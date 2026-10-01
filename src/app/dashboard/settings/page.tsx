@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback, useMemo } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { useToast } from "@/context/ToastContext";
 import { AttendanceSettings, ApiResponse } from "@/types";
@@ -15,60 +15,106 @@ export default function SettingsPage() {
   const [detectedIp, setDetectedIp] = useState<string>("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [savingIp, setSavingIp] = useState(false);
   const [newIpInput, setNewIpInput] = useState("");
 
   // Tải cấu hình hiện tại từ backend
-  useEffect(() => {
-    const fetchSettings = async () => {
-      setLoading(true);
-      try {
-        const res = await fetch("/api/settings/attendance");
-        const json: ApiResponse<{
-          settings: AttendanceSettings;
-          detectedClientIp: string;
-          isIpAllowed: boolean;
-        }> = await res.json();
+  const fetchSettings = useCallback(async () => {
+    setLoading(true);
+    try {
+      const res = await fetch("/api/settings/attendance");
+      const json: ApiResponse<{
+        settings: AttendanceSettings;
+        detectedClientIp: string;
+        isIpAllowed: boolean;
+      }> = await res.json();
 
-        if (json.success && json.data) {
-          setSettings(json.data.settings);
-          setDetectedIp(json.data.detectedClientIp);
-        }
-      } catch (err) {
-        toast.error(err instanceof Error ? err.message : "Lỗi khi tải cấu hình", {
-          title: "Lỗi Hệ Thống",
-        });
-      } finally {
-        setLoading(false);
+      if (json.success && json.data) {
+        setSettings(json.data.settings);
+        setDetectedIp(json.data.detectedClientIp);
       }
-    };
-
-    fetchSettings();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Lỗi khi tải cấu hình", {
+        title: "Lỗi Hệ Thống",
+      });
+    } finally {
+      setLoading(false);
+    }
   }, [toast]);
 
-  const handleAddIp = (ipToAdd?: string) => {
-    const ip = (ipToAdd || newIpInput).trim();
-    if (!ip || !settings) return;
+  useEffect(() => {
+    fetchSettings();
+  }, [fetchSettings]);
 
+  // Hàm tự động lưu IP trực tiếp vào DB ngay khi thêm hoặc xóa
+  const saveAllowedIps = async (newIps: string[], successMsg: string) => {
+    if (!settings) return;
+    const uniqueIps = Array.from(new Set(newIps.map((ip) => ip.trim()).filter(Boolean)));
+
+    // Cập nhật state cục bộ ngay lập tức
+    setSettings((prev) => (prev ? { ...prev, allowedIps: uniqueIps } : prev));
+    setSavingIp(true);
+
+    try {
+      const res = await fetch("/api/settings/attendance", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          ...settings,
+          allowedIps: uniqueIps,
+        }),
+      });
+
+      const json = await res.json();
+      if (res.ok && json.success) {
+        if (json.data) setSettings(json.data);
+        toast.success(successMsg, {
+          title: "Đã Lưu Vào Database",
+        });
+      } else {
+        throw new Error(json.message || json.error || "Không thể lưu IP");
+      }
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Lỗi khi lưu IP vào cơ sở dữ liệu", {
+        title: "Lỗi Lưu IP",
+      });
+      fetchSettings();
+    } finally {
+      setSavingIp(false);
+    }
+  };
+
+  // Thêm IP hiện tại của người dùng & Lưu trực tiếp vào DB
+  const handleAddDetectedIp = async () => {
+    if (!detectedIp || !settings) return;
+    const ip = detectedIp.trim();
+    if (isCurrentIpInList) {
+      toast.warning(`IP "${ip}" đã có trong danh sách.`);
+      return;
+    }
+    await saveAllowedIps([...settings.allowedIps, ip], `Đã thêm và lưu IP ${ip} vào cơ sở dữ liệu thành công!`);
+  };
+
+  // Thêm IP từ ô nhập & Lưu trực tiếp vào DB
+  const handleAddInputIp = async () => {
+    const ip = newIpInput.trim();
+    if (!ip || !settings) return;
     if (settings.allowedIps.includes(ip)) {
       toast.warning(`IP "${ip}" đã có trong danh sách.`);
       return;
     }
-
-    setSettings({
-      ...settings,
-      allowedIps: [...settings.allowedIps, ip],
-    });
     setNewIpInput("");
+    await saveAllowedIps([...settings.allowedIps, ip], `Đã thêm và lưu IP ${ip} vào cơ sở dữ liệu thành công!`);
   };
 
-  const handleRemoveIp = (ipToRemove: string) => {
+  // Xóa IP & Lưu trực tiếp vào DB
+  const handleRemoveIp = async (ipToRemove: string) => {
     if (!settings) return;
-    setSettings({
-      ...settings,
-      allowedIps: settings.allowedIps.filter((ip) => ip !== ipToRemove),
-    });
+    const newIps = settings.allowedIps.filter((ip) => ip !== ipToRemove);
+    await saveAllowedIps(newIps, `Đã xóa IP ${ipToRemove} khỏi cơ sở dữ liệu thành công!`);
   };
 
+  // Lưu toàn bộ form (bao gồm cả giờ làm việc và checkbox kiểm tra IP)
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!settings) return;
@@ -105,6 +151,18 @@ export default function SettingsPage() {
 
   const isPrivileged = user?.role === "admin" || user?.role === "director";
 
+  // Kiểm tra IP hiện tại có trong danh sách (hỗ trợ cả tiền tố wildcard *)
+  const isCurrentIpInList = useMemo(() => {
+    if (!detectedIp || !settings?.allowedIps) return false;
+    const client = detectedIp.trim();
+    return settings.allowedIps.some((allowed) => {
+      const a = allowed.trim();
+      if (a === client) return true;
+      if (a.endsWith("*") && client.startsWith(a.slice(0, -1))) return true;
+      return false;
+    });
+  }, [detectedIp, settings?.allowedIps]);
+
   if (!isPrivileged) {
     return (
       <div className="w-full max-w-2xl mx-auto p-6 sm:p-10 text-center">
@@ -130,8 +188,6 @@ export default function SettingsPage() {
       </div>
     );
   }
-
-  const isCurrentIpInList = detectedIp && settings.allowedIps.includes(detectedIp);
 
   return (
     <div className="w-full px-4 sm:px-6 lg:px-8 py-4 sm:py-6 space-y-4 sm:space-y-6">
@@ -208,7 +264,9 @@ export default function SettingsPage() {
                 type="button"
                 variant="outline"
                 size="sm"
-                onClick={() => handleAddIp(detectedIp)}
+                onClick={handleAddDetectedIp}
+                isLoading={savingIp}
+                loadingText="Đang thêm & lưu..."
               >
                 + Thêm IP này vào danh sách
               </Button>
@@ -234,6 +292,12 @@ export default function SettingsPage() {
               type="text"
               value={newIpInput}
               onChange={(e) => setNewIpInput(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  handleAddInputIp();
+                }
+              }}
               placeholder="Nhập địa chỉ IP (VD: 113.161.72.15 hoặc 192.168.1.*)"
               className="flex-1 px-3.5 py-2 rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-950 text-xs sm:text-sm font-mono text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-zinc-900 dark:focus:ring-zinc-100"
             />
@@ -241,7 +305,9 @@ export default function SettingsPage() {
               type="button"
               variant="secondary"
               size="md"
-              onClick={() => handleAddIp()}
+              onClick={handleAddInputIp}
+              isLoading={savingIp}
+              loadingText="Đang thêm..."
             >
               Thêm IP
             </Button>
@@ -264,8 +330,9 @@ export default function SettingsPage() {
                   <button
                     type="button"
                     onClick={() => handleRemoveIp(ip)}
+                    disabled={savingIp}
                     title="Xóa IP này"
-                    className="ml-1 text-zinc-400 hover:text-red-500 transition-colors cursor-pointer"
+                    className="ml-1 text-zinc-400 hover:text-red-500 disabled:opacity-50 transition-colors cursor-pointer"
                   >
                     ✕
                   </button>

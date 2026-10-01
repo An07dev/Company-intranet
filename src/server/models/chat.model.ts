@@ -73,10 +73,21 @@ export async function ensureDefaultConversations() {
 
   // 2. Kênh từng Phòng Ban
   const allDepts = await MongoDepartmentModel.find().lean();
+  const privilegedUserIds = allUsers
+    .filter((u) => u.role === "admin" || u.role === "director")
+    .map((u) => u.id);
+
   for (const dept of allDepts) {
     const deptMembers = allUsers
       .filter((u) => u.department && u.department.toLowerCase() === dept.name.toLowerCase())
       .map((u) => u.id);
+
+    // Kênh phòng ban luôn bao gồm nhân sự phòng ban + Ban Giám Đốc + Admin
+    const memberSet = new Set([...deptMembers, ...privilegedUserIds]);
+    if (dept.managerId) {
+      memberSet.add(dept.managerId);
+    }
+    const finalMemberIds = Array.from(memberSet);
 
     let deptConv = await MongoChatConversationModel.findOne({
       type: "department",
@@ -91,7 +102,7 @@ export async function ensureDefaultConversations() {
         departmentId: dept.id,
         departmentName: dept.name,
         avatar: "💼",
-        memberIds: deptMembers,
+        memberIds: finalMemberIds,
         lastMessage: {
           content: `Kênh trao đổi nội bộ của ${dept.name}`,
           senderId: "system",
@@ -114,10 +125,13 @@ export async function ensureDefaultConversations() {
         updatedAt: now,
       });
     } else {
-      // Đồng bộ thành viên phòng ban
+      // Đồng bộ tên phòng ban và đảm bảo thành viên cùng Admin & Giám đốc luôn có trong nhóm
       await MongoChatConversationModel.updateOne(
         { id: deptConv.id },
-        { $set: { memberIds: deptMembers, departmentName: dept.name, name: `Phòng ${dept.name}` } }
+        {
+          $set: { departmentName: dept.name, name: `Phòng ${dept.name}` },
+          $addToSet: { memberIds: { $each: finalMemberIds } },
+        }
       );
     }
   }
@@ -137,12 +151,19 @@ export async function createDepartmentConversation(dept: {
   await connectToDatabase();
   const now = new Date().toISOString();
 
-  // Tìm tất cả nhân sự đang thuộc phòng ban này
+  // Tìm tất cả nhân sự đang thuộc phòng ban này và các tài khoản Admin / Giám đốc
+  const privilegedUsers = await MongoUserModel.find({
+    role: { $in: ["admin", "director"] },
+    status: "active",
+  }).lean();
   const members = await MongoUserModel.find({
     department: { $regex: new RegExp(`^${dept.name}$`, "i") },
     status: "active",
   }).lean();
-  const memberSet = new Set(members.map((m) => m.id));
+  const memberSet = new Set([
+    ...members.map((m) => m.id),
+    ...privilegedUsers.map((p) => p.id),
+  ]);
   if (dept.managerId) {
     memberSet.add(dept.managerId);
   }
@@ -293,6 +314,16 @@ export async function removeMembersFromDepartmentChat(
   if (!userIds || userIds.length === 0) return;
   await connectToDatabase();
 
+  // Không rút Admin và Giám Đốc khỏi kênh chat phòng ban
+  const protectedUsers = await MongoUserModel.find({
+    id: { $in: userIds },
+    role: { $in: ["admin", "director"] },
+  }).lean();
+  const protectedIds = new Set(protectedUsers.map((u) => u.id));
+  const effectiveRemoveIds = userIds.filter((id) => !protectedIds.has(id));
+
+  if (effectiveRemoveIds.length === 0) return;
+
   const deptConv = await MongoChatConversationModel.findOne({
     type: "department",
     departmentId: deptId,
@@ -306,12 +337,12 @@ export async function removeMembersFromDepartmentChat(
   await MongoChatConversationModel.updateOne(
     { id: deptConv.id },
     {
-      $pull: { memberIds: { $in: userIds } },
+      $pull: { memberIds: { $in: effectiveRemoveIds } },
       $set: { updatedAt: now },
     }
   );
 
-  const removedUsers = await MongoUserModel.find({ id: { $in: userIds } }).lean();
+  const removedUsers = await MongoUserModel.find({ id: { $in: effectiveRemoveIds } }).lean();
   const userNames = removedUsers.map((u) => u.name).join(", ");
 
   if (userNames) {
@@ -785,15 +816,40 @@ export const ChatModel = {
       throw new Error("Không tìm thấy người gửi");
     }
 
-    // Nếu không phải kênh company, kiểm tra sender có trong memberIds không
-    if (conv.type !== "company") {
+    // Kiểm tra quyền gửi tin nhắn:
+    // 1. Kênh company: Tất cả nhân viên active đều được gửi
+    // 2. Kênh department: Thành viên phòng ban, ADMIN và GIÁM ĐỐC đều có quyền gửi tin nhắn
+    // 3. Kênh group/direct: Bắt buộc phải có trong memberIds
+    if (conv.type === "company") {
       if (!conv.memberIds.includes(senderId)) {
-        // Nếu là department và user thuộc phòng này, tự động thêm vào
-        if (conv.type === "department" && sender.department?.toLowerCase() === conv.departmentName?.toLowerCase()) {
+        conv.memberIds.push(senderId);
+        await MongoChatConversationModel.updateOne(
+          { id: conv.id },
+          { $addToSet: { memberIds: senderId } }
+        );
+      }
+    } else if (conv.type === "department") {
+      const isPrivileged = sender.role === "admin" || sender.role === "director";
+      const isDeptMember = Boolean(
+        sender.department &&
+        conv.departmentName &&
+        sender.department.trim().toLowerCase() === conv.departmentName.trim().toLowerCase()
+      );
+
+      if (!conv.memberIds.includes(senderId)) {
+        if (isPrivileged || isDeptMember) {
           conv.memberIds.push(senderId);
+          await MongoChatConversationModel.updateOne(
+            { id: conv.id },
+            { $addToSet: { memberIds: senderId } }
+          );
         } else {
-          throw new Error("Bạn không phải thành viên của cuộc trò chuyện này");
+          throw new Error("Bạn không có quyền gửi tin nhắn vào kênh phòng ban này");
         }
+      }
+    } else {
+      if (!conv.memberIds.includes(senderId)) {
+        throw new Error("Bạn không phải thành viên của cuộc trò chuyện này");
       }
     }
 

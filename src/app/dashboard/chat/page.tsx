@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import { useAuth } from "@/context/AuthContext";
+import { useToast } from "@/context/ToastContext";
 import { ChatConversation, ChatMessage, ChatAttachment, User } from "@/types";
 import { ChatSidebar } from "@/components/chat/ChatSidebar";
 import { ChatMessageList } from "@/components/chat/ChatMessageList";
@@ -12,6 +13,7 @@ import { ConversationInfoDrawer } from "@/components/chat/ConversationInfoDrawer
 
 export default function ChatPage() {
   const { user } = useAuth();
+  const { toast } = useToast();
 
   // State hội thoại & tin nhắn
   const [conversations, setConversations] = useState<ChatConversation[]>([]);
@@ -178,9 +180,18 @@ export default function ChatPage() {
         setMessages((prev) => prev.map((m) => (m.id === tempId ? savedMsg : m)));
         // Cập nhật lại cuộc trò chuyện
         fetchConversations(false);
+      } else {
+        setMessages((prev) => prev.filter((m) => m.id !== tempId));
+        toast.error(json.message || json.error || "Không thể gửi tin nhắn", {
+          title: "Gửi Tin Nhắn Thất Bại",
+        });
       }
     } catch (err) {
       console.error("Lỗi khi gửi tin nhắn:", err);
+      setMessages((prev) => prev.filter((m) => m.id !== tempId));
+      toast.error(err instanceof Error ? err.message : "Lỗi kết nối", {
+        title: "Lỗi Hệ Thống",
+      });
     }
   };
 
