@@ -10,6 +10,7 @@ import { ChatInput } from "@/components/chat/ChatInput";
 import { CreateGroupModal } from "@/components/chat/CreateGroupModal";
 import { DirectChatModal } from "@/components/chat/DirectChatModal";
 import { ConversationInfoDrawer } from "@/components/chat/ConversationInfoDrawer";
+import { LoadingSection } from "@/components/ui/Loading";
 
 export default function ChatPage() {
   const { user } = useAuth();
@@ -17,6 +18,7 @@ export default function ChatPage() {
 
   // State hội thoại & tin nhắn
   const [conversations, setConversations] = useState<ChatConversation[]>([]);
+  const [loadingConversations, setLoadingConversations] = useState(true);
   const [activeConv, setActiveConv] = useState<ChatConversation | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [loadingMessages, setLoadingMessages] = useState(false);
@@ -48,7 +50,8 @@ export default function ChatPage() {
   }, []);
 
   // Fetch danh sách cuộc trò chuyện
-  const fetchConversations = useCallback(async (selectFirstIfNone = false) => {
+  const fetchConversations = useCallback(async (selectFirstIfNone = false, isInitial = false) => {
+    if (isInitial) setLoadingConversations(true);
     try {
       const res = await fetch("/api/chat/conversations");
       const json = await res.json();
@@ -63,6 +66,8 @@ export default function ChatPage() {
       }
     } catch (e) {
       console.error("Lỗi fetch conversations:", e);
+    } finally {
+      if (isInitial) setLoadingConversations(false);
     }
   }, []);
 
@@ -96,7 +101,7 @@ export default function ChatPage() {
   // Khởi tạo ban đầu
   useEffect(() => {
     fetchUsers();
-    fetchConversations(true);
+    fetchConversations(true, true);
   }, [fetchUsers, fetchConversations]);
 
   // Khi activeConv thay đổi -> Tải tin nhắn của hội thoại đó
@@ -256,6 +261,7 @@ export default function ChatPage() {
           onSelectConversation={handleSelectConversation}
           onOpenDirectModal={() => setIsDirectModalOpen(true)}
           onOpenGroupModal={() => setIsGroupModalOpen(true)}
+          loading={loadingConversations}
         />
       </div>
 
@@ -343,15 +349,21 @@ export default function ChatPage() {
         ) : (
           /* Màn hình trống khi chưa chọn hội thoại */
           <div className="hidden md:flex flex-1 flex-col items-center justify-center text-center p-8 bg-zinc-50/50 dark:bg-zinc-950/40">
-            <div className="w-16 h-16 rounded-3xl bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center text-3xl mb-3 shadow-xs">
-              💬
-            </div>
-            <h3 className="text-base font-bold text-zinc-800 dark:text-zinc-200">
-              Hệ Thống Trò Chuyện &amp; Tin Nhắn Nội Bộ
-            </h3>
-            <p className="text-xs text-zinc-400 max-w-sm mt-1 leading-relaxed">
-              Chọn một kênh trao đổi toàn công ty, phòng ban, nhắn tin trực tiếp 1-1 hoặc tạo nhóm hội chat để bắt đầu giao tiếp ngay.
-            </p>
+            {loadingConversations ? (
+              <LoadingSection text="Đang tải danh sách hộp thoại..." size="lg" />
+            ) : (
+              <>
+                <div className="w-16 h-16 rounded-3xl bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center text-3xl mb-3 shadow-xs">
+                  💬
+                </div>
+                <h3 className="text-base font-bold text-zinc-800 dark:text-zinc-200">
+                  Hệ Thống Trò Chuyện &amp; Tin Nhắn Nội Bộ
+                </h3>
+                <p className="text-xs text-zinc-400 max-w-sm mt-1 leading-relaxed">
+                  Chọn một kênh trao đổi toàn công ty, phòng ban, nhắn tin trực tiếp 1-1 hoặc tạo nhóm hội chat để bắt đầu giao tiếp ngay.
+                </p>
+              </>
+            )}
           </div>
         )}
 

@@ -2,6 +2,7 @@
 
 import React, { useEffect, useRef, useState } from "react";
 import { ChatMessage, ChatAttachment, User } from "@/types";
+import { Spinner } from "@/components/ui/Loading";
 
 interface ChatMessageListProps {
   messages: ChatMessage[];
@@ -48,11 +49,74 @@ export function ChatMessageList({
 
   return (
     <div className="flex-1 overflow-y-auto p-4 sm:p-5 space-y-4">
+      {/* 1. Trạng thái Loading ban đầu: Hiệu ứng Skeleton tin nhắn hiện đại */}
       {loading && messages.length === 0 ? (
-        <div className="flex items-center justify-center h-full text-xs text-zinc-400">
-          Đang tải tin nhắn...
+        <div className="flex flex-col space-y-4 py-2">
+          {/* Badge thông báo đang tải */}
+          <div className="flex items-center justify-center my-2">
+            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700/60 text-[11px] font-medium text-zinc-600 dark:text-zinc-300 shadow-2xs">
+              <Spinner size="xs" color="default" />
+              <span>Đang tải nội dung cuộc trò chuyện...</span>
+            </div>
+          </div>
+
+          {/* Skeleton tin nhắn 1 (Bên trái) */}
+          <div className="flex items-end gap-2.5 max-w-[75%] animate-pulse">
+            <div className="w-7 h-7 rounded-xl bg-zinc-200 dark:bg-zinc-800 shrink-0 mb-1" />
+            <div className="space-y-1.5 flex-1">
+              <div className="h-2.5 w-24 bg-zinc-200 dark:bg-zinc-800 rounded" />
+              <div className="p-3.5 rounded-2xl rounded-bl-xs bg-zinc-100 dark:bg-zinc-800/70 border border-zinc-200/50 dark:border-zinc-800 space-y-2">
+                <div className="h-3 w-48 bg-zinc-200 dark:bg-zinc-700 rounded" />
+                <div className="h-3 w-28 bg-zinc-200 dark:bg-zinc-700 rounded" />
+              </div>
+            </div>
+          </div>
+
+          {/* Skeleton tin nhắn 2 (Bên phải - Của tôi) */}
+          <div className="flex items-end justify-end gap-2.5 animate-pulse">
+            <div className="space-y-1.5 flex flex-col items-end max-w-[65%]">
+              <div className="h-2.5 w-14 bg-zinc-200 dark:bg-zinc-800 rounded" />
+              <div className="p-3.5 rounded-2xl rounded-br-xs bg-zinc-900/10 dark:bg-zinc-100/10 space-y-2">
+                <div className="h-3 w-52 bg-zinc-300 dark:bg-zinc-700 rounded" />
+              </div>
+            </div>
+          </div>
+
+          {/* Skeleton tin nhắn 3 (Bên trái) */}
+          <div className="flex items-end gap-2.5 max-w-[80%] animate-pulse">
+            <div className="w-7 h-7 rounded-xl bg-zinc-200 dark:bg-zinc-800 shrink-0 mb-1" />
+            <div className="space-y-1.5 flex-1">
+              <div className="h-2.5 w-28 bg-zinc-200 dark:bg-zinc-800 rounded" />
+              <div className="p-3.5 rounded-2xl rounded-bl-xs bg-zinc-100 dark:bg-zinc-800/70 border border-zinc-200/50 dark:border-zinc-800 space-y-2">
+                <div className="h-3 w-64 bg-zinc-200 dark:bg-zinc-700 rounded" />
+                <div className="h-3 w-36 bg-zinc-200 dark:bg-zinc-700 rounded" />
+              </div>
+            </div>
+          </div>
+
+          {/* Skeleton tin nhắn 4 (Bên phải - Của tôi) */}
+          <div className="flex items-end justify-end gap-2.5 animate-pulse">
+            <div className="space-y-1.5 flex flex-col items-end max-w-[60%]">
+              <div className="h-2.5 w-14 bg-zinc-200 dark:bg-zinc-800 rounded" />
+              <div className="p-3.5 rounded-2xl rounded-br-xs bg-zinc-900/10 dark:bg-zinc-100/10 space-y-2">
+                <div className="h-3 w-36 bg-zinc-300 dark:bg-zinc-700 rounded" />
+              </div>
+            </div>
+          </div>
         </div>
-      ) : messages.length === 0 ? (
+      ) : (
+        <>
+          {/* 2. Thanh hiển thị đồng bộ nền khi đang tải lại */}
+          {loading && (
+            <div className="sticky top-0 z-10 flex justify-center pb-2">
+              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/95 dark:bg-zinc-900/95 shadow-md border border-zinc-200 dark:border-zinc-800 text-[11px] font-medium text-zinc-600 dark:text-zinc-300 backdrop-blur-xs">
+                <Spinner size="xs" color="default" />
+                <span>Đang đồng bộ tin nhắn...</span>
+              </div>
+            </div>
+          )}
+
+          {messages.length === 0 ? (
         <div className="flex flex-col items-center justify-center h-full text-center py-12">
           <div className="w-12 h-12 rounded-2xl bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center text-2xl mb-2">
             💬
@@ -290,6 +354,8 @@ export function ChatMessageList({
           );
         })
       )}
+      </>
+    )}
 
       <div ref={bottomRef} />
 

@@ -9,6 +9,7 @@ interface ChatSidebarProps {
   onSelectConversation: (conv: ChatConversation) => void;
   onOpenDirectModal: () => void;
   onOpenGroupModal: () => void;
+  loading?: boolean;
 }
 
 export function ChatSidebar({
@@ -17,6 +18,7 @@ export function ChatSidebar({
   onSelectConversation,
   onOpenDirectModal,
   onOpenGroupModal,
+  loading = false,
 }: ChatSidebarProps) {
   const [activeTab, setActiveTab] = useState<"all" | ChatConversationType>("all");
   const [searchQuery, setSearchQuery] = useState("");
@@ -179,7 +181,37 @@ export function ChatSidebar({
 
       {/* 4. Danh sách cuộc hội thoại */}
       <div className="flex-1 overflow-y-auto divide-y divide-zinc-100 dark:divide-zinc-800/50">
-        {filteredConversations.length === 0 ? (
+        {loading ? (
+          <div className="p-3 space-y-2">
+            {Array.from({ length: 7 }).map((_, idx) => (
+              <div
+                key={idx}
+                className="p-2 sm:px-2.5 rounded-xl flex items-center gap-3 animate-pulse bg-zinc-50/50 dark:bg-zinc-800/20"
+              >
+                {/* Avatar Skeleton */}
+                <div className="w-10 h-10 rounded-2xl bg-zinc-200 dark:bg-zinc-800 shrink-0" />
+
+                {/* Text Skeleton */}
+                <div className="flex-1 min-w-0 space-y-2">
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2">
+                      <div
+                        className="h-3.5 bg-zinc-200 dark:bg-zinc-800 rounded-md"
+                        style={{ width: `${80 + (idx % 4) * 25}px` }}
+                      />
+                      <div className="h-3 w-12 bg-zinc-200/70 dark:bg-zinc-800/70 rounded-full" />
+                    </div>
+                    <div className="h-2.5 w-8 bg-zinc-200/60 dark:bg-zinc-800/60 rounded" />
+                  </div>
+                  <div
+                    className="h-2.5 bg-zinc-200/70 dark:bg-zinc-800/70 rounded"
+                    style={{ width: `${110 + (idx % 3) * 35}px` }}
+                  />
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : filteredConversations.length === 0 ? (
           <div className="py-12 px-4 text-center text-xs text-zinc-400">
             Không tìm thấy cuộc trò chuyện nào
           </div>
