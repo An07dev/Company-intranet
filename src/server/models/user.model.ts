@@ -1,7 +1,7 @@
 import crypto from "crypto";
 import { User, UserRole, UserStatus, ContractType, CreateUserInput, UpdateUserInput } from "@/types";
 import { connectToDatabase } from "@/server/db";
-import { MongoUserModel, IUserDocument } from "@/server/db/schema";
+import { MongoUserModel, MongoDepartmentModel, IUserDocument } from "@/server/db/schema";
 
 export type UserDocument = IUserDocument;
 
@@ -386,6 +386,36 @@ export const UserModel = {
         ? input.officialStartDate || now.slice(0, 10)
         : undefined;
 
+    // Chuẩn hóa và đồng bộ phòng ban với collection departments
+    let finalDeptName = input.department?.trim();
+    if (finalDeptName && finalDeptName !== "Khác") {
+      const deptDoc = await MongoDepartmentModel.findOne({
+        name: { $regex: new RegExp(`^${finalDeptName}$`, "i") },
+      });
+      if (deptDoc) {
+        finalDeptName = deptDoc.name;
+      } else {
+        // Tự động tạo phòng ban mới nếu người dùng nhập phòng ban mới
+        try {
+          const { DepartmentModel } = await import("@/server/models/department.model");
+          const deptCode =
+            finalDeptName
+              .split(" ")
+              .map((w: string) => w[0]?.toUpperCase() || "")
+              .join("")
+              .slice(0, 6) || "DEPT";
+
+          await DepartmentModel.create({
+            name: finalDeptName,
+            code: deptCode,
+            description: `Phòng ban ${finalDeptName}`,
+          });
+        } catch (deptErr) {
+          console.error("Lỗi tự động tạo phòng ban mới khi thêm user:", deptErr);
+        }
+      }
+    }
+
     const newDoc = await MongoUserModel.create({
       id: `usr_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
       employeeCode,
@@ -395,7 +425,7 @@ export const UserModel = {
       salt,
       role: input.role,
       phone: input.phone?.trim(),
-      department: input.department?.trim(),
+      department: finalDeptName,
       avatarUrl: input.avatarUrl,
       status: input.status || "active",
       contractType,
@@ -403,6 +433,16 @@ export const UserModel = {
       createdAt: now,
       updatedAt: now,
     });
+
+    // Nếu tạo user với vai trò manager và phòng ban chưa có manager, tự động gán
+    if (newDoc.role === "manager" && finalDeptName) {
+      const dept = await MongoDepartmentModel.findOne({ name: finalDeptName });
+      if (dept && !dept.managerId) {
+        dept.managerId = newDoc.id;
+        dept.updatedAt = now;
+        await dept.save();
+      }
+    }
 
     // Tự động đồng bộ vào nhóm chat phòng ban và nhóm chat toàn công ty
     try {
@@ -441,7 +481,18 @@ export const UserModel = {
     if (input.name !== undefined) current.name = input.name.trim();
     if (input.role !== undefined) current.role = input.role;
     if (input.phone !== undefined) current.phone = input.phone?.trim();
-    if (input.department !== undefined) current.department = input.department?.trim();
+    if (input.department !== undefined) {
+      let updatedDept = input.department?.trim();
+      if (updatedDept && updatedDept !== "Khác") {
+        const deptDoc = await MongoDepartmentModel.findOne({
+          name: { $regex: new RegExp(`^${updatedDept}$`, "i") },
+        });
+        if (deptDoc) {
+          updatedDept = deptDoc.name;
+        }
+      }
+      current.department = updatedDept;
+    }
     if (input.avatarUrl !== undefined) current.avatarUrl = input.avatarUrl;
     if (input.status !== undefined) current.status = input.status;
 

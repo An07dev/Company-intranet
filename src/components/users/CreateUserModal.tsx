@@ -1,21 +1,21 @@
 "use client";
 
-import React, { useState } from "react";
-import { UserRole, UserStatus, ContractType } from "@/types";
+import React, { useState, useEffect } from "react";
+import { UserRole, UserStatus, ContractType, Department } from "@/types";
 import { Spinner } from "@/components/ui/Loading";
 
 interface CreateUserModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSuccess: () => void;
-  availableDepartments: string[];
+  availableDepartments?: string[];
 }
 
 export function CreateUserModal({
   isOpen,
   onClose,
   onSuccess,
-  availableDepartments,
+  availableDepartments = [],
 }: CreateUserModalProps) {
   const todayStr = new Intl.DateTimeFormat("en-CA", {
     timeZone: "Asia/Ho_Chi_Minh",
@@ -30,14 +30,40 @@ export function CreateUserModal({
   const [password, setPassword] = useState("company123");
   const [showPassword, setShowPassword] = useState(false);
   const [phone, setPhone] = useState("");
-  const [department, setDepartment] = useState(availableDepartments[0] || "Bộ Phận Phát Triển Sản Phẩm");
+  const [department, setDepartment] = useState(availableDepartments[0] || "");
   const [customDept, setCustomDept] = useState("");
+  const [departments, setDepartments] = useState<Department[]>([]);
+  const [loadingDepts, setLoadingDepts] = useState(false);
   const [role, setRole] = useState<UserRole>("employee");
   const [contractType, setContractType] = useState<ContractType>("official");
   const [officialStartDate, setOfficialStartDate] = useState(todayStr);
   const [status, setStatus] = useState<UserStatus>("active");
   const [submitting, setSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
+
+  // Tải danh sách phòng ban thực tế từ cơ sở dữ liệu
+  useEffect(() => {
+    if (isOpen) {
+      const fetchDepts = async () => {
+        try {
+          setLoadingDepts(true);
+          const res = await fetch("/api/departments");
+          const json = await res.json();
+          if (res.ok && json.success && Array.isArray(json.data) && json.data.length > 0) {
+            setDepartments(json.data);
+            setDepartment((prev) => (prev && prev !== "custom" ? prev : json.data[0].name));
+          } else if (availableDepartments.length > 0) {
+            setDepartment((prev) => (prev && prev !== "custom" ? prev : availableDepartments[0]));
+          }
+        } catch (e) {
+          console.error("Lỗi tải phòng ban:", e);
+        } finally {
+          setLoadingDepts(false);
+        }
+      };
+      fetchDepts();
+    }
+  }, [isOpen, availableDepartments]);
 
   if (!isOpen) return null;
 
@@ -227,11 +253,21 @@ export function CreateUserModal({
                 onChange={(e) => setDepartment(e.target.value)}
                 className="w-full px-3 py-2 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-950 text-xs text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-1 focus:ring-zinc-900 dark:focus:ring-zinc-100 cursor-pointer"
               >
-                {availableDepartments.map((dept) => (
-                  <option key={dept} value={dept}>
-                    {dept}
-                  </option>
-                ))}
+                {loadingDepts && departments.length === 0 ? (
+                  <option disabled>Đang tải danh sách phòng ban...</option>
+                ) : departments.length > 0 ? (
+                  departments.map((dept) => (
+                    <option key={dept.id} value={dept.name}>
+                      {dept.name} ({dept.code})
+                    </option>
+                  ))
+                ) : (
+                  availableDepartments.map((dept) => (
+                    <option key={dept} value={dept}>
+                      {dept}
+                    </option>
+                  ))
+                )}
                 <option value="custom">+ Thêm phòng ban khác...</option>
               </select>
 

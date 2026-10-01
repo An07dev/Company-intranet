@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { User, UserRole, UserStatus, ContractType } from "@/types";
+import { User, UserRole, UserStatus, ContractType, Department } from "@/types";
 import { Spinner } from "@/components/ui/Loading";
 
 interface EditUserModalProps {
@@ -9,7 +9,7 @@ interface EditUserModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSuccess: () => void;
-  availableDepartments: string[];
+  availableDepartments?: string[];
 }
 
 export function EditUserModal({
@@ -17,7 +17,7 @@ export function EditUserModal({
   isOpen,
   onClose,
   onSuccess,
-  availableDepartments,
+  availableDepartments = [],
 }: EditUserModalProps) {
   const [name, setName] = useState("");
   const [employeeCode, setEmployeeCode] = useState("");
@@ -25,12 +25,35 @@ export function EditUserModal({
   const [phone, setPhone] = useState("");
   const [department, setDepartment] = useState("");
   const [customDept, setCustomDept] = useState("");
+  const [departments, setDepartments] = useState<Department[]>([]);
+  const [loadingDepts, setLoadingDepts] = useState(false);
   const [role, setRole] = useState<UserRole>("employee");
   const [contractType, setContractType] = useState<ContractType>("official");
   const [officialStartDate, setOfficialStartDate] = useState("");
   const [status, setStatus] = useState<UserStatus>("active");
   const [submitting, setSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
+
+  // Tải danh sách phòng ban từ API
+  useEffect(() => {
+    if (isOpen) {
+      const fetchDepts = async () => {
+        try {
+          setLoadingDepts(true);
+          const res = await fetch("/api/departments");
+          const json = await res.json();
+          if (res.ok && json.success && Array.isArray(json.data)) {
+            setDepartments(json.data);
+          }
+        } catch (e) {
+          console.error("Lỗi tải phòng ban:", e);
+        } finally {
+          setLoadingDepts(false);
+        }
+      };
+      fetchDepts();
+    }
+  }, [isOpen]);
 
   useEffect(() => {
     if (user) {
@@ -206,11 +229,21 @@ export function EditUserModal({
                 onChange={(e) => setDepartment(e.target.value)}
                 className="w-full px-3 py-2 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-950 text-xs text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-1 focus:ring-zinc-900 dark:focus:ring-zinc-100 cursor-pointer"
               >
-                {availableDepartments.map((dept) => (
-                  <option key={dept} value={dept}>
-                    {dept}
-                  </option>
-                ))}
+                {loadingDepts && departments.length === 0 ? (
+                  <option disabled>Đang tải danh sách phòng ban...</option>
+                ) : departments.length > 0 ? (
+                  departments.map((dept) => (
+                    <option key={dept.id} value={dept.name}>
+                      {dept.name} ({dept.code})
+                    </option>
+                  ))
+                ) : (
+                  availableDepartments.map((dept) => (
+                    <option key={dept} value={dept}>
+                      {dept}
+                    </option>
+                  ))
+                )}
                 <option value="custom">+ Thêm phòng ban khác...</option>
               </select>
 

@@ -3,7 +3,7 @@
 import React, { useEffect, useState, useCallback, useMemo } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
-import { User, UserRole, UserStatus } from "@/types";
+import { User, UserRole, UserStatus, Department } from "@/types";
 import { LoadingSection } from "@/components/ui/Loading";
 import { USER_ROLE_LABELS } from "@/lib/constants";
 import { CreateUserModal } from "@/components/users/CreateUserModal";
@@ -11,22 +11,12 @@ import { EditUserModal } from "@/components/users/EditUserModal";
 import { ResetPasswordModal } from "@/components/users/ResetPasswordModal";
 import { DeleteUserModal } from "@/components/users/DeleteUserModal";
 
-const DEFAULT_DEPARTMENTS = [
-  "Ban Giám Đốc",
-  "Ban Công Nghệ & Quản Trị Hệ Thống",
-  "Bộ Phận Phát Triển Sản Phẩm",
-  "Phòng Kinh Doanh",
-  "Phòng Kế Toán",
-  "Phòng Nhân Sự",
-  "Khối Vận Hành",
-  "Phòng Marketing",
-];
-
 export default function UsersManagementPage() {
   const { user: currentUser, isLoading } = useAuth();
   const router = useRouter();
 
   const [usersList, setUsersList] = useState<User[]>([]);
+  const [departmentsList, setDepartmentsList] = useState<Department[]>([]);
   const [loading, setLoading] = useState(true);
 
   // Bộ lọc & Sắp xếp & Tìm kiếm
@@ -58,6 +48,19 @@ export default function UsersManagementPage() {
     }
   }, [isLoading, currentUser, router]);
 
+  // Tải danh sách phòng ban từ API
+  const fetchDepartments = useCallback(async () => {
+    try {
+      const res = await fetch("/api/departments");
+      const json = await res.json();
+      if (json.success && Array.isArray(json.data)) {
+        setDepartmentsList(json.data);
+      }
+    } catch (err) {
+      console.error("Lỗi khi tải danh sách phòng ban:", err);
+    }
+  }, []);
+
   // Tải danh sách người dùng từ API
   const fetchUsers = useCallback(async () => {
     try {
@@ -74,20 +77,28 @@ export default function UsersManagementPage() {
     }
   }, []);
 
+  const refreshData = useCallback(() => {
+    fetchUsers();
+    fetchDepartments();
+  }, [fetchUsers, fetchDepartments]);
+
   useEffect(() => {
     if (currentUser && (currentUser.role === "admin" || currentUser.role === "director")) {
       fetchUsers();
+      fetchDepartments();
     }
-  }, [currentUser, fetchUsers]);
+  }, [currentUser, fetchUsers, fetchDepartments]);
 
-  // Tổng hợp danh sách các phòng ban duy nhất
+  // Tổng hợp danh sách các phòng ban thực tế trong hệ thống
   const availableDepartments = useMemo(() => {
-    const set = new Set<string>(DEFAULT_DEPARTMENTS);
+    const names = departmentsList.map((d) => d.name);
     usersList.forEach((u) => {
-      if (u.department) set.add(u.department);
+      if (u.department && !names.includes(u.department)) {
+        names.push(u.department);
+      }
     });
-    return Array.from(set).sort();
-  }, [usersList]);
+    return names;
+  }, [departmentsList, usersList]);
 
   // Thống kê người dùng cho 4 thẻ KPI
   const stats = useMemo(() => {
@@ -423,15 +434,26 @@ export default function UsersManagementPage() {
           {/* 4. Lọc theo phòng ban */}
           <select
             value={selectedDept}
-            onChange={(e) => setSelectedDept(e.target.value)}
+            onChange={(e) => {
+              setSelectedDept(e.target.value);
+              setCurrentPage(1);
+            }}
             className="w-auto shrink-0 px-2.5 py-1.5 rounded-lg border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-950 text-xs text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-1 focus:ring-zinc-900 dark:focus:ring-zinc-100 cursor-pointer"
           >
-            <option value="all">Tất cả phòng ban ({availableDepartments.length})</option>
-            {availableDepartments.map((dept) => (
-              <option key={dept} value={dept}>
-                {dept}
-              </option>
-            ))}
+            <option value="all">Tất cả phòng ban ({departmentsList.length || availableDepartments.length})</option>
+            {departmentsList.length > 0 ? (
+              departmentsList.map((dept) => (
+                <option key={dept.id} value={dept.name}>
+                  {dept.name} ({dept.code})
+                </option>
+              ))
+            ) : (
+              availableDepartments.map((dept) => (
+                <option key={dept} value={dept}>
+                  {dept}
+                </option>
+              ))
+            )}
           </select>
 
           {/* 5. Sắp xếp */}
@@ -986,7 +1008,7 @@ export default function UsersManagementPage() {
       <CreateUserModal
         isOpen={isCreateOpen}
         onClose={() => setIsCreateOpen(false)}
-        onSuccess={fetchUsers}
+        onSuccess={refreshData}
         availableDepartments={availableDepartments}
       />
 
@@ -994,7 +1016,7 @@ export default function UsersManagementPage() {
         user={editingUser}
         isOpen={Boolean(editingUser)}
         onClose={() => setEditingUser(null)}
-        onSuccess={fetchUsers}
+        onSuccess={refreshData}
         availableDepartments={availableDepartments}
       />
 
