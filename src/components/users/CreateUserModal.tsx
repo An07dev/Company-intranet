@@ -310,11 +310,10 @@ export function CreateUserModal({
                 <button
                   type="button"
                   onClick={() => setContractType("official")}
-                  className={`p-2.5 rounded-xl border text-left flex flex-col transition-all cursor-pointer ${
-                    contractType === "official"
-                      ? "border-blue-500 bg-blue-50/80 text-blue-900 dark:bg-blue-950/60 dark:text-blue-200 dark:border-blue-600 shadow-xs"
-                      : "border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-zinc-600 dark:text-zinc-400 hover:border-zinc-300"
-                  }`}
+                  className={`p-2.5 rounded-xl border text-left flex flex-col transition-all cursor-pointer ${contractType === "official"
+                    ? "border-blue-500 bg-blue-50/80 text-blue-900 dark:bg-blue-950/60 dark:text-blue-200 dark:border-blue-600 shadow-xs"
+                    : "border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-zinc-600 dark:text-zinc-400 hover:border-zinc-300"
+                    }`}
                 >
                   <span className="font-bold flex items-center gap-1">
                     <span>🏢</span> Chính thức
@@ -327,11 +326,10 @@ export function CreateUserModal({
                 <button
                   type="button"
                   onClick={() => setContractType("probation")}
-                  className={`p-2.5 rounded-xl border text-left flex flex-col transition-all cursor-pointer ${
-                    contractType === "probation"
-                      ? "border-amber-500 bg-amber-50/80 text-amber-900 dark:bg-amber-950/60 dark:text-amber-200 dark:border-amber-600 shadow-xs"
-                      : "border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-zinc-600 dark:text-zinc-400 hover:border-zinc-300"
-                  }`}
+                  className={`p-2.5 rounded-xl border text-left flex flex-col transition-all cursor-pointer ${contractType === "probation"
+                    ? "border-amber-500 bg-amber-50/80 text-amber-900 dark:bg-amber-950/60 dark:text-amber-200 dark:border-amber-600 shadow-xs"
+                    : "border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-zinc-600 dark:text-zinc-400 hover:border-zinc-300"
+                    }`}
                 >
                   <span className="font-bold flex items-center gap-1">
                     <span>⏳</span> Thử việc
@@ -378,7 +376,7 @@ export function CreateUserModal({
                   className="accent-emerald-600"
                 />
                 <span className="text-emerald-700 dark:text-emerald-400 font-medium">
-                  🟢 Hoạt động (Cho phép đăng nhập)
+                  🟢 Hoạt động
                 </span>
               </label>
               <label className="flex items-center gap-2 cursor-pointer">

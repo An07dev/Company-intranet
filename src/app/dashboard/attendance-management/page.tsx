@@ -8,7 +8,6 @@ import { useToast } from "@/context/ToastContext";
 import { AttendanceRecord, ApiResponse, PaginatedData, User } from "@/types";
 import { Button } from "@/components/ui/Button";
 import { TableSkeleton } from "@/components/ui/Loading";
-import { AttendanceCalendar } from "@/components/attendance/AttendanceCalendar";
 
 interface DashboardSummary {
   totalEmployees: number;
@@ -41,6 +40,7 @@ export default function AttendanceManagementPage() {
   const [searchEmployeeQuery, setSearchEmployeeQuery] = useState<string>("");
   const [selectedDate, setSelectedDate] = useState<string>("");
   const [selectedStatus, setSelectedStatus] = useState<string>("all");
+  const [showMobileFilters, setShowMobileFilters] = useState<boolean>(false);
 
   const isAdminOrDirector = user?.role === "admin" || user?.role === "director";
 
@@ -219,7 +219,7 @@ export default function AttendanceManagementPage() {
   };
 
   // Định dạng giờ an toàn theo giờ Việt Nam
-  const formatDisplayTime = useCallback((isoString?: string | null) => {
+  const formatDisplayTime = useCallback((isoString?: string | null, includeSeconds = true) => {
     if (!isoString) return "—";
     const d = new Date(isoString);
     if (!isNaN(d.getTime())) {
@@ -227,12 +227,14 @@ export default function AttendanceManagementPage() {
         timeZone: "Asia/Ho_Chi_Minh",
         hour: "2-digit",
         minute: "2-digit",
-        second: "2-digit",
+        ...(includeSeconds ? { second: "2-digit" } : {}),
         hour12: false,
       });
     }
-    const match = isoString.match(/T(\d{2})[:.](\d{2})[:.](\d{2})/);
-    if (match) return `${match[1]}:${match[2]}:${match[3]}`;
+    const match = isoString.match(/T(\d{2})[:.](\d{2})(?:[:.](\d{2}))?/);
+    if (match) {
+      return includeSeconds && match[3] ? `${match[1]}:${match[2]}:${match[3]}` : `${match[1]}:${match[2]}`;
+    }
     return "—";
   }, []);
 
@@ -242,6 +244,15 @@ export default function AttendanceManagementPage() {
     selectedDate ||
     selectedStatus !== "all"
   );
+
+  const activeFiltersCount = useMemo(() => {
+    let count = 0;
+    if (selectedEmployeeCode && selectedEmployeeCode !== "all") count++;
+    if (searchEmployeeQuery.trim()) count++;
+    if (selectedDate) count++;
+    if (selectedStatus && selectedStatus !== "all") count++;
+    return count;
+  }, [selectedEmployeeCode, searchEmployeeQuery, selectedDate, selectedStatus]);
 
   // Phân trang danh sách số trang
   const paginationItems = useMemo(() => {
@@ -288,9 +299,53 @@ export default function AttendanceManagementPage() {
   }
 
   return (
-    <div className="w-full px-4 sm:px-6 lg:px-8 py-5 sm:py-6 space-y-6">
+    <div className="w-full px-3.5 sm:px-6 lg:px-8 py-4 sm:py-6 space-y-4 sm:space-y-6">
       {/* 1. Header Trang Chuyên Dụng: Dữ liệu chấm công toàn đơn vị */}
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 pb-5 border-b border-zinc-200 dark:border-zinc-800">
+      {/* 1.1 MOBILE HEADER (sm:hidden) */}
+      <div className="sm:hidden flex items-center justify-between gap-2 pb-3.5 border-b border-zinc-200 dark:border-zinc-800">
+        <div className="min-w-0">
+          <div className="flex items-center gap-1.5">
+            <span className="text-base shrink-0">📋</span>
+            <h1 className="text-base font-bold text-zinc-900 dark:text-zinc-100 truncate">
+              Điểm Danh Toàn Nhân Viên
+            </h1>
+          </div>
+          <div className="flex items-center gap-2 mt-0.5">
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-900 dark:bg-amber-950/80 dark:text-amber-300 border border-amber-300/40">
+              <span>👑</span>
+              <span>Giám Đốc & Quản Trị</span>
+            </span>
+          </div>
+        </div>
+
+        {/* Nút hành động nhanh trên Mobile */}
+        <div className="flex items-center gap-1.5 shrink-0">
+          <button
+            type="button"
+            onClick={() => fetchAttendanceData(currentPage)}
+            className="p-2 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
+            title="Làm mới dữ liệu"
+          >
+            <svg className={`w-3.5 h-3.5 ${loadingHistory ? "animate-spin" : ""}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+            </svg>
+          </button>
+          <button
+            type="button"
+            onClick={handleExportExcel}
+            className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-emerald-300 dark:border-emerald-700 bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-300 text-xs font-semibold hover:bg-emerald-100 dark:hover:bg-emerald-900/60 transition-colors shadow-2xs cursor-pointer"
+            title="Xuất file Excel"
+          >
+            <svg className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
+            <span>Excel</span>
+          </button>
+        </div>
+      </div>
+
+      {/* 1.2 DESKTOP HEADER (hidden sm:flex) - 100% UNTOUCHED */}
+      <div className="hidden sm:flex flex-col md:flex-row md:items-center md:justify-between gap-4 pb-5 border-b border-zinc-200 dark:border-zinc-800">
         <div>
           <div className="flex items-center gap-2.5 flex-wrap">
             <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold tracking-tight text-zinc-900 dark:text-zinc-100 flex items-center gap-2.5">
@@ -326,7 +381,65 @@ export default function AttendanceManagementPage() {
       </div>
 
       {/* 2. Thẻ Thống Kê Tổng Quan Hôm Nay (KPIs) */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4">
+      {/* 2.1 GIAO DIỆN MOBILE: Lưới 2x2 siêu gọn gàng (sm:hidden) */}
+      <div className="sm:hidden grid grid-cols-2 gap-2">
+        {/* Card 1: Có mặt / Tổng */}
+        <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-2.5 shadow-2xs">
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] font-medium text-zinc-500 dark:text-zinc-400">Đi làm hôm nay</span>
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+          </div>
+          <div className="flex items-baseline justify-between mt-1">
+            <div className="flex items-baseline gap-1">
+              <span className="text-xl font-bold font-mono text-emerald-600 dark:text-emerald-400">
+                {summaryStats?.presentToday ?? 10}
+              </span>
+              <span className="text-[11px] text-zinc-400 font-mono">
+                /{summaryStats?.totalEmployees ?? employeesList.length ?? 12}
+              </span>
+            </div>
+            <span className="text-[11px] font-semibold font-mono text-emerald-600 dark:text-emerald-400">
+              {summaryStats?.attendanceRate ? `${summaryStats.attendanceRate}%` : "83%"}
+            </span>
+          </div>
+        </div>
+
+        {/* Card 2: Đúng giờ */}
+        <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-2.5 shadow-2xs">
+          <span className="text-[11px] font-medium text-zinc-500 dark:text-zinc-400">Đúng giờ</span>
+          <div className="flex items-baseline justify-between mt-1">
+            <span className="text-xl font-bold font-mono text-blue-600 dark:text-blue-400">
+              {summaryStats?.onTimeToday ?? 8}
+            </span>
+            <span className="text-[10px] text-zinc-400">Chuẩn ca</span>
+          </div>
+        </div>
+
+        {/* Card 3: Đi muộn */}
+        <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-2.5 shadow-2xs">
+          <span className="text-[11px] font-medium text-zinc-500 dark:text-zinc-400">Đi muộn</span>
+          <div className="flex items-baseline justify-between mt-1">
+            <span className="text-xl font-bold font-mono text-amber-600 dark:text-amber-400">
+              {summaryStats?.lateToday ?? 2}
+            </span>
+            <span className="text-[10px] text-amber-600 dark:text-amber-400">&gt; 08:00</span>
+          </div>
+        </div>
+
+        {/* Card 4: Vắng / Nghỉ phép */}
+        <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-2.5 shadow-2xs">
+          <span className="text-[11px] font-medium text-zinc-500 dark:text-zinc-400">Vắng / Nghỉ phép</span>
+          <div className="flex items-baseline justify-between mt-1">
+            <span className="text-xl font-bold font-mono text-purple-600 dark:text-purple-400">
+              {summaryStats?.absentToday ?? 2}
+            </span>
+            <span className="text-[10px] text-purple-600 dark:text-purple-400">Có đơn</span>
+          </div>
+        </div>
+      </div>
+
+      {/* 2.2 GIAO DIỆN DESKTOP: 5 Thẻ KPIs Đầy Đủ (hidden sm:grid) - 100% UNTOUCHED */}
+      <div className="hidden sm:grid sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4">
         <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-4 shadow-2xs">
           <div className="text-zinc-400 text-xs font-medium">Tổng nhân sự</div>
           <div className="text-2xl font-bold font-mono text-zinc-900 dark:text-zinc-100 mt-1">
@@ -384,7 +497,28 @@ export default function AttendanceManagementPage() {
       {/* 4. Khối Bảng Dữ Liệu Chấm Công & Bộ Lọc Đa Chiều */}
       <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl shadow-xs overflow-hidden">
         {/* Header Bảng */}
-        <div className="p-4 sm:p-5 border-b border-zinc-200 dark:border-zinc-800 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 bg-white dark:bg-zinc-900">
+        {/* 4.1 MOBILE TABLE HEADER (sm:hidden) */}
+        <div className="sm:hidden px-3 py-2.5 border-b border-zinc-200 dark:border-zinc-800 flex items-center justify-between gap-2 bg-white dark:bg-zinc-900">
+          <div className="flex items-center gap-1.5 min-w-0">
+            <span className="text-sm shrink-0">👥</span>
+            <h2 className="text-xs font-bold text-zinc-900 dark:text-zinc-100 truncate">
+              Danh Sách Điểm Danh
+            </h2>
+          </div>
+          <div className="flex items-center gap-1.5 shrink-0">
+            <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-semibold bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-700">
+              {totalRecords} bản ghi
+            </span>
+            {totalPages > 1 && (
+              <span className="text-[10px] font-mono text-zinc-400">
+                (T{currentPage}/{totalPages})
+              </span>
+            )}
+          </div>
+        </div>
+
+        {/* 4.2 DESKTOP TABLE HEADER (hidden sm:flex) - 100% UNTOUCHED */}
+        <div className="hidden sm:flex p-4 sm:p-5 border-b border-zinc-200 dark:border-zinc-800 flex-col sm:flex-row sm:items-center sm:justify-between gap-3 bg-white dark:bg-zinc-900">
           <div className="flex items-center gap-2.5 flex-wrap">
             <h2 className="text-base sm:text-lg font-bold text-zinc-900 dark:text-zinc-100 flex items-center gap-2">
               <span>👥</span>
@@ -405,8 +539,285 @@ export default function AttendanceManagementPage() {
           </div>
         </div>
 
-        {/* Thanh công cụ BỘ LỌC ĐẦY ĐỦ */}
-        <div className="p-3.5 sm:p-4 bg-zinc-50/70 dark:bg-zinc-950/40 border-b border-zinc-200 dark:border-zinc-800 flex flex-col xl:flex-row xl:items-center justify-between gap-3 text-xs">
+        {/* 4.3 THANH CÔNG CỤ BỘ LỌC SIÊU GỌN GÀNG CHO MOBILE (sm:hidden) */}
+        <div className="sm:hidden p-2.5 bg-zinc-50/70 dark:bg-zinc-950/40 border-b border-zinc-200 dark:border-zinc-800 space-y-2 text-xs">
+          {/* Hàng 1: Ô tìm kiếm + Nút Lọc đa chiều + Nút Làm mới */}
+          <div className="flex items-center gap-1.5">
+            <div className="relative flex-1">
+              <span className="absolute inset-y-0 left-0 flex items-center pl-2.5 pointer-events-none text-zinc-400">
+                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+              </span>
+              <input
+                type="text"
+                value={searchEmployeeQuery}
+                onChange={(e) => {
+                  setSearchEmployeeQuery(e.target.value);
+                  setCurrentPage(1);
+                }}
+                placeholder="Tìm tên, mã NV, email..."
+                className="w-full pl-8 pr-7 py-1.5 rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 focus:outline-none focus:ring-1 focus:ring-zinc-900 dark:focus:ring-zinc-100 text-xs"
+              />
+              {searchEmployeeQuery && (
+                <button
+                  type="button"
+                  onClick={() => setSearchEmployeeQuery("")}
+                  className="absolute inset-y-0 right-0 flex items-center pr-2 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 cursor-pointer"
+                >
+                  <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              )}
+            </div>
+
+            {/* Nút Bộ lọc (kèm số đếm khi kích hoạt) */}
+            <button
+              type="button"
+              onClick={() => setShowMobileFilters(!showMobileFilters)}
+              className={`flex items-center gap-1 px-2.5 py-1.5 rounded-lg border text-xs font-medium transition-colors shrink-0 cursor-pointer ${
+                showMobileFilters || activeFiltersCount > 0
+                  ? "bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 border-zinc-900 dark:border-zinc-100 font-semibold shadow-2xs"
+                  : "bg-white dark:bg-zinc-900 border-zinc-300 dark:border-zinc-700 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800"
+              }`}
+            >
+              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
+              </svg>
+              <span>Lọc</span>
+              {activeFiltersCount > 0 && (
+                <span className="w-4 h-4 rounded-full bg-emerald-500 text-white text-[10px] font-bold flex items-center justify-center">
+                  {activeFiltersCount}
+                </span>
+              )}
+            </button>
+
+            {/* Nút Làm mới nhanh */}
+            <button
+              type="button"
+              onClick={() => fetchAttendanceData(currentPage)}
+              className="p-1.5 rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors shrink-0 cursor-pointer"
+              title="Làm mới bảng"
+            >
+              <svg className={`w-3.5 h-3.5 ${loadingHistory ? "animate-spin" : ""}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+              </svg>
+            </button>
+          </div>
+
+          {/* Hàng 2: Thanh chip cuộn ngang (Quick Filter Pills) */}
+          <div className="flex items-center gap-1.5 overflow-x-auto pb-0.5 no-scrollbar text-xs">
+            {/* Nhóm ngày */}
+            <button
+              type="button"
+              onClick={() => {
+                setSelectedDate(todayDateString);
+                setCurrentPage(1);
+              }}
+              className={`px-2.5 py-1 rounded-md text-[11px] font-medium shrink-0 transition-colors cursor-pointer ${
+                selectedDate === todayDateString
+                  ? "bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 font-semibold shadow-2xs"
+                  : "bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-zinc-600 dark:text-zinc-400"
+              }`}
+            >
+              Hôm nay
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setSelectedDate(yesterdayDateString);
+                setCurrentPage(1);
+              }}
+              className={`px-2.5 py-1 rounded-md text-[11px] font-medium shrink-0 transition-colors cursor-pointer ${
+                selectedDate === yesterdayDateString
+                  ? "bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 font-semibold shadow-2xs"
+                  : "bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-zinc-600 dark:text-zinc-400"
+              }`}
+            >
+              Hôm qua
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setSelectedDate("");
+                setCurrentPage(1);
+              }}
+              className={`px-2.5 py-1 rounded-md text-[11px] font-medium shrink-0 transition-colors cursor-pointer ${
+                selectedDate === ""
+                  ? "bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 font-semibold shadow-2xs"
+                  : "bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-zinc-600 dark:text-zinc-400"
+              }`}
+            >
+              Tất cả ngày
+            </button>
+
+            <span className="w-px h-3.5 bg-zinc-300 dark:bg-zinc-700 shrink-0" />
+
+            {/* Nhóm trạng thái */}
+            <button
+              type="button"
+              onClick={() => {
+                setSelectedStatus(selectedStatus === "on_time" ? "all" : "on_time");
+                setCurrentPage(1);
+              }}
+              className={`px-2.5 py-1 rounded-md text-[11px] font-medium shrink-0 transition-colors cursor-pointer ${
+                selectedStatus === "on_time"
+                  ? "bg-emerald-600 text-white font-semibold shadow-2xs"
+                  : "bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-emerald-600 dark:text-emerald-400"
+              }`}
+            >
+              🟢 Đúng giờ
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setSelectedStatus(selectedStatus === "late" ? "all" : "late");
+                setCurrentPage(1);
+              }}
+              className={`px-2.5 py-1 rounded-md text-[11px] font-medium shrink-0 transition-colors cursor-pointer ${
+                selectedStatus === "late"
+                  ? "bg-amber-600 text-white font-semibold shadow-2xs"
+                  : "bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-amber-600 dark:text-amber-400"
+              }`}
+            >
+              🟡 Đi muộn
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setSelectedStatus(selectedStatus === "early_leave" ? "all" : "early_leave");
+                setCurrentPage(1);
+              }}
+              className={`px-2.5 py-1 rounded-md text-[11px] font-medium shrink-0 transition-colors cursor-pointer ${
+                selectedStatus === "early_leave"
+                  ? "bg-blue-600 text-white font-semibold shadow-2xs"
+                  : "bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-blue-600 dark:text-blue-400"
+              }`}
+            >
+              🔵 Về sớm
+            </button>
+
+            {/* Chip Xóa lọc nếu đang có lọc */}
+            {hasActiveFilters && (
+              <button
+                type="button"
+                onClick={handleResetFilters}
+                className="px-2 py-1 rounded-md text-[11px] font-medium shrink-0 text-red-600 dark:text-red-400 bg-red-50 hover:bg-red-100 dark:bg-red-950/40 border border-red-200 dark:border-red-900/50 transition-colors cursor-pointer flex items-center gap-1"
+              >
+                <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+                <span>Xóa lọc</span>
+              </button>
+            )}
+          </div>
+
+          {/* Ngăn Bộ Lọc Nâng Cao Chi Tiết (Chỉ mở khi chạm nút "Lọc") */}
+          {showMobileFilters && (
+            <div className="p-3 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl space-y-2.5 shadow-xs">
+              <div className="flex items-center justify-between pb-1 border-b border-zinc-100 dark:border-zinc-800">
+                <span className="text-[11px] font-bold text-zinc-900 dark:text-zinc-100 flex items-center gap-1">
+                  <span>⚡</span>
+                  <span>Bộ Lọc Nâng Cao</span>
+                </span>
+                {hasActiveFilters && (
+                  <button
+                    type="button"
+                    onClick={handleResetFilters}
+                    className="text-[11px] text-red-600 dark:text-red-400 hover:underline cursor-pointer"
+                  >
+                    Đặt lại
+                  </button>
+                )}
+              </div>
+
+              {/* 1. Chọn nhân viên cụ thể */}
+              <div>
+                <label className="text-[10px] font-medium text-zinc-400 dark:text-zinc-500 block mb-1">
+                  👤 NHÂN VIÊN:
+                </label>
+                <select
+                  value={selectedEmployeeCode}
+                  onChange={(e) => {
+                    setSelectedEmployeeCode(e.target.value);
+                    setCurrentPage(1);
+                  }}
+                  className="w-full px-2.5 py-1.5 rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 text-xs focus:outline-none focus:ring-1 focus:ring-zinc-900 dark:focus:ring-zinc-100 truncate cursor-pointer"
+                >
+                  <option value="all">Tất cả nhân viên ({employeesList.length || "12"})</option>
+                  {employeesList.map((emp) => (
+                    <option key={emp.id} value={emp.employeeCode}>
+                      {emp.employeeCode} - {emp.name} ({emp.department || "Khác"})
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* 2. Grid 2 cột: Ngày cụ thể & Trạng thái */}
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="text-[10px] font-medium text-zinc-400 dark:text-zinc-500 block mb-1">
+                    📅 NGÀY CỤ THỂ:
+                  </label>
+                  <input
+                    type="date"
+                    value={selectedDate}
+                    onChange={(e) => {
+                      setSelectedDate(e.target.value);
+                      setCurrentPage(1);
+                    }}
+                    className="w-full px-2 py-1.5 rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 text-xs font-mono cursor-pointer"
+                  />
+                </div>
+                <div>
+                  <label className="text-[10px] font-medium text-zinc-400 dark:text-zinc-500 block mb-1">
+                    🏷️ TRẠNG THÁI:
+                  </label>
+                  <select
+                    value={selectedStatus}
+                    onChange={(e) => {
+                      setSelectedStatus(e.target.value);
+                      setCurrentPage(1);
+                    }}
+                    className="w-full px-2 py-1.5 rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 text-xs truncate cursor-pointer"
+                  >
+                    <option value="all">Tất cả</option>
+                    <option value="on_time">Đúng giờ</option>
+                    <option value="late">Đi muộn</option>
+                    <option value="early_leave">Về sớm</option>
+                    <option value="completed">Hoàn thành</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* 3. Nút xuất Excel & Đóng */}
+              <div className="flex items-center justify-between pt-1">
+                <button
+                  type="button"
+                  onClick={handleExportExcel}
+                  className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[11px] font-semibold text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-300 dark:border-emerald-700 hover:bg-emerald-100 transition-colors cursor-pointer"
+                >
+                  <svg className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  </svg>
+                  <span>Xuất Excel (.xlsx)</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setShowMobileFilters(false)}
+                  className="text-[11px] text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200 cursor-pointer font-medium"
+                >
+                  Thu gọn ▲
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* 4.4 THANH CÔNG CỤ BỘ LỌC ĐẦY ĐỦ CHO DESKTOP (hidden sm:flex) - 100% UNTOUCHED */}
+        <div className="hidden sm:flex p-3.5 sm:p-4 bg-zinc-50/70 dark:bg-zinc-950/40 border-b border-zinc-200 dark:border-zinc-800 flex-col xl:flex-row xl:items-center justify-between gap-3 text-xs">
           <div className="flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center gap-2.5 w-full xl:w-auto">
             {/* 1. Lọc theo từng nhân viên */}
             <div className="flex items-center gap-1.5 w-full sm:w-auto">
@@ -609,30 +1020,49 @@ export default function AttendanceManagementPage() {
             </div>
           ) : (
             <>
-              {/* 1. GIAO DIỆN MOBILE: DẠNG DANH SÁCH THẺ (CARD LIST) */}
+              {/* 1. GIAO DIỆN MOBILE: DẠNG DANH SÁCH THẺ TINH GỌN (sm:hidden) */}
               <div className="sm:hidden divide-y divide-zinc-200 dark:divide-zinc-800">
                 {history.map((record) => {
                   const isLate = record.status === "late";
                   const isEarly = record.status === "early_leave";
+                  const avatar = record.userAvatar || employeesMap.get(record.userId)?.avatarUrl || employeesMap.get(record.employeeCode)?.avatarUrl;
+                  const empDepartment = employeesMap.get(record.userId)?.department || employeesMap.get(record.employeeCode)?.department;
 
                   return (
                     <div
                       key={record.id}
-                      className="p-3.5 space-y-2.5 hover:bg-zinc-50/70 dark:hover:bg-zinc-800/30 transition-colors"
+                      className="p-3 space-y-2 hover:bg-zinc-50/70 dark:hover:bg-zinc-800/30 transition-colors"
                     >
-                      {/* Hàng 1: Mã NV + Ngày + Badge trạng thái */}
+                      {/* Hàng 1: Avatar + Tên + Mã NV + Badge trạng thái */}
                       <div className="flex items-center justify-between gap-2">
-                        <div className="flex items-center gap-2">
-                          <span className="font-mono font-bold text-xs px-2 py-0.5 rounded bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 border border-zinc-200 dark:border-zinc-700">
-                            {record.employeeCode || "—"}
-                          </span>
-                          <span className="font-mono text-xs text-zinc-600 dark:text-zinc-400 font-semibold">
-                            {record.date}
-                          </span>
+                        <div className="flex items-center gap-2 min-w-0">
+                          <div className="w-7 h-7 rounded-full bg-zinc-200 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 flex items-center justify-center font-bold text-[10px] shrink-0 overflow-hidden ring-1 ring-zinc-300 dark:ring-zinc-700">
+                            {avatar ? (
+                              <img src={avatar} alt={record.userName} className="w-full h-full object-cover" />
+                            ) : (
+                              record.userName.slice(0, 1).toUpperCase()
+                            )}
+                          </div>
+                          <div className="min-w-0">
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              <span className="font-semibold text-xs text-zinc-900 dark:text-zinc-100 truncate">
+                                {record.userName}
+                              </span>
+                              <span className="font-mono text-[10px] font-bold px-1.5 py-0.2 rounded bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 shrink-0 border border-zinc-200 dark:border-zinc-700">
+                                {record.employeeCode || "—"}
+                              </span>
+                            </div>
+                            {empDepartment && (
+                              <span className="text-[10px] text-zinc-400 block truncate">
+                                {empDepartment}
+                              </span>
+                            )}
+                          </div>
                         </div>
 
+                        {/* Badge trạng thái */}
                         <span
-                          className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-semibold ${record.status === "on_time"
+                          className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-semibold shrink-0 ${record.status === "on_time"
                             ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-950/70 dark:text-emerald-300"
                             : isLate
                               ? "bg-amber-100 text-amber-800 dark:bg-amber-950/70 dark:text-amber-300"
@@ -661,58 +1091,38 @@ export default function AttendanceManagementPage() {
                         </span>
                       </div>
 
-                      {/* Hàng 2: Nhân sự */}
-                      {(() => {
-                        const avatar = record.userAvatar || employeesMap.get(record.userId)?.avatarUrl || employeesMap.get(record.employeeCode)?.avatarUrl;
-                        return (
-                          <div className="flex items-center gap-2 text-xs text-zinc-700 dark:text-zinc-300">
-                            <div className="w-7 h-7 rounded-full bg-zinc-200 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 flex items-center justify-center font-bold text-[10px] shrink-0 overflow-hidden ring-1 ring-zinc-300 dark:ring-zinc-700">
-                              {avatar ? (
-                                <img src={avatar} alt={record.userName} className="w-full h-full object-cover" />
-                              ) : (
-                                record.userName.slice(0, 1).toUpperCase()
-                              )}
-                            </div>
-                            <span className="font-semibold text-zinc-900 dark:text-zinc-100">{record.userName}</span>
-                            <span className="text-zinc-400 text-[11px] truncate">({record.userEmail})</span>
-                          </div>
-                        );
-                      })()}
-
-                      {/* Hàng 3: Giờ Vào & Giờ Về */}
-                      <div className="grid grid-cols-2 gap-2 text-xs font-mono">
-                        <div className="p-2 rounded-lg bg-zinc-50 dark:bg-zinc-950/60 border border-zinc-100 dark:border-zinc-800/80">
-                          <span className="text-[10px] text-zinc-400 block mb-0.5">Giờ vào:</span>
-                          <span className={`font-bold ${isLate ? "text-amber-600 dark:text-amber-400" : "text-zinc-900 dark:text-zinc-100"}`}>
-                            {formatDisplayTime(record.checkInTime)}
-                          </span>
-                          <span className="text-[10px] text-zinc-400 block truncate mt-0.5">
-                            IP: {record.checkInIp || "—"}
+                      {/* Hàng 2: Thanh Vào - Ra - Tổng Giờ Làm (Không vỡ, gọn gàng) */}
+                      <div className="grid grid-cols-3 gap-1.5 bg-zinc-50 dark:bg-zinc-800/40 border border-zinc-100 dark:border-zinc-800 rounded-lg p-2 text-center">
+                        <div>
+                          <span className="text-[10px] text-zinc-400 block">Vào ca</span>
+                          <span className={`text-xs font-mono font-bold block ${isLate ? "text-amber-600 dark:text-amber-400" : "text-zinc-900 dark:text-zinc-100"}`}>
+                            {formatDisplayTime(record.checkInTime, false)}
                           </span>
                         </div>
-                        <div className="p-2 rounded-lg bg-zinc-50 dark:bg-zinc-950/60 border border-zinc-100 dark:border-zinc-800/80">
-                          <span className="text-[10px] text-zinc-400 block mb-0.5">Giờ về:</span>
-                          <span className="font-bold text-zinc-900 dark:text-zinc-100">
-                            {formatDisplayTime(record.checkOutTime)}
+                        <div>
+                          <span className="text-[10px] text-zinc-400 block">Tan ca</span>
+                          <span className="text-xs font-mono font-bold text-zinc-900 dark:text-zinc-100 block">
+                            {record.checkOutTime ? formatDisplayTime(record.checkOutTime, false) : "—"}
                           </span>
-                          <span className="text-[10px] text-zinc-400 block truncate mt-0.5">
-                            IP: {record.checkOutIp || "—"}
+                        </div>
+                        <div>
+                          <span className="text-[10px] text-zinc-400 block">Tổng giờ</span>
+                          <span className="text-xs font-mono font-bold text-zinc-700 dark:text-zinc-300 block">
+                            {record.workDurationMinutes !== undefined
+                              ? `${Math.floor(record.workDurationMinutes / 60)}h${record.workDurationMinutes % 60 ? ` ${record.workDurationMinutes % 60}p` : ""}`
+                              : "—"}
                           </span>
                         </div>
                       </div>
 
-                      {/* Hàng 4: Thời lượng & Ghi chú */}
-                      <div className="flex items-center justify-between text-[11px] text-zinc-500 dark:text-zinc-400 pt-0.5">
-                        <span>
-                          Thời lượng:{" "}
-                          <strong className="text-zinc-800 dark:text-zinc-200 font-mono">
-                            {record.workDurationMinutes !== undefined
-                              ? `${Math.floor(record.workDurationMinutes / 60)}h ${record.workDurationMinutes % 60}m`
-                              : "—"}
-                          </strong>
+                      {/* Hàng 3: Ngày và Ghi chú (nếu có) */}
+                      <div className="flex items-center justify-between text-[11px] text-zinc-400 px-0.5">
+                        <span className="font-mono text-[10px] flex items-center gap-1">
+                          <span>📅</span>
+                          <span>{record.date ? record.date.split("-").reverse().join("/") : "—"}</span>
                         </span>
                         {record.note && (
-                          <span className="italic truncate max-w-[160px]" title={record.note}>
+                          <span className="italic truncate max-w-[180px] text-zinc-500 dark:text-zinc-400 text-[10px]" title={record.note}>
                             📝 {record.note}
                           </span>
                         )}
@@ -869,7 +1279,41 @@ export default function AttendanceManagementPage() {
               </div>
 
               {/* 3. KHỐI PHÂN TRANG (PAGINATION) */}
-              <div className="p-3.5 sm:p-4 border-t border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-950/20 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs">
+              {/* 3.1 MOBILE PAGINATION (sm:hidden) */}
+              <div className="sm:hidden p-3 border-t border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-950/20 flex items-center justify-between gap-2 text-xs">
+                <button
+                  type="button"
+                  disabled={currentPage === 1 || loadingHistory}
+                  onClick={() => handlePageChange(currentPage - 1)}
+                  className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-zinc-700 dark:text-zinc-300 font-medium disabled:opacity-30 disabled:cursor-not-allowed hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
+                >
+                  <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                  </svg>
+                  <span>Trước</span>
+                </button>
+
+                <div className="text-center font-mono text-[11px] text-zinc-500 dark:text-zinc-400">
+                  <span className="font-bold text-zinc-900 dark:text-zinc-100">Trang {currentPage}</span>
+                  <span> / {totalPages}</span>
+                  <span className="block text-[10px] text-zinc-400 font-sans">({totalRecords} bản ghi)</span>
+                </div>
+
+                <button
+                  type="button"
+                  disabled={currentPage === totalPages || loadingHistory}
+                  onClick={() => handlePageChange(currentPage + 1)}
+                  className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-zinc-700 dark:text-zinc-300 font-medium disabled:opacity-30 disabled:cursor-not-allowed hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
+                >
+                  <span>Sau</span>
+                  <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                  </svg>
+                </button>
+              </div>
+
+              {/* 3.2 DESKTOP PAGINATION (hidden sm:flex) - 100% UNTOUCHED */}
+              <div className="hidden sm:flex p-3.5 sm:p-4 border-t border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-950/20 flex-col sm:flex-row items-center justify-between gap-3 text-xs">
                 <div className="text-zinc-500 dark:text-zinc-400 font-mono">
                   Hiển thị {(currentPage - 1) * pageSize + 1} -{" "}
                   {Math.min(currentPage * pageSize, totalRecords)} trong tổng số{" "}

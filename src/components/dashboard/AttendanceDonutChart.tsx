@@ -89,6 +89,7 @@ export function AttendanceDonutChart({
                 className="transition-all duration-300 cursor-pointer"
                 onMouseEnter={() => setHoveredIdx(idx)}
                 onMouseLeave={() => setHoveredIdx(null)}
+                onClick={() => setHoveredIdx(hoveredIdx === idx ? null : idx)}
               />
             ))}
           </svg>
@@ -106,7 +107,7 @@ export function AttendanceDonutChart({
       </div>
 
       {/* Chú giải chi tiết với số lượng và tỷ lệ */}
-      <div className="grid grid-cols-3 gap-2 pt-3 border-t border-zinc-100 dark:border-zinc-800">
+      <div className="grid grid-cols-3 gap-1.5 sm:gap-2 pt-3 border-t border-zinc-100 dark:border-zinc-800">
         {data.map((item, idx) => {
           const isHovered = hoveredIdx === idx;
           return (
@@ -114,7 +115,8 @@ export function AttendanceDonutChart({
               key={item.label}
               onMouseEnter={() => setHoveredIdx(idx)}
               onMouseLeave={() => setHoveredIdx(null)}
-              className={`p-2 rounded-lg transition-all cursor-pointer border ${
+              onClick={() => setHoveredIdx(hoveredIdx === idx ? null : idx)}
+              className={`p-1.5 sm:p-2 rounded-lg transition-all cursor-pointer border ${
                 isHovered
                   ? "bg-zinc-100 dark:bg-zinc-800/80 border-zinc-300 dark:border-zinc-700 shadow-xs"
                   : "bg-zinc-50/50 dark:bg-zinc-950/40 border-transparent hover:border-zinc-200 dark:hover:border-zinc-800"

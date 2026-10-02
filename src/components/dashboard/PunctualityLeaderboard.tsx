@@ -122,44 +122,54 @@ export function PunctualityLeaderboard({ data = [], initialMonth }: PunctualityL
   const others = members.filter((d) => d.rank > 3);
 
   return (
-    <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-4 sm:p-5 shadow-xs transition-all">
+    <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-3 sm:p-5 shadow-xs transition-all">
       {/* Header with Title and Month Filter */}
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 pb-4 border-b border-zinc-100 dark:border-zinc-800">
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2.5 sm:gap-3 pb-3 sm:pb-4 border-b border-zinc-100 dark:border-zinc-800">
         {/* Left: Title & Subtitle */}
-        <div className="flex items-center gap-2.5">
-          <div className="w-10 h-10 rounded-xl bg-linear-to-br from-amber-400 via-amber-500 to-amber-600 text-white flex items-center justify-center text-xl shadow-xs shrink-0 ring-2 ring-amber-400/20">
-            🏆
-          </div>
-          <div>
-            <div className="flex items-center flex-wrap gap-2">
-              <h3 className="text-sm sm:text-base font-bold text-zinc-900 dark:text-zinc-100">
-                Bảng Vinh Danh Chuyên Cần Tháng
-              </h3>
-              <span className="text-[11px] px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 dark:bg-amber-950/80 dark:text-amber-300 font-semibold tracking-wide flex items-center gap-1">
-                <span>⭐</span> {monthLabel}
-              </span>
-              {isCurrentMonth && (
-                <span className="text-[10px] px-1.5 py-0.2 rounded bg-emerald-100 text-emerald-800 dark:bg-emerald-950/70 dark:text-emerald-300 font-medium">
-                  Hiện tại
-                </span>
-              )}
+        <div className="flex items-center justify-between gap-2 w-full md:w-auto">
+          <div className="flex items-center gap-2 sm:gap-2.5">
+            <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-linear-to-br from-amber-400 via-amber-500 to-amber-600 text-white flex items-center justify-center text-base sm:text-xl shadow-xs shrink-0 ring-2 ring-amber-400/20">
+              🏆
             </div>
-            <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">
-              Tuyên dương các nhân sự có tỷ lệ đi làm đúng giờ và tính kỷ luật cao nhất đơn vị
-            </p>
+            <div>
+              <div className="flex items-center flex-wrap gap-1.5 sm:gap-2">
+                <h3 className="text-xs sm:text-base font-bold text-zinc-900 dark:text-zinc-100">
+                  Vinh Danh Chuyên Cần Tháng
+                </h3>
+                <span className="text-[10px] sm:text-[11px] px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 dark:bg-amber-950/80 dark:text-amber-300 font-semibold tracking-wide flex items-center gap-1">
+                  <span>⭐</span> {monthLabel}
+                </span>
+                {isCurrentMonth && (
+                  <span className="text-[9px] sm:text-[10px] px-1.5 py-0.2 rounded bg-emerald-100 text-emerald-800 dark:bg-emerald-950/70 dark:text-emerald-300 font-medium hidden xs:inline">
+                    Hiện tại
+                  </span>
+                )}
+              </div>
+              <p className="hidden sm:block text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">
+                Tuyên dương các nhân sự có tỷ lệ đi làm đúng giờ và tính kỷ luật cao nhất đơn vị
+              </p>
+            </div>
           </div>
+
+          {/* Sổ chấm công link hiển thị ở góc phải trên Mobile */}
+          <Link
+            href="/dashboard/attendance"
+            className="md:hidden text-[11px] font-semibold text-blue-600 hover:text-blue-700 dark:text-blue-400 shrink-0 whitespace-nowrap"
+          >
+            Sổ chấm công →
+          </Link>
         </div>
 
         {/* Right: Month Selector Dropdown & Quick Navigation */}
-        <div className="flex items-center flex-wrap gap-2 self-start md:self-auto">
+        <div className="flex items-center justify-between md:justify-end gap-2 w-full md:w-auto">
           {/* Month Stepper & Dropdown */}
-          <div className="flex items-center bg-zinc-50 dark:bg-zinc-800/80 rounded-lg p-0.5 border border-zinc-200 dark:border-zinc-700 shadow-2xs">
+          <div className="flex items-center bg-zinc-50 dark:bg-zinc-800/80 rounded-lg p-0.5 border border-zinc-200 dark:border-zinc-700 shadow-2xs w-full sm:w-auto justify-between sm:justify-start">
             {/* Prev month button */}
             <button
               type="button"
               onClick={() => handleShiftMonth(-1)}
               title="Tháng trước"
-              className="p-1.5 text-zinc-600 dark:text-zinc-300 hover:text-zinc-900 dark:hover:text-white hover:bg-zinc-200/60 dark:hover:bg-zinc-700 rounded-md transition-colors cursor-pointer"
+              className="p-1.5 text-zinc-600 dark:text-zinc-300 hover:text-zinc-900 dark:hover:text-white hover:bg-zinc-200/60 dark:hover:bg-zinc-700 rounded-md transition-colors cursor-pointer shrink-0"
             >
               <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15 19l-7-7 7-7" />
@@ -167,7 +177,7 @@ export function PunctualityLeaderboard({ data = [], initialMonth }: PunctualityL
             </button>
 
             {/* Dropdown Select */}
-            <div className="relative flex items-center">
+            <div className="relative flex items-center flex-1 sm:flex-initial justify-center">
               <span className="absolute left-2 text-zinc-400 dark:text-zinc-500 pointer-events-none">
                 <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path
@@ -183,7 +193,7 @@ export function PunctualityLeaderboard({ data = [], initialMonth }: PunctualityL
                 onChange={(e) => handleSelectMonth(e.target.value)}
                 disabled={isLoading}
                 aria-label="Chọn tháng xếp hạng"
-                className="appearance-none bg-transparent text-xs font-semibold text-zinc-800 dark:text-zinc-200 pl-7 pr-7 py-1 rounded-md focus:outline-none focus:ring-1 focus:ring-amber-500 cursor-pointer disabled:opacity-50"
+                className="appearance-none bg-transparent text-xs font-semibold text-zinc-800 dark:text-zinc-200 pl-7 pr-7 py-1 rounded-md focus:outline-none focus:ring-1 focus:ring-amber-500 cursor-pointer disabled:opacity-50 text-center sm:text-left"
               >
                 {monthOptions.map((opt) => (
                   <option
@@ -208,7 +218,7 @@ export function PunctualityLeaderboard({ data = [], initialMonth }: PunctualityL
               onClick={() => handleShiftMonth(1)}
               disabled={isFutureMonth || isLoading}
               title={isFutureMonth ? "Không thể xem tháng tương lai" : "Tháng sau"}
-              className="p-1.5 text-zinc-600 dark:text-zinc-300 hover:text-zinc-900 dark:hover:text-white hover:bg-zinc-200/60 dark:hover:bg-zinc-700 rounded-md transition-colors cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
+              className="p-1.5 text-zinc-600 dark:text-zinc-300 hover:text-zinc-900 dark:hover:text-white hover:bg-zinc-200/60 dark:hover:bg-zinc-700 rounded-md transition-colors cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed shrink-0"
             >
               <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" />
@@ -221,16 +231,16 @@ export function PunctualityLeaderboard({ data = [], initialMonth }: PunctualityL
             <button
               type="button"
               onClick={() => handleSelectMonth(currentMonthStr)}
-              className="px-2.5 py-1 text-xs font-medium text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/60 hover:bg-amber-100 dark:hover:bg-amber-900/60 border border-amber-200 dark:border-amber-800 rounded-lg transition-colors cursor-pointer shadow-2xs"
+              className="px-2.5 py-1 text-xs font-medium text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/60 hover:bg-amber-100 dark:hover:bg-amber-900/60 border border-amber-200 dark:border-amber-800 rounded-lg transition-colors cursor-pointer shadow-2xs shrink-0"
             >
               Về tháng này
             </button>
           )}
 
-          {/* Sổ chấm công link */}
+          {/* Sổ chấm công link trên Desktop */}
           <Link
             href="/dashboard/attendance"
-            className="text-xs font-medium text-blue-600 hover:text-blue-700 dark:text-blue-400 hover:underline ml-1"
+            className="hidden md:inline text-xs font-medium text-blue-600 hover:text-blue-700 dark:text-blue-400 hover:underline ml-1 shrink-0"
           >
             Sổ chấm công →
           </Link>
@@ -291,136 +301,139 @@ export function PunctualityLeaderboard({ data = [], initialMonth }: PunctualityL
         </div>
       ) : (
         /* Main Content: Podium Top 3 + Danh sách Top 4 & 5 */
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 mt-4">
-          {/* PODIUM TOP 3 (chiếm 8 cột trên Desktop) */}
-          <div className="lg:col-span-8 grid grid-cols-1 sm:grid-cols-3 gap-3 items-end">
-            {/* TOP 2 (BẠC) */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-3 sm:gap-4 mt-3 sm:mt-4">
+          {/* PODIUM TOP 3 (chiếm 8 cột trên Desktop, 3 cột Olympic trên Mobile) */}
+          <div className="lg:col-span-8 grid grid-cols-3 gap-1.5 sm:gap-3 items-end">
+            {/* TOP 2 (BẠC - BÊN TRÁI) */}
             {top2 ? (
-              <div className="order-2 sm:order-1 p-3.5 sm:p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-linear-to-b from-slate-50 dark:from-slate-900/40 to-white dark:to-zinc-900 flex flex-col items-center text-center relative shadow-xs hover:border-slate-300 dark:hover:border-slate-700 transition-all">
-                <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-slate-200 text-slate-800 dark:bg-slate-700 dark:text-slate-200 shadow-xs flex items-center gap-1 font-mono">
+              <div className="order-1 p-2 sm:p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-linear-to-b from-slate-50 dark:from-slate-900/40 to-white dark:to-zinc-900 flex flex-col items-center text-center relative shadow-xs hover:border-slate-300 dark:hover:border-slate-700 transition-all">
+                <div className="absolute -top-2.5 sm:-top-3 left-1/2 -translate-x-1/2 px-1.5 sm:px-2.5 py-0.5 rounded-full text-[9px] sm:text-[11px] font-bold bg-slate-200 text-slate-800 dark:bg-slate-700 dark:text-slate-200 shadow-xs flex items-center gap-0.5 sm:gap-1 font-mono whitespace-nowrap">
                   <span>🥈 Hạng 2</span>
                 </div>
 
-                <div className="relative mt-2 mb-2">
+                <div className="relative mt-2 mb-1.5 sm:mb-2">
                   {top2.avatarUrl ? (
                     <img
                       src={top2.avatarUrl}
                       alt={top2.name}
-                      className="w-14 h-14 rounded-full object-cover ring-2 ring-slate-300 dark:ring-slate-700 shadow-xs"
+                      className="w-10 h-10 sm:w-14 sm:h-14 rounded-full object-cover ring-2 ring-slate-300 dark:ring-slate-700 shadow-xs"
                     />
                   ) : (
-                    <div className="w-14 h-14 rounded-full bg-slate-600 text-white font-bold flex items-center justify-center text-base shadow-xs">
+                    <div className="w-10 h-10 sm:w-14 sm:h-14 rounded-full bg-slate-600 text-white font-bold flex items-center justify-center text-xs sm:text-base shadow-xs">
                       {top2.name.slice(0, 1).toUpperCase()}
                     </div>
                   )}
-                  <span className="absolute -bottom-1 -right-1 text-base">🥈</span>
+                  <span className="absolute -bottom-1 -right-1 text-xs sm:text-base">🥈</span>
                 </div>
 
-                <div className="font-bold text-zinc-900 dark:text-zinc-100 text-xs sm:text-sm truncate w-full" title={top2.name}>
+                <div className="font-bold text-zinc-900 dark:text-zinc-100 text-[11px] sm:text-sm line-clamp-2 min-h-[28px] flex items-center justify-center text-center w-full px-0.5 leading-tight" title={top2.name}>
                   {top2.name}
                 </div>
-                <div className="text-[11px] text-zinc-400 font-mono mt-0.5 truncate w-full" title={`${top2.employeeCode} • ${top2.department}`}>
-                  {top2.employeeCode} • {top2.department}
+                <div className="text-[9px] sm:text-[11px] text-zinc-400 font-mono mt-0.5 truncate w-full" title={`${top2.employeeCode} • ${top2.department}`}>
+                  {top2.employeeCode}
                 </div>
 
-                <div className="mt-2.5 px-2 py-1 rounded-lg bg-white dark:bg-zinc-800/80 border border-slate-200/80 dark:border-slate-700/60 w-full">
-                  <div className="text-base font-extrabold font-mono text-slate-700 dark:text-slate-300">
+                <div className="mt-1.5 sm:mt-2.5 px-1 sm:px-2 py-1 rounded-lg bg-white dark:bg-zinc-800/80 border border-slate-200/80 dark:border-slate-700/60 w-full">
+                  <div className="text-xs sm:text-base font-extrabold font-mono text-slate-700 dark:text-slate-300">
                     {top2.punctualityRate}%
                   </div>
-                  <div className="text-[10px] text-zinc-400 font-medium">
-                    Đúng giờ: {top2.onTimeCount}/{top2.totalCheckins} ngày
+                  <div className="text-[8px] sm:text-[10px] text-zinc-400 font-medium truncate">
+                    {top2.onTimeCount}/{top2.totalCheckins} ngày
                   </div>
                 </div>
 
-                <span className="text-[10px] mt-2 font-medium text-slate-600 dark:text-slate-400">
+                {/* Ẩn badge dài trên mobile để tránh bị cắt chữ '...' */}
+                <span className="hidden sm:block text-[10px] mt-2 font-medium text-slate-600 dark:text-slate-400 truncate w-full">
                   {top2.badge}
                 </span>
               </div>
             ) : null}
 
-            {/* TOP 1 (VÀNG - QUÁN QUÂN) */}
+            {/* TOP 1 (VÀNG - QUÁN QUÂN Ở GIỮA, CAO HƠN) */}
             {top1 ? (
-              <div className="order-1 sm:order-2 p-4 sm:p-5 rounded-xl border-2 border-amber-400/90 dark:border-amber-500/80 bg-linear-to-b from-amber-500/15 via-amber-500/5 to-white dark:to-zinc-900 flex flex-col items-center text-center relative shadow-md hover:shadow-lg transition-all ring-2 ring-amber-400/20">
-                <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 px-3 py-0.5 rounded-full text-xs font-extrabold bg-linear-to-r from-amber-400 to-amber-500 text-amber-950 shadow-xs flex items-center gap-1">
+              <div className="order-2 p-2.5 sm:p-5 rounded-xl border-2 border-amber-400/90 dark:border-amber-500/80 bg-linear-to-b from-amber-500/15 via-amber-500/5 to-white dark:to-zinc-900 flex flex-col items-center text-center relative shadow-md hover:shadow-lg transition-all ring-2 ring-amber-400/20">
+                <div className="absolute -top-3 sm:-top-3.5 left-1/2 -translate-x-1/2 px-2 sm:px-3 py-0.5 rounded-full text-[9px] sm:text-xs font-extrabold bg-linear-to-r from-amber-400 to-amber-500 text-amber-950 shadow-xs flex items-center gap-0.5 sm:gap-1 whitespace-nowrap">
                   <span>👑 QUÁN QUÂN</span>
                 </div>
 
-                <div className="relative mt-2 mb-2">
+                <div className="relative mt-2 mb-1.5 sm:mb-2">
                   {top1.avatarUrl ? (
                     <img
                       src={top1.avatarUrl}
                       alt={top1.name}
-                      className="w-18 h-18 rounded-full object-cover ring-4 ring-amber-400 shadow-md"
+                      className="w-12 h-12 sm:w-18 sm:h-18 rounded-full object-cover ring-2 sm:ring-4 ring-amber-400 shadow-md"
                     />
                   ) : (
-                    <div className="w-18 h-18 rounded-full bg-amber-500 text-white font-extrabold flex items-center justify-center text-xl shadow-md">
+                    <div className="w-12 h-12 sm:w-18 sm:h-18 rounded-full bg-amber-500 text-white font-extrabold flex items-center justify-center text-sm sm:text-xl shadow-md">
                       {top1.name.slice(0, 1).toUpperCase()}
                     </div>
                   )}
-                  <span className="absolute -bottom-1 -right-1 text-2xl animate-bounce">🥇</span>
+                  <span className="absolute -bottom-1 -right-1 text-sm sm:text-2xl animate-bounce">🥇</span>
                 </div>
 
-                <div className="font-extrabold text-zinc-900 dark:text-zinc-100 text-sm sm:text-base truncate w-full" title={top1.name}>
+                <div className="font-extrabold text-zinc-900 dark:text-zinc-100 text-xs sm:text-base line-clamp-2 min-h-[28px] flex items-center justify-center text-center w-full px-0.5 leading-tight" title={top1.name}>
                   {top1.name}
                 </div>
-                <div className="text-xs text-amber-700 dark:text-amber-300 font-mono mt-0.5 truncate w-full font-semibold" title={`${top1.employeeCode} • ${top1.department}`}>
-                  {top1.employeeCode} • {top1.department}
+                <div className="text-[10px] sm:text-xs text-amber-700 dark:text-amber-300 font-mono mt-0.5 truncate w-full font-semibold" title={`${top1.employeeCode} • ${top1.department}`}>
+                  {top1.employeeCode}
                 </div>
 
-                <div className="mt-3 px-3 py-1.5 rounded-xl bg-amber-500/10 border border-amber-300/80 dark:border-amber-600/50 w-full shadow-2xs">
-                  <div className="text-xl sm:text-2xl font-black font-mono text-amber-600 dark:text-amber-400">
+                <div className="mt-2 sm:mt-3 px-1.5 sm:px-3 py-1 sm:py-1.5 rounded-xl bg-amber-500/10 border border-amber-300/80 dark:border-amber-600/50 w-full shadow-2xs">
+                  <div className="text-sm sm:text-2xl font-black font-mono text-amber-600 dark:text-amber-400">
                     {top1.punctualityRate}%
                   </div>
-                  <div className="text-[11px] text-amber-800 dark:text-amber-200 font-medium">
-                    Đúng giờ: <strong>{top1.onTimeCount}</strong>/{top1.totalCheckins} ngày
+                  <div className="text-[9px] sm:text-[11px] text-amber-800 dark:text-amber-200 font-medium truncate">
+                    Đúng: <strong>{top1.onTimeCount}</strong>/{top1.totalCheckins} ngày
                   </div>
                 </div>
 
-                <span className="text-[11px] mt-2 font-bold text-amber-600 dark:text-amber-400">
+                {/* Ẩn badge dài trên mobile để tránh bị cắt chữ '...' */}
+                <span className="hidden sm:block text-[11px] mt-2 font-bold text-amber-600 dark:text-amber-400 truncate w-full">
                   {top1.badge}
                 </span>
               </div>
             ) : null}
 
-            {/* TOP 3 (ĐỒNG) */}
+            {/* TOP 3 (ĐỒNG - BÊN PHẢI) */}
             {top3 ? (
-              <div className="order-3 p-3.5 sm:p-4 rounded-xl border border-amber-800/30 dark:border-amber-800/40 bg-linear-to-b from-amber-700/5 to-white dark:to-zinc-900 flex flex-col items-center text-center relative shadow-xs hover:border-amber-800/50 transition-all">
-                <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-amber-100 text-amber-900 dark:bg-amber-950 dark:text-amber-200 shadow-xs flex items-center gap-1 font-mono">
+              <div className="order-3 p-2 sm:p-4 rounded-xl border border-amber-800/30 dark:border-amber-800/40 bg-linear-to-b from-amber-700/5 to-white dark:to-zinc-900 flex flex-col items-center text-center relative shadow-xs hover:border-amber-800/50 transition-all">
+                <div className="absolute -top-2.5 sm:-top-3 left-1/2 -translate-x-1/2 px-1.5 sm:px-2.5 py-0.5 rounded-full text-[9px] sm:text-[11px] font-bold bg-amber-100 text-amber-900 dark:bg-amber-950 dark:text-amber-200 shadow-xs flex items-center gap-0.5 sm:gap-1 font-mono whitespace-nowrap">
                   <span>🥉 Hạng 3</span>
                 </div>
 
-                <div className="relative mt-2 mb-2">
+                <div className="relative mt-2 mb-1.5 sm:mb-2">
                   {top3.avatarUrl ? (
                     <img
                       src={top3.avatarUrl}
                       alt={top3.name}
-                      className="w-14 h-14 rounded-full object-cover ring-2 ring-amber-700/50 shadow-xs"
+                      className="w-10 h-10 sm:w-14 sm:h-14 rounded-full object-cover ring-2 ring-amber-700/50 shadow-xs"
                     />
                   ) : (
-                    <div className="w-14 h-14 rounded-full bg-amber-700 text-white font-bold flex items-center justify-center text-base shadow-xs">
+                    <div className="w-10 h-10 sm:w-14 sm:h-14 rounded-full bg-amber-700 text-white font-bold flex items-center justify-center text-xs sm:text-base shadow-xs">
                       {top3.name.slice(0, 1).toUpperCase()}
                     </div>
                   )}
-                  <span className="absolute -bottom-1 -right-1 text-base">🥉</span>
+                  <span className="absolute -bottom-1 -right-1 text-xs sm:text-base">🥉</span>
                 </div>
 
-                <div className="font-bold text-zinc-900 dark:text-zinc-100 text-xs sm:text-sm truncate w-full" title={top3.name}>
+                <div className="font-bold text-zinc-900 dark:text-zinc-100 text-[11px] sm:text-sm line-clamp-2 min-h-[28px] flex items-center justify-center text-center w-full px-0.5 leading-tight" title={top3.name}>
                   {top3.name}
                 </div>
-                <div className="text-[11px] text-zinc-400 font-mono mt-0.5 truncate w-full" title={`${top3.employeeCode} • ${top3.department}`}>
-                  {top3.employeeCode} • {top3.department}
+                <div className="text-[9px] sm:text-[11px] text-zinc-400 font-mono mt-0.5 truncate w-full" title={`${top3.employeeCode} • ${top3.department}`}>
+                  {top3.employeeCode}
                 </div>
 
-                <div className="mt-2.5 px-2 py-1 rounded-lg bg-white dark:bg-zinc-800/80 border border-amber-800/20 w-full">
-                  <div className="text-base font-extrabold font-mono text-amber-700 dark:text-amber-300">
+                <div className="mt-1.5 sm:mt-2.5 px-1 sm:px-2 py-1 rounded-lg bg-white dark:bg-zinc-800/80 border border-amber-800/20 w-full">
+                  <div className="text-xs sm:text-base font-extrabold font-mono text-amber-700 dark:text-amber-300">
                     {top3.punctualityRate}%
                   </div>
-                  <div className="text-[10px] text-zinc-400 font-medium">
-                    Đúng giờ: {top3.onTimeCount}/{top3.totalCheckins} ngày
+                  <div className="text-[8px] sm:text-[10px] text-zinc-400 font-medium truncate">
+                    {top3.onTimeCount}/{top3.totalCheckins} ngày
                   </div>
                 </div>
 
-                <span className="text-[10px] mt-2 font-medium text-amber-800 dark:text-amber-400">
+                {/* Ẩn badge dài trên mobile để tránh bị cắt chữ '...' */}
+                <span className="hidden sm:block text-[10px] mt-2 font-medium text-amber-800 dark:text-amber-400 truncate w-full">
                   {top3.badge}
                 </span>
               </div>
@@ -428,36 +441,36 @@ export function PunctualityLeaderboard({ data = [], initialMonth }: PunctualityL
           </div>
 
           {/* DANH SÁCH TOP TIẾP THEO (chiếm 4 cột trên Desktop) */}
-          <div className="lg:col-span-4 flex flex-col justify-between p-3.5 rounded-xl bg-zinc-50/70 dark:bg-zinc-950/30 border border-zinc-200/80 dark:border-zinc-800 space-y-2">
+          <div className="lg:col-span-4 flex flex-col justify-between p-2.5 sm:p-3.5 rounded-xl bg-zinc-50/70 dark:bg-zinc-950/30 border border-zinc-200/80 dark:border-zinc-800 space-y-2">
             <div>
-              <div className="text-xs font-semibold text-zinc-800 dark:text-zinc-200 uppercase tracking-wider mb-2 flex items-center justify-between">
+              <div className="text-[11px] sm:text-xs font-semibold text-zinc-800 dark:text-zinc-200 uppercase tracking-wider mb-1.5 sm:mb-2 flex items-center justify-between">
                 <span>Top Kế Tiếp</span>
                 <span className="text-[10px] font-mono text-zinc-400 font-normal">Hạng 4 &amp; 5</span>
               </div>
 
               {others.length === 0 ? (
-                <div className="text-xs text-zinc-400 italic py-6 text-center">
+                <div className="text-xs text-zinc-400 italic py-4 text-center">
                   Không còn nhân sự khác có điểm danh trong tháng.
                 </div>
               ) : (
-                <div className="space-y-2">
+                <div className="space-y-1.5 sm:space-y-2">
                   {others.map((member) => (
                     <div
                       key={member.id}
-                      className="p-2.5 rounded-lg bg-white dark:bg-zinc-900 border border-zinc-200/70 dark:border-zinc-800 flex items-center justify-between gap-2.5 hover:border-zinc-300 dark:hover:border-zinc-700 transition-colors shadow-2xs"
+                      className="p-2 sm:p-2.5 rounded-lg bg-white dark:bg-zinc-900 border border-zinc-200/70 dark:border-zinc-800 flex items-center justify-between gap-2 hover:border-zinc-300 dark:hover:border-zinc-700 transition-colors shadow-2xs"
                     >
                       <div className="flex items-center gap-2 min-w-0">
-                        <span className="w-5 text-center font-mono font-bold text-xs text-zinc-400 shrink-0">
+                        <span className="w-4 text-center font-mono font-bold text-[11px] text-zinc-400 shrink-0">
                           #{member.rank}
                         </span>
                         {member.avatarUrl ? (
                           <img
                             src={member.avatarUrl}
                             alt={member.name}
-                            className="w-8 h-8 rounded-full object-cover shrink-0 ring-1 ring-zinc-200 dark:ring-zinc-700"
+                            className="w-7 h-7 sm:w-8 sm:h-8 rounded-full object-cover shrink-0 ring-1 ring-zinc-200 dark:ring-zinc-700"
                           />
                         ) : (
-                          <div className="w-8 h-8 rounded-full bg-blue-600 text-white font-bold flex items-center justify-center text-xs shrink-0">
+                          <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-blue-600 text-white font-bold flex items-center justify-center text-xs shrink-0">
                             {member.name.slice(0, 1).toUpperCase()}
                           </div>
                         )}
@@ -486,19 +499,14 @@ export function PunctualityLeaderboard({ data = [], initialMonth }: PunctualityL
             </div>
 
             {/* Bottom summary and criteria note */}
-            <div className="pt-2.5 border-t border-zinc-200/60 dark:border-zinc-800 text-[11px] text-zinc-500 dark:text-zinc-400 space-y-1">
-              <div className="flex items-center justify-between">
-                <span className="flex items-center gap-1 font-medium">
-                  <span>🎯</span> Tiêu chí: Đúng giờ / Tổng check-in
-                </span>
-                <span className="font-mono text-[10px] font-semibold text-zinc-700 dark:text-zinc-300">
-                  Mốc: 08:00
-                </span>
-              </div>
+            <div className="pt-2 sm:pt-2.5 border-t border-zinc-200/60 dark:border-zinc-800 text-[10px] sm:text-[11px] text-zinc-500 dark:text-zinc-400 flex items-center justify-between">
+              <span className="flex items-center gap-1 font-medium">
+                <span>🎯</span> Tiêu chí: Đúng giờ (Mốc 08:00)
+              </span>
               {totalRanked > 0 && (
-                <div className="text-[10px] text-zinc-400 text-right font-mono">
-                  Tổng hợp {totalCheckinsInMonth ? `${totalCheckinsInMonth} lượt chấm công (` : ""}{totalRanked} nhân sự{totalCheckinsInMonth ? ")" : ""}
-                </div>
+                <span className="font-mono text-[10px] text-zinc-400">
+                  {totalRanked} nhân sự
+                </span>
               )}
             </div>
           </div>

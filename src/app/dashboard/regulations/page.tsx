@@ -431,29 +431,30 @@ export default function RegulationsPage() {
   };
 
   return (
-    <div className="w-full px-4 sm:px-6 lg:px-8 py-4 sm:py-6 space-y-5 sm:space-y-6 print:p-0 print:space-y-4">
+    <div className="w-full px-3.5 sm:px-6 lg:px-8 py-4 sm:py-6 space-y-4 sm:space-y-6 print:p-0 print:space-y-4">
       {/* 1. Header Banner / Hero Section */}
-      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-indigo-900 via-blue-900 to-zinc-900 text-white p-6 sm:p-8 shadow-xl border border-indigo-800/40">
+      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-indigo-900 via-blue-900 to-zinc-900 text-white p-4 sm:p-8 shadow-xl border border-indigo-800/40">
         <div className="absolute top-0 right-0 -mt-10 -mr-10 w-64 h-64 rounded-full bg-blue-500/10 blur-3xl pointer-events-none" />
-        <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
-          <div className="space-y-3">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-500/20 text-indigo-300 text-xs font-semibold backdrop-blur-sm border border-indigo-400/20">
-              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-              Văn Bản Pháp Quy Nội Bộ • Số 01/2026/QĐ-NB
+        <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-4 sm:gap-6">
+          <div className="space-y-2 sm:space-y-3">
+            <div className="inline-flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3 py-0.5 sm:py-1 rounded-full bg-indigo-500/20 text-indigo-300 text-[11px] sm:text-xs font-semibold backdrop-blur-sm border border-indigo-400/20">
+              <span className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-emerald-400 animate-pulse" />
+              <span>Văn Bản Pháp Quy Nội Bộ • Số 01/2026/QĐ-NB</span>
             </div>
-            <h1 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold tracking-tight text-white leading-tight">
+            <h1 className="text-xl sm:text-3xl lg:text-4xl font-extrabold tracking-tight text-white leading-tight">
               Quy Định & Nội Quy Doanh Nghiệp
             </h1>
-            <p className="text-sm sm:text-base text-zinc-300 max-w-3xl leading-relaxed">
-              Văn bản chuẩn mực tác phong, giờ giấc làm việc, kỷ luật lao động, bảo mật dữ liệu và chế độ đãi ngộ áp dụng bắt buộc cho toàn thể nhân sự văn phòng.
+            <p className="text-xs sm:text-base text-zinc-300 max-w-3xl leading-relaxed">
+              Văn bản chuẩn mực tác phong, giờ giấc làm việc, kỷ luật lao động, bảo mật dữ liệu và chế độ đãi ngộ áp dụng bắt buộc cho toàn thể nhân sự.
             </p>
           </div>
 
-          <div className="flex flex-wrap sm:flex-nowrap items-center gap-3 shrink-0 print:hidden">
+          <div className="flex items-center gap-2 sm:gap-3 shrink-0 print:hidden">
+            {/* Desktop Print button (hidden on mobile) */}
             <button
               type="button"
               onClick={handlePrint}
-              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-white font-medium text-sm backdrop-blur-sm border border-white/15 transition-all shadow-sm active:scale-95 cursor-pointer"
+              className="hidden sm:inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-white font-medium text-sm backdrop-blur-sm border border-white/15 transition-all shadow-sm active:scale-95 cursor-pointer"
             >
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path
@@ -467,9 +468,9 @@ export default function RegulationsPage() {
             </button>
             <Link
               href="/dashboard/guide"
-              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-medium text-sm transition-all shadow-md active:scale-95 cursor-pointer"
+              className="inline-flex items-center justify-center gap-1.5 sm:gap-2 px-3.5 sm:px-4 py-2 sm:py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-medium text-xs sm:text-sm transition-all shadow-md active:scale-95 cursor-pointer w-full sm:w-auto"
             >
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <svg className="w-3.5 h-3.5 sm:w-4 sm:h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path
                   strokeLinecap="round"
                   strokeLinejoin="round"
@@ -482,8 +483,11 @@ export default function RegulationsPage() {
           </div>
         </div>
 
-        {/* Thống kê nhanh */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 mt-6 pt-6 border-t border-indigo-700/40">
+        {/* Thống kê nhanh:
+            - Desktop: giữ nguyên grid 4 cột ban đầu
+            - Mobile: hiển thị 2 dòng chip gọn đẹp không chiếm chiều cao
+        */}
+        <div className="hidden sm:grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 mt-6 pt-6 border-t border-indigo-700/40">
           <div className="bg-black/20 rounded-xl p-3 backdrop-blur-xs">
             <span className="text-xs text-zinc-400 block">Quy mô điều lệ</span>
             <span className="text-lg font-bold text-white">8 Chương • {totalArticlesCount} Điều</span>
@@ -501,96 +505,119 @@ export default function RegulationsPage() {
             <span className="text-lg font-bold text-indigo-300">100% Cán bộ nhân viên</span>
           </div>
         </div>
+
+        {/* Mobile Fast-Facts Strip */}
+        <div className="sm:hidden flex items-center justify-between gap-2 mt-3.5 pt-3 border-t border-indigo-700/30 text-[11px]">
+          <span className="text-zinc-300 flex items-center gap-1">
+            <span>📜</span>
+            <strong className="text-white">8 Chương</strong> ({totalArticlesCount} điều)
+          </span>
+          <span className="text-emerald-300 flex items-center gap-1">
+            <span>⏱️</span>
+            <strong>08:00 - 17:30</strong> (T2-T7)
+          </span>
+        </div>
       </div>
 
       {/* 2. Tóm tắt 6 Nguyên Tắc Cốt Lõi (Core Corporate Ethics Card) */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 print:hidden">
-        <div className="p-4 rounded-xl border border-emerald-200 dark:border-emerald-950 bg-emerald-50/60 dark:bg-emerald-950/20 flex items-start gap-3">
-          <div className="w-9 h-9 rounded-lg bg-emerald-500 text-white flex items-center justify-center font-bold shrink-0 shadow-xs">
-            1
-          </div>
-          <div>
-            <h4 className="font-semibold text-sm text-emerald-950 dark:text-emerald-300">Đúng Giờ & Tự Giác</h4>
-            <p className="text-xs text-zinc-600 dark:text-zinc-400 mt-1 leading-relaxed">
-              Check-in trước 08:00 và Check-out sau 17:30 qua Wi-Fi công ty. Tôn trọng thời gian làm việc chung (Thứ 2 - Thứ 7).
-            </p>
-          </div>
+      <div className="space-y-2.5 sm:space-y-4 print:hidden">
+        <div className="flex items-center justify-between px-1">
+          <h3 className="text-xs sm:text-sm font-bold text-zinc-900 dark:text-zinc-100 flex items-center gap-1.5">
+            <span>🎯</span>
+            <span>6 Nguyên Tắc Cốt Lõi Tại Nơi Làm Việc</span>
+          </h3>
+          <span className="text-[11px] text-zinc-400">Tuân thủ 100%</span>
         </div>
 
-        <div className="p-4 rounded-xl border border-blue-200 dark:border-blue-950 bg-blue-50/60 dark:bg-blue-950/20 flex items-start gap-3">
-          <div className="w-9 h-9 rounded-lg bg-blue-500 text-white flex items-center justify-center font-bold shrink-0 shadow-xs">
-            2
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5 sm:gap-4">
+          <div className="p-3.5 sm:p-4 rounded-xl border border-emerald-200 dark:border-emerald-950 bg-emerald-50/60 dark:bg-emerald-950/20 flex items-start gap-3">
+            <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-lg bg-emerald-500 text-white flex items-center justify-center font-bold shrink-0 shadow-xs text-xs sm:text-sm mt-0.5">
+              1
+            </div>
+            <div className="min-w-0 flex-1">
+              <h4 className="font-semibold text-xs sm:text-sm text-emerald-950 dark:text-emerald-300">Đúng Giờ & Tự Giác</h4>
+              <p className="text-xs text-zinc-600 dark:text-zinc-400 mt-1 leading-relaxed break-words">
+                Check-in trước 08:00 và Check-out sau 17:30 qua Wi-Fi công ty. Tôn trọng thời gian làm việc chung (Thứ 2 - Thứ 7).
+              </p>
+            </div>
           </div>
-          <div>
-            <h4 className="font-semibold text-sm text-blue-950 dark:text-blue-300">Bảo Mật Tuyệt Đối</h4>
-            <p className="text-xs text-zinc-600 dark:text-zinc-400 mt-1 leading-relaxed">
-              Tuyệt đối không rò rỉ mã nguồn, dữ liệu khách hàng hoặc chia sẻ mật khẩu tài khoản cá nhân.
-            </p>
-          </div>
-        </div>
 
-        <div className="p-4 rounded-xl border border-purple-200 dark:border-purple-950 bg-purple-50/60 dark:bg-purple-950/20 flex items-start gap-3">
-          <div className="w-9 h-9 rounded-lg bg-purple-500 text-white flex items-center justify-center font-bold shrink-0 shadow-xs">
-            3
+          <div className="p-3.5 sm:p-4 rounded-xl border border-blue-200 dark:border-blue-950 bg-blue-50/60 dark:bg-blue-950/20 flex items-start gap-3">
+            <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-lg bg-blue-500 text-white flex items-center justify-center font-bold shrink-0 shadow-xs text-xs sm:text-sm mt-0.5">
+              2
+            </div>
+            <div className="min-w-0 flex-1">
+              <h4 className="font-semibold text-xs sm:text-sm text-blue-950 dark:text-blue-300">Bảo Mật Tuyệt Đối</h4>
+              <p className="text-xs text-zinc-600 dark:text-zinc-400 mt-1 leading-relaxed break-words">
+                Tuyệt đối không rò rỉ mã nguồn, dữ liệu khách hàng hoặc chia sẻ mật khẩu tài khoản cá nhân.
+              </p>
+            </div>
           </div>
-          <div>
-            <h4 className="font-semibold text-sm text-purple-950 dark:text-purple-300">Thủ Tục Minh Bạch</h4>
-            <p className="text-xs text-zinc-600 dark:text-zinc-400 mt-1 leading-relaxed">
-              Tạo đơn xin nghỉ phép / OT trước hạn trên hệ thống và chờ Ban Giám Đốc xét duyệt trước khi thực hiện.
-            </p>
-          </div>
-        </div>
 
-        <div className="p-4 rounded-xl border border-amber-200 dark:border-amber-950 bg-amber-50/60 dark:bg-amber-950/20 flex items-start gap-3">
-          <div className="w-9 h-9 rounded-lg bg-amber-500 text-white flex items-center justify-center font-bold shrink-0 shadow-xs">
-            4
+          <div className="p-3.5 sm:p-4 rounded-xl border border-purple-200 dark:border-purple-950 bg-purple-50/60 dark:bg-purple-950/20 flex items-start gap-3">
+            <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-lg bg-purple-500 text-white flex items-center justify-center font-bold shrink-0 shadow-xs text-xs sm:text-sm mt-0.5">
+              3
+            </div>
+            <div className="min-w-0 flex-1">
+              <h4 className="font-semibold text-xs sm:text-sm text-purple-950 dark:text-purple-300">Thủ Tục Minh Bạch</h4>
+              <p className="text-xs text-zinc-600 dark:text-zinc-400 mt-1 leading-relaxed break-words">
+                Tạo đơn xin nghỉ phép / OT trước hạn trên hệ thống và chờ Ban Giám Đốc xét duyệt trước khi thực hiện.
+              </p>
+            </div>
           </div>
-          <div>
-            <h4 className="font-semibold text-sm text-amber-950 dark:text-amber-300">Trang Phục Lịch Thiệp</h4>
-            <p className="text-xs text-zinc-600 dark:text-zinc-400 mt-1 leading-relaxed">
-              Mặc đồ công sở chỉnh tề từ T2 - T5; được mặc smart-casual vào T6; luôn đeo thẻ nhân viên trong văn phòng.
-            </p>
-          </div>
-        </div>
 
-        <div className="p-4 rounded-xl border border-rose-200 dark:border-rose-950 bg-rose-50/60 dark:bg-rose-950/20 flex items-start gap-3">
-          <div className="w-9 h-9 rounded-lg bg-rose-500 text-white flex items-center justify-center font-bold shrink-0 shadow-xs">
-            5
+          <div className="p-3.5 sm:p-4 rounded-xl border border-amber-200 dark:border-amber-950 bg-amber-50/60 dark:bg-amber-950/20 flex items-start gap-3">
+            <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-lg bg-amber-500 text-white flex items-center justify-center font-bold shrink-0 shadow-xs text-xs sm:text-sm mt-0.5">
+              4
+            </div>
+            <div className="min-w-0 flex-1">
+              <h4 className="font-semibold text-xs sm:text-sm text-amber-950 dark:text-amber-300">Trang Phục Lịch Thiệp</h4>
+              <p className="text-xs text-zinc-600 dark:text-zinc-400 mt-1 leading-relaxed break-words">
+                Mặc đồ công sở chỉnh tề từ T2 - T5; được mặc smart-casual vào T6; luôn đeo thẻ nhân viên trong văn phòng.
+              </p>
+            </div>
           </div>
-          <div>
-            <h4 className="font-semibold text-sm text-rose-950 dark:text-rose-300">Không Thuốc Lá & Cháy Nổ</h4>
-            <p className="text-xs text-zinc-600 dark:text-zinc-400 mt-1 leading-relaxed">
-              Nghiêm cấm hút thuốc (kể cả vape) trong văn phòng, cầu thang và toilet. Tuân thủ 100% nội quy PCCC.
-            </p>
-          </div>
-        </div>
 
-        <div className="p-4 rounded-xl border border-indigo-200 dark:border-indigo-950 bg-indigo-50/60 dark:bg-indigo-950/20 flex items-start gap-3">
-          <div className="w-9 h-9 rounded-lg bg-indigo-500 text-white flex items-center justify-center font-bold shrink-0 shadow-xs">
-            6
+          <div className="p-3.5 sm:p-4 rounded-xl border border-rose-200 dark:border-rose-950 bg-rose-50/60 dark:bg-rose-950/20 flex items-start gap-3">
+            <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-lg bg-rose-500 text-white flex items-center justify-center font-bold shrink-0 shadow-xs text-xs sm:text-sm mt-0.5">
+              5
+            </div>
+            <div className="min-w-0 flex-1">
+              <h4 className="font-semibold text-xs sm:text-sm text-rose-950 dark:text-rose-300">Không Thuốc Lá & Cháy Nổ</h4>
+              <p className="text-xs text-zinc-600 dark:text-zinc-400 mt-1 leading-relaxed break-words">
+                Nghiêm cấm hút thuốc (kể cả vape) trong văn phòng, cầu thang và toilet. Tuân thủ 100% nội quy PCCC.
+              </p>
+            </div>
           </div>
-          <div>
-            <h4 className="font-semibold text-sm text-indigo-950 dark:text-indigo-300">Văn Hóa Giao Tiếp 5S</h4>
-            <p className="text-xs text-zinc-600 dark:text-zinc-400 mt-1 leading-relaxed">
-              Giao tiếp văn minh, tôn trọng đồng nghiệp; giữ bàn làm việc ngăn nắp; khóa màn hình (Win + L) khi ra ngoài.
-            </p>
+
+          <div className="p-3.5 sm:p-4 rounded-xl border border-indigo-200 dark:border-indigo-950 bg-indigo-50/60 dark:bg-indigo-950/20 flex items-start gap-3">
+            <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-lg bg-indigo-500 text-white flex items-center justify-center font-bold shrink-0 shadow-xs text-xs sm:text-sm mt-0.5">
+              6
+            </div>
+            <div className="min-w-0 flex-1">
+              <h4 className="font-semibold text-xs sm:text-sm text-indigo-950 dark:text-indigo-300">Văn Hóa Giao Tiếp 5S</h4>
+              <p className="text-xs text-zinc-600 dark:text-zinc-400 mt-1 leading-relaxed break-words">
+                Giao tiếp văn minh, tôn trọng đồng nghiệp; giữ bàn làm việc ngăn nắp; khóa màn hình (Win + L) khi ra ngoài.
+              </p>
+            </div>
           </div>
         </div>
       </div>
 
       {/* 3. Thanh tìm kiếm và bộ lọc chương */}
-      <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-4 sm:p-5 shadow-xs space-y-4 print:hidden">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-2.5 sm:p-5 shadow-xs space-y-2.5 sm:space-y-4 print:hidden">
+        <div className="flex items-center justify-between gap-2 sm:gap-4">
+          {/* Ô tìm kiếm */}
           <div className="relative flex-1">
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Tìm kiếm theo tên điều, từ khóa (ví dụ: giờ làm, đi muộn, phép năm, OT, trang phục, sa thải...)..."
-              className="w-full pl-10 pr-4 py-2.5 text-sm bg-zinc-50 dark:bg-zinc-800/80 border border-zinc-300 dark:border-zinc-700 rounded-xl focus:outline-hidden focus:ring-2 focus:ring-blue-500 text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400"
+              placeholder="Tìm theo điều, từ khóa (giờ làm, phép, OT...)..."
+              className="w-full pl-8 sm:pl-10 pr-7 sm:pr-4 py-2 sm:py-2.5 text-xs sm:text-sm bg-zinc-50 dark:bg-zinc-800/80 border border-zinc-300 dark:border-zinc-700 rounded-xl focus:outline-hidden focus:ring-2 focus:ring-blue-500 text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400"
             />
             <svg
-              className="w-4 h-4 text-zinc-400 absolute left-3.5 top-3.5"
+              className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-zinc-400 absolute left-2.5 sm:left-3 top-2.5 sm:top-3.5"
               fill="none"
               viewBox="0 0 24 24"
               stroke="currentColor"
@@ -606,18 +633,19 @@ export default function RegulationsPage() {
               <button
                 type="button"
                 onClick={() => setSearchQuery("")}
-                className="absolute right-3 top-3 text-xs text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200"
+                className="absolute right-2.5 top-2 sm:top-3 text-xs text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 cursor-pointer"
               >
-                Xóa
+                ✕
               </button>
             )}
           </div>
 
-          <div className="flex items-center gap-2 shrink-0">
+          {/* Desktop Only: 2 nút Mở rộng / Thu gọn bên phải ô tìm kiếm */}
+          <div className="hidden sm:flex items-center gap-2 shrink-0">
             <button
               type="button"
               onClick={expandAll}
-              className="px-3 py-1.5 text-xs font-medium text-zinc-600 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-lg transition"
+              className="px-3 py-1.5 text-xs font-medium text-zinc-600 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-lg transition cursor-pointer"
             >
               Mở rộng tất cả
             </button>
@@ -625,7 +653,25 @@ export default function RegulationsPage() {
             <button
               type="button"
               onClick={collapseAll}
-              className="px-3 py-1.5 text-xs font-medium text-zinc-600 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-lg transition"
+              className="px-3 py-1.5 text-xs font-medium text-zinc-600 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-lg transition cursor-pointer"
+            >
+              Thu gọn
+            </button>
+          </div>
+
+          {/* Mobile Only: 2 nút nhỏ chung hàng ngang với ô tìm kiếm (tiết kiệm 1 dòng trống) */}
+          <div className="flex sm:hidden items-center gap-1 shrink-0">
+            <button
+              type="button"
+              onClick={expandAll}
+              className="px-2 py-2 text-[11px] font-semibold text-zinc-600 dark:text-zinc-300 bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 rounded-xl transition cursor-pointer active:scale-95"
+            >
+              Mở hết
+            </button>
+            <button
+              type="button"
+              onClick={collapseAll}
+              className="px-2 py-2 text-[11px] font-semibold text-zinc-600 dark:text-zinc-300 bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 rounded-xl transition cursor-pointer active:scale-95"
             >
               Thu gọn
             </button>
@@ -633,24 +679,24 @@ export default function RegulationsPage() {
         </div>
 
         {/* Quick Chapter Navigation Pills */}
-        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none text-xs">
+        <div className="flex items-center gap-1.5 overflow-x-auto pb-0.5 scrollbar-none text-xs -mx-2.5 px-2.5 sm:mx-0 sm:px-0">
           <button
             type="button"
             onClick={() => setSelectedChapterId("all")}
-            className={`px-3 py-1.5 rounded-lg whitespace-nowrap font-medium transition ${
+            className={`px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-lg whitespace-nowrap font-medium transition cursor-pointer shrink-0 ${
               selectedChapterId === "all"
                 ? "bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 shadow-xs"
                 : "bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-700"
             }`}
           >
-            Tất cả chương ({REGULATION_DATA.length})
+            Tất cả ({REGULATION_DATA.length})
           </button>
           {REGULATION_DATA.map((ch) => (
             <button
               key={ch.id}
               type="button"
               onClick={() => setSelectedChapterId(ch.id)}
-              className={`px-3 py-1.5 rounded-lg whitespace-nowrap font-medium transition flex items-center gap-1.5 ${
+              className={`px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-lg whitespace-nowrap font-medium transition flex items-center gap-1 cursor-pointer shrink-0 ${
                 selectedChapterId === ch.id
                   ? "bg-blue-600 text-white shadow-xs"
                   : "bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-700"
@@ -664,11 +710,11 @@ export default function RegulationsPage() {
       </div>
 
       {/* 4. Danh sách các Chương & Điều khoản */}
-      <div className="space-y-8">
+      <div className="space-y-4 sm:space-y-8">
         {filteredChapters.length === 0 ? (
-          <div className="p-12 text-center bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl">
-            <span className="text-4xl block mb-3">🔍</span>
-            <h3 className="text-base font-semibold text-zinc-900 dark:text-zinc-100">
+          <div className="p-8 sm:p-12 text-center bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl">
+            <span className="text-3xl sm:text-4xl block mb-2 sm:mb-3">🔍</span>
+            <h3 className="text-sm sm:text-base font-semibold text-zinc-900 dark:text-zinc-100">
               Không tìm thấy quy định phù hợp
             </h3>
             <p className="text-xs text-zinc-500 mt-1">
@@ -680,7 +726,7 @@ export default function RegulationsPage() {
                 setSearchQuery("");
                 setSelectedChapterId("all");
               }}
-              className="mt-4 px-4 py-2 bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 text-xs font-medium rounded-lg"
+              className="mt-4 px-4 py-2 bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 text-xs font-medium rounded-lg cursor-pointer"
             >
               Xem toàn bộ quy định
             </button>
@@ -693,27 +739,27 @@ export default function RegulationsPage() {
               className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl shadow-xs overflow-hidden transition-all"
             >
               {/* Chapter Header */}
-              <div className="px-6 py-5 bg-gradient-to-r from-zinc-50 to-white dark:from-zinc-800/60 dark:to-zinc-900 border-b border-zinc-200 dark:border-zinc-800 flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <span className="w-10 h-10 rounded-xl bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400 flex items-center justify-center text-xl shrink-0 shadow-xs">
+              <div className="px-4 sm:px-6 py-3.5 sm:py-5 bg-gradient-to-r from-zinc-50 to-white dark:from-zinc-800/60 dark:to-zinc-900 border-b border-zinc-200 dark:border-zinc-800 flex items-start sm:items-center justify-between gap-2.5">
+                <div className="flex items-start sm:items-center gap-2.5 sm:gap-3 min-w-0 flex-1">
+                  <span className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400 flex items-center justify-center text-base sm:text-xl shrink-0 shadow-xs mt-0.5 sm:mt-0">
                     {chapter.icon}
                   </span>
-                  <div>
-                    <div className="text-xs font-bold uppercase tracking-wider text-blue-600 dark:text-blue-400">
+                  <div className="min-w-0 flex-1">
+                    <div className="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-blue-600 dark:text-blue-400">
                       {chapter.chapterNumber}
                     </div>
-                    <h2 className="text-lg font-bold text-zinc-900 dark:text-zinc-100">
+                    <h2 className="text-sm sm:text-lg font-bold text-zinc-900 dark:text-zinc-100 leading-snug break-words">
                       {chapter.title}
                     </h2>
                   </div>
                 </div>
-                <span className="text-xs font-medium text-zinc-500 dark:text-zinc-400 bg-zinc-100 dark:bg-zinc-800 px-3 py-1 rounded-full">
-                  {chapter.articles.length} Điều khoản
+                <span className="text-[11px] sm:text-xs font-medium text-zinc-500 dark:text-zinc-400 bg-zinc-100 dark:bg-zinc-800 px-2.5 sm:px-3 py-0.5 sm:py-1 rounded-full shrink-0 mt-0.5 sm:mt-0">
+                  {chapter.articles.length} Điều
                 </span>
               </div>
 
               {chapter.description && (
-                <div className="px-6 py-2.5 bg-blue-50/40 dark:bg-blue-950/20 text-xs text-zinc-600 dark:text-zinc-400 border-b border-zinc-100 dark:border-zinc-800/60">
+                <div className="px-4 sm:px-6 py-2 sm:py-2.5 bg-blue-50/40 dark:bg-blue-950/20 text-xs text-zinc-600 dark:text-zinc-400 border-b border-zinc-100 dark:border-zinc-800/60">
                   💡 {chapter.description}
                 </div>
               )}
@@ -735,30 +781,21 @@ export default function RegulationsPage() {
                       <button
                         type="button"
                         onClick={() => toggleArticle(article.id)}
-                        className="w-full px-6 py-4 flex items-center justify-between text-left gap-4 cursor-pointer"
+                        className="w-full px-4 sm:px-6 py-3 sm:py-4 flex items-start sm:items-center justify-between text-left gap-2 sm:gap-4 cursor-pointer"
                       >
-                        <div className="flex items-center gap-3 min-w-0">
-                          <span className="font-mono text-xs font-bold text-zinc-500 dark:text-zinc-400 shrink-0 w-14">
+                        <div className="flex items-start sm:items-center gap-2 sm:gap-3 min-w-0 flex-1">
+                          <span className="font-mono text-xs font-bold text-zinc-500 dark:text-zinc-400 shrink-0 w-12 sm:w-14 pt-0.5 sm:pt-0">
                             {article.articleNumber}
                           </span>
-                          <span className="font-semibold text-sm sm:text-base text-zinc-900 dark:text-zinc-100 truncate">
+                          <span className="font-semibold text-xs sm:text-base text-zinc-900 dark:text-zinc-100 leading-snug break-words flex-1">
                             {article.title}
                           </span>
-                          {article.badge && (
-                            <span
-                              className={`text-[11px] font-semibold px-2.5 py-0.5 rounded-full border shrink-0 hidden sm:inline-block ${
-                                badgeStyles[article.badge] || ""
-                              }`}
-                            >
-                              {article.badge}
-                            </span>
-                          )}
                         </div>
 
-                        <div className="flex items-center gap-3 shrink-0">
+                        <div className="flex items-center gap-2 sm:gap-3 shrink-0 pt-0.5 sm:pt-0">
                           {article.badge && (
                             <span
-                              className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border sm:hidden ${
+                              className={`text-[10px] sm:text-[11px] font-semibold px-2 sm:px-2.5 py-0.5 rounded-full border ${
                                 badgeStyles[article.badge] || ""
                               }`}
                             >
@@ -766,7 +803,7 @@ export default function RegulationsPage() {
                             </span>
                           )}
                           <svg
-                            className={`w-5 h-5 text-zinc-400 transition-transform duration-200 ${
+                            className={`w-4 h-4 sm:w-5 sm:h-5 text-zinc-400 transition-transform duration-200 shrink-0 ${
                               isExpanded ? "rotate-180" : ""
                             }`}
                             fill="none"
@@ -780,28 +817,28 @@ export default function RegulationsPage() {
 
                       {/* Article Expanded Content */}
                       {isExpanded && (
-                        <div className="px-6 pb-6 pt-1 space-y-4 text-sm text-zinc-700 dark:text-zinc-300 bg-zinc-50/30 dark:bg-zinc-900/50">
+                        <div className="px-4 sm:px-6 pb-4 sm:pb-6 pt-1 space-y-3 sm:space-y-4 text-xs sm:text-sm text-zinc-700 dark:text-zinc-300 bg-zinc-50/30 dark:bg-zinc-900/50">
                           <p className="text-xs sm:text-sm font-medium text-zinc-600 dark:text-zinc-400 italic">
                             &quot;{article.summary}&quot;
                           </p>
 
                           <div className="space-y-2">
                             {article.content.map((p, idx) => (
-                              <div key={idx} className="flex items-start gap-2.5 text-xs sm:text-sm leading-relaxed">
-                                <span className="text-blue-500 font-bold mt-0.5">•</span>
+                              <div key={idx} className="flex items-start gap-2 sm:gap-2.5 text-xs sm:text-sm leading-relaxed">
+                                <span className="text-blue-500 font-bold mt-0.5 shrink-0">•</span>
                                 <span>{p}</span>
                               </div>
                             ))}
                           </div>
 
                           {article.keyRules && article.keyRules.length > 0 && (
-                            <div className="p-3.5 rounded-xl bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-900/50 space-y-1.5">
+                            <div className="p-3 sm:p-3.5 rounded-xl bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-900/50 space-y-1.5">
                               <span className="text-xs font-bold text-blue-900 dark:text-blue-300 uppercase tracking-wide block">
                                 📌 Lưu ý chấp hành:
                               </span>
                               {article.keyRules.map((r, rIdx) => (
                                 <div key={rIdx} className="flex items-center gap-2 text-xs text-blue-800 dark:text-blue-200">
-                                  <span className="w-1.5 h-1.5 rounded-full bg-blue-500" />
+                                  <span className="w-1.5 h-1.5 rounded-full bg-blue-500 shrink-0" />
                                   <span>{r}</span>
                                 </div>
                               ))}
@@ -809,8 +846,8 @@ export default function RegulationsPage() {
                           )}
 
                           {article.penaltyOrNote && (
-                            <div className="p-3.5 rounded-xl bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-900/50 flex items-start gap-2.5 text-xs text-rose-800 dark:text-rose-200">
-                              <span className="text-base shrink-0">⚠️</span>
+                            <div className="p-3 sm:p-3.5 rounded-xl bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-900/50 flex items-start gap-2 sm:gap-2.5 text-xs text-rose-800 dark:text-rose-200">
+                              <span className="text-sm sm:text-base shrink-0">⚠️</span>
                               <div className="leading-relaxed">
                                 <strong className="font-semibold">Chế tài & Cảnh báo: </strong>
                                 {article.penaltyOrNote}
@@ -829,9 +866,9 @@ export default function RegulationsPage() {
       </div>
 
       {/* 5. Chữ ký Pháp nhân / Cam kết Thực hiện (Print-ready Footer) */}
-      <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-6 sm:p-8 space-y-6">
-        <div className="border-b border-zinc-200 dark:border-zinc-800 pb-4">
-          <h3 className="text-base font-bold text-zinc-900 dark:text-zinc-100 uppercase tracking-wide">
+      <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-4 sm:p-8 space-y-4 sm:space-y-6">
+        <div className="border-b border-zinc-200 dark:border-zinc-800 pb-3 sm:pb-4">
+          <h3 className="text-sm sm:text-base font-bold text-zinc-900 dark:text-zinc-100 uppercase tracking-wide">
             Cam Kết Thực Hiện Nội Quy Lao Động
           </h3>
           <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-1">
@@ -839,20 +876,20 @@ export default function RegulationsPage() {
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 text-center pt-2">
-          <div className="space-y-2">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-8 text-center pt-1 sm:pt-2">
+          <div className="space-y-1.5 sm:space-y-2 p-3 sm:p-0 rounded-xl bg-zinc-50 dark:bg-zinc-800/40 sm:bg-transparent">
             <span className="text-xs uppercase font-semibold text-zinc-500 block">Đại Diện Người Lao Động</span>
-            <p className="text-xs italic text-zinc-400">(Ký và ghi rõ họ tên khi tiếp nhận công việc)</p>
-            <div className="h-20 flex items-center justify-center text-xs text-zinc-400 font-mono">
-              {user ? `[Đã xác nhận điện tử bởi: ${user.name}]` : "[Chữ ký nhân viên]"}
+            <p className="text-[11px] sm:text-xs italic text-zinc-400">(Xác nhận điện tử khi tiếp nhận việc)</p>
+            <div className="h-12 sm:h-20 flex items-center justify-center text-xs text-zinc-600 dark:text-zinc-300 font-mono">
+              {user ? `[Đã xác nhận bởi: ${user.name}]` : "[Chữ ký nhân viên]"}
             </div>
           </div>
 
-          <div className="space-y-2">
+          <div className="space-y-1.5 sm:space-y-2 p-3 sm:p-0 rounded-xl bg-zinc-50 dark:bg-zinc-800/40 sm:bg-transparent">
             <span className="text-xs uppercase font-semibold text-zinc-500 block">TM. BAN GIÁM ĐỐC CÔNG TY</span>
-            <p className="text-xs italic text-zinc-400">(Ký tên và đóng dấu bản hành)</p>
-            <div className="h-20 flex flex-col items-center justify-center">
-              <span className="text-xs font-bold text-red-600 dark:text-red-400 border-2 border-red-500/80 px-3 py-1 rounded-md rotate-[-3deg] uppercase tracking-wider">
+            <p className="text-[11px] sm:text-xs italic text-zinc-400">(Ký tên và đóng dấu ban hành)</p>
+            <div className="h-12 sm:h-20 flex flex-col items-center justify-center">
+              <span className="text-[11px] sm:text-xs font-bold text-red-600 dark:text-red-400 border-2 border-red-500/80 px-2.5 sm:px-3 py-0.5 sm:py-1 rounded-md rotate-[-2deg] uppercase tracking-wider">
                 ĐÃ PHÊ DUYỆT & BAN HÀNH
               </span>
             </div>

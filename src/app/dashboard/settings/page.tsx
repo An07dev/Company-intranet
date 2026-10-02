@@ -190,9 +190,30 @@ export default function SettingsPage() {
   }
 
   return (
-    <div className="w-full px-4 sm:px-6 lg:px-8 py-4 sm:py-6 space-y-4 sm:space-y-6">
-      {/* Header */}
-      <div>
+    <div className="w-full px-3.5 sm:px-6 lg:px-8 py-4 sm:py-6 space-y-4 sm:space-y-6 max-w-4xl mx-auto">
+      {/* =========================================================================
+          1. HEADER TRANG
+         ========================================================================= */}
+      {/* 1.1 MOBILE HEADER (sm:hidden) */}
+      <div className="sm:hidden pb-3 border-b border-zinc-200 dark:border-zinc-800 space-y-1">
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center gap-1.5 min-w-0">
+            <span className="text-base shrink-0">⚙️</span>
+            <h1 className="text-base font-bold text-zinc-900 dark:text-zinc-100 truncate">
+              Cấu hình IP Chấm Công
+            </h1>
+          </div>
+          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-purple-100 text-purple-800 dark:bg-purple-950 dark:text-purple-300 border border-purple-200 dark:border-purple-800 shrink-0">
+            👑 Admin &amp; Giám Đốc
+          </span>
+        </div>
+        <p className="text-xs text-zinc-500 dark:text-zinc-400">
+          Chỉ cho phép chấm công khi nhân viên kết nối đúng Wi-Fi văn phòng.
+        </p>
+      </div>
+
+      {/* 1.2 DESKTOP HEADER (hidden sm:block) - 100% UNTOUCHED */}
+      <div className="hidden sm:block">
         <div className="inline-flex items-center gap-2 px-2.5 py-0.5 rounded-full text-xs font-medium bg-zinc-200 dark:bg-zinc-800 text-zinc-800 dark:text-zinc-200 mb-2">
           <span>⚙️</span>
           Quản Trị Hệ Thống
@@ -205,183 +226,183 @@ export default function SettingsPage() {
         </p>
       </div>
 
+      <form onSubmit={handleSave}>
+        {/* =========================================================================
+            2. GIAO DIỆN MOBILE DÀNH CHO ĐIỆN THOẠI (sm:hidden)
+           ========================================================================= */}
+        <div className="sm:hidden space-y-3.5">
+          {/* Card 1 Mobile: Bật / Tắt kiểm tra IP */}
+          <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-3.5 shadow-2xs">
+            <div className="flex items-center justify-between gap-3">
+              <div className="min-w-0">
+                <h2 className="text-xs font-bold text-zinc-900 dark:text-zinc-100">
+                  Bắt buộc kiểm tra IP văn phòng
+                </h2>
+                <p className="text-[11px] text-zinc-500 dark:text-zinc-400 mt-0.5 line-clamp-2">
+                  Chỉ cho phép chấm công khi nhân viên kết nối đúng Wi-Fi văn phòng.
+                </p>
+              </div>
 
-
-      <form onSubmit={handleSave} className="space-y-6">
-        {/* Card 1: Bật / Tắt kiểm tra IP */}
-        <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-5 sm:p-6 shadow-sm">
-          <div className="flex items-center justify-between">
-            <div>
-              <h2 className="text-base font-semibold text-zinc-900 dark:text-zinc-100">
-                Bắt buộc kiểm tra IP văn phòng
-              </h2>
-              <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">
-                Khi bật tính năng này, nhân viên chỉ chấm công được khi kết nối đúng mạng Wi-Fi/IP văn phòng.
-              </p>
+              <label className="relative inline-flex items-center cursor-pointer shrink-0">
+                <input
+                  type="checkbox"
+                  checked={settings.enableIpCheck}
+                  onChange={(e) =>
+                    setSettings({ ...settings, enableIpCheck: e.target.checked })
+                  }
+                  className="sr-only peer"
+                />
+                <div className="w-10 h-5 bg-zinc-300 peer-focus:outline-none rounded-full peer dark:bg-zinc-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-zinc-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-emerald-600" />
+              </label>
             </div>
-
-            <label className="relative inline-flex items-center cursor-pointer">
-              <input
-                type="checkbox"
-                checked={settings.enableIpCheck}
-                onChange={(e) =>
-                  setSettings({ ...settings, enableIpCheck: e.target.checked })
-                }
-                className="sr-only peer"
-              />
-              <div className="w-11 h-6 bg-zinc-300 peer-focus:outline-none rounded-full peer dark:bg-zinc-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-zinc-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-600" />
-            </label>
           </div>
-        </div>
 
-        {/* Card 2: IP hiện tại của Admin & Tiện ích điền nhanh */}
-        <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-5 sm:p-6 shadow-sm">
-          <h2 className="text-base font-semibold text-zinc-900 dark:text-zinc-100 mb-2">
-            Địa chỉ IP hiện tại của bạn
-          </h2>
-          <p className="text-xs text-zinc-500 dark:text-zinc-400 mb-4">
-            Hệ thống tự động phát hiện IP máy bạn đang gửi yêu cầu lên máy chủ.
-          </p>
-
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 rounded-lg bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800">
-            <div className="flex items-center gap-2.5">
-              <span className="font-mono text-sm font-bold text-zinc-900 dark:text-zinc-100">
-                {detectedIp || "Đang lấy..."}
-              </span>
+          {/* Card 2 Mobile: IP hiện tại của bạn */}
+          <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-3.5 shadow-2xs space-y-2">
+            <div className="flex items-center justify-between">
+              <h2 className="text-xs font-bold text-zinc-900 dark:text-zinc-100 flex items-center gap-1.5">
+                <span>📶</span>
+                <span>IP thiết bị của bạn</span>
+              </h2>
               {isCurrentIpInList ? (
-                <span className="text-[11px] font-medium px-2 py-0.5 rounded bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
-                  Đã có trong danh sách hợp lệ
+                <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
+                  🟢 Hợp lệ
                 </span>
               ) : (
-                <span className="text-[11px] font-medium px-2 py-0.5 rounded bg-amber-100 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800">
-                  Chưa có trong danh sách
+                <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-amber-100 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800">
+                  🟡 Chưa thêm
                 </span>
               )}
             </div>
 
-            {!isCurrentIpInList && detectedIp && (
-              <Button
+            <div className="flex items-center justify-between gap-2 p-2.5 rounded-lg bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800">
+              <span className="font-mono text-xs font-bold text-zinc-900 dark:text-zinc-100 truncate">
+                {detectedIp || "Đang lấy..."}
+              </span>
+
+              {!isCurrentIpInList && detectedIp && (
+                <button
+                  type="button"
+                  onClick={handleAddDetectedIp}
+                  disabled={savingIp}
+                  className="px-2.5 py-1 rounded-lg bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 text-[11px] font-semibold hover:opacity-90 disabled:opacity-50 shrink-0 cursor-pointer"
+                >
+                  {savingIp ? "Đang thêm..." : "+ Thêm IP này"}
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* Card 3 Mobile: Danh sách IP Whitelist */}
+          <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-3.5 shadow-2xs space-y-2.5">
+            <div className="flex items-center justify-between">
+              <h2 className="text-xs font-bold text-zinc-900 dark:text-zinc-100 flex items-center gap-1.5">
+                <span>🛡️</span>
+                <span>IP văn phòng hợp lệ ({settings.allowedIps.length})</span>
+              </h2>
+              <span className="text-[10px] text-zinc-400 font-mono">
+                Hỗ trợ * (VD: 192.168.1.*)
+              </span>
+            </div>
+
+            {/* Ô nhập thêm IP mới */}
+            <div className="flex gap-1.5">
+              <input
+                type="text"
+                value={newIpInput}
+                onChange={(e) => setNewIpInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    handleAddInputIp();
+                  }
+                }}
+                placeholder="Nhập IP (VD: 192.168.1.*)"
+                className="flex-1 min-w-0 px-2.5 py-1.5 rounded-lg border border-zinc-300 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-950 text-xs font-mono text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 focus:outline-none focus:ring-1 focus:ring-zinc-900 dark:focus:ring-zinc-100"
+              />
+              <button
                 type="button"
-                variant="outline"
-                size="sm"
-                onClick={handleAddDetectedIp}
-                isLoading={savingIp}
-                loadingText="Đang thêm & lưu..."
+                onClick={handleAddInputIp}
+                disabled={savingIp || !newIpInput.trim()}
+                className="px-3 py-1.5 rounded-lg bg-zinc-900 hover:bg-zinc-800 text-white dark:bg-zinc-100 dark:hover:bg-zinc-200 dark:text-zinc-900 text-xs font-semibold disabled:opacity-40 shrink-0 cursor-pointer"
               >
-                + Thêm IP này vào danh sách
-              </Button>
+                {savingIp ? "..." : "+ Thêm"}
+              </button>
+            </div>
+
+            {/* Danh sách Tags IP */}
+            {settings.allowedIps.length === 0 ? (
+              <div className="p-4 rounded-lg bg-zinc-50 dark:bg-zinc-950 border border-dashed border-zinc-300 dark:border-zinc-700 text-center text-[11px] text-zinc-500">
+                Chưa có IP nào. Hãy thêm ít nhất 1 IP văn phòng hoặc tắt kiểm tra IP.
+              </div>
+            ) : (
+              <div className="flex flex-wrap gap-1.5 p-2 rounded-lg bg-zinc-50/60 dark:bg-zinc-950/60 border border-zinc-200 dark:border-zinc-800 max-h-48 overflow-y-auto">
+                {settings.allowedIps.map((ip) => (
+                  <span
+                    key={ip}
+                    className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-[11px] font-mono text-zinc-800 dark:text-zinc-200 shadow-2xs"
+                  >
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                    <span>{ip}</span>
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveIp(ip)}
+                      disabled={savingIp}
+                      title="Xóa IP này"
+                      className="ml-0.5 text-zinc-400 hover:text-rose-500 disabled:opacity-50 transition-colors cursor-pointer text-xs"
+                    >
+                      ✕
+                    </button>
+                  </span>
+                ))}
+              </div>
             )}
           </div>
-        </div>
 
-        {/* Card 3: Danh sách IP Whitelist */}
-        <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-5 sm:p-6 shadow-sm">
-          <div className="flex items-center justify-between mb-2">
-            <h2 className="text-base font-semibold text-zinc-900 dark:text-zinc-100">
-              Danh sách IP văn phòng hợp lệ ({settings.allowedIps.length})
-            </h2>
-            <span className="text-xs text-zinc-400 font-mono">Hỗ trợ IP cố định & wildcard (VD: 192.168.1.*)</span>
-          </div>
-          <p className="text-xs text-zinc-500 dark:text-zinc-400 mb-4">
-            Chỉ những IP nằm trong danh sách này mới được quyền gửi yêu cầu chấm công thành công.
-          </p>
-
-          {/* Ô nhập thêm IP mới */}
-          <div className="flex gap-2 mb-4">
-            <input
-              type="text"
-              value={newIpInput}
-              onChange={(e) => setNewIpInput(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") {
-                  e.preventDefault();
-                  handleAddInputIp();
-                }
-              }}
-              placeholder="Nhập địa chỉ IP (VD: 113.161.72.15 hoặc 192.168.1.*)"
-              className="flex-1 px-3.5 py-2 rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-950 text-xs sm:text-sm font-mono text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-zinc-900 dark:focus:ring-zinc-100"
-            />
-            <Button
-              type="button"
-              variant="secondary"
-              size="md"
-              onClick={handleAddInputIp}
-              isLoading={savingIp}
-              loadingText="Đang thêm..."
-            >
-              Thêm IP
-            </Button>
-          </div>
-
-          {/* Danh sách Tags IP */}
-          {settings.allowedIps.length === 0 ? (
-            <div className="p-6 rounded-lg bg-zinc-50 dark:bg-zinc-950 border border-dashed border-zinc-300 dark:border-zinc-700 text-center text-xs text-zinc-500">
-              Chưa có địa chỉ IP nào. Hãy thêm ít nhất 1 IP văn phòng hoặc tắt tính năng kiểm tra IP.
-            </div>
-          ) : (
-            <div className="flex flex-wrap gap-2 p-3 rounded-lg bg-zinc-50/60 dark:bg-zinc-950/60 border border-zinc-200 dark:border-zinc-800">
-              {settings.allowedIps.map((ip) => (
-                <span
-                  key={ip}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-xs font-mono text-zinc-800 dark:text-zinc-200 shadow-2xs"
-                >
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                  <span>{ip}</span>
-                  <button
-                    type="button"
-                    onClick={() => handleRemoveIp(ip)}
-                    disabled={savingIp}
-                    title="Xóa IP này"
-                    className="ml-1 text-zinc-400 hover:text-red-500 disabled:opacity-50 transition-colors cursor-pointer"
-                  >
-                    ✕
-                  </button>
-                </span>
-              ))}
-            </div>
-          )}
-        </div>
-
-        {/* Card 4: Cấu hình khung giờ làm việc */}
-        <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-5 sm:p-6 shadow-sm">
-          <h2 className="text-base font-semibold text-zinc-900 dark:text-zinc-100 mb-1">
-            Quy định giờ giấc làm việc
-          </h2>
-          <p className="text-xs text-zinc-500 dark:text-zinc-400 mb-4">
-            Dùng để đối chiếu tính toán trạng thái Đúng giờ, Đi muộn hoặc Về sớm.
-          </p>
-
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          {/* Card 4 Mobile: Cấu hình khung giờ làm việc */}
+          <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-3.5 shadow-2xs space-y-2.5">
             <div>
-              <label className="block text-xs font-medium text-zinc-700 dark:text-zinc-300 mb-1.5">
-                Giờ bắt đầu làm việc
-              </label>
-              <input
-                type="time"
-                value={settings.workStartTime}
-                onChange={(e) =>
-                  setSettings({ ...settings, workStartTime: e.target.value })
-                }
-                className="w-full px-3 py-2 rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-950 text-xs sm:text-sm font-mono text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-zinc-900 dark:focus:ring-zinc-100"
-              />
+              <h2 className="text-xs font-bold text-zinc-900 dark:text-zinc-100 flex items-center gap-1.5">
+                <span>⏰</span>
+                <span>Quy định giờ giấc làm việc</span>
+              </h2>
+              <p className="text-[11px] text-zinc-500 dark:text-zinc-400 mt-0.5">
+                Tính toán tự động trạng thái Đúng giờ, Đi muộn, Về sớm.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <label className="block text-[11px] font-medium text-zinc-600 dark:text-zinc-400 mb-1">
+                  Giờ vào làm
+                </label>
+                <input
+                  type="time"
+                  value={settings.workStartTime}
+                  onChange={(e) =>
+                    setSettings({ ...settings, workStartTime: e.target.value })
+                  }
+                  className="w-full px-2.5 py-1.5 rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-950 text-xs font-mono text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-1 focus:ring-zinc-900 dark:focus:ring-zinc-100"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-medium text-zinc-600 dark:text-zinc-400 mb-1">
+                  Giờ tan làm
+                </label>
+                <input
+                  type="time"
+                  value={settings.workEndTime}
+                  onChange={(e) =>
+                    setSettings({ ...settings, workEndTime: e.target.value })
+                  }
+                  className="w-full px-2.5 py-1.5 rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-950 text-xs font-mono text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-1 focus:ring-zinc-900 dark:focus:ring-zinc-100"
+                />
+              </div>
             </div>
 
             <div>
-              <label className="block text-xs font-medium text-zinc-700 dark:text-zinc-300 mb-1.5">
-                Giờ kết thúc làm việc
-              </label>
-              <input
-                type="time"
-                value={settings.workEndTime}
-                onChange={(e) =>
-                  setSettings({ ...settings, workEndTime: e.target.value })
-                }
-                className="w-full px-3 py-2 rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-950 text-xs sm:text-sm font-mono text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-zinc-900 dark:focus:ring-zinc-100"
-              />
-            </div>
-
-            <div>
-              <label className="block text-xs font-medium text-zinc-700 dark:text-zinc-300 mb-1.5">
+              <label className="block text-[11px] font-medium text-zinc-600 dark:text-zinc-400 mb-1">
                 Khoảng ân hạn đi muộn (phút)
               </label>
               <input
@@ -396,23 +417,234 @@ export default function SettingsPage() {
                     lateThresholdMinutes: isNaN(val) ? 0 : Math.max(0, val),
                   });
                 }}
-                className="w-full px-3 py-2 rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-950 text-xs sm:text-sm font-mono text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-zinc-900 dark:focus:ring-zinc-100"
+                className="w-full px-2.5 py-1.5 rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-950 text-xs font-mono text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-1 focus:ring-zinc-900 dark:focus:ring-zinc-100"
               />
             </div>
           </div>
+
+          {/* Nút lưu cấu hình trên mobile (Toàn chiều rộng) */}
+          <div className="pt-1">
+            <button
+              type="submit"
+              disabled={saving}
+              className="w-full py-2.5 px-4 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-white dark:bg-zinc-100 dark:hover:bg-zinc-200 dark:text-zinc-900 text-xs font-bold shadow-xs flex items-center justify-center gap-1.5 disabled:opacity-50 cursor-pointer transition-colors"
+            >
+              <span>{saving ? "⏳" : "💾"}</span>
+              <span>{saving ? "Đang lưu cấu hình..." : "Lưu thay đổi cài đặt"}</span>
+            </button>
+          </div>
         </div>
 
-        {/* Nút lưu cấu hình */}
-        <div className="flex justify-end gap-3 pt-2">
-          <Button
-            type="submit"
-            variant="primary"
-            size="lg"
-            isLoading={saving}
-            loadingText="Đang lưu cấu hình..."
-          >
-            Lưu thay đổi cài đặt
-          </Button>
+        {/* =========================================================================
+            3. GIAO DIỆN DESKTOP (hidden sm:block) - 100% UNTOUCHED
+           ========================================================================= */}
+        <div className="hidden sm:block space-y-6">
+          {/* Card 1: Bật / Tắt kiểm tra IP */}
+          <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-5 sm:p-6 shadow-sm">
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-base font-semibold text-zinc-900 dark:text-zinc-100">
+                  Bắt buộc kiểm tra IP văn phòng
+                </h2>
+                <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">
+                  Khi bật tính năng này, nhân viên chỉ chấm công được khi kết nối đúng mạng Wi-Fi/IP văn phòng.
+                </p>
+              </div>
+
+              <label className="relative inline-flex items-center cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={settings.enableIpCheck}
+                  onChange={(e) =>
+                    setSettings({ ...settings, enableIpCheck: e.target.checked })
+                  }
+                  className="sr-only peer"
+                />
+                <div className="w-11 h-6 bg-zinc-300 peer-focus:outline-none rounded-full peer dark:bg-zinc-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-zinc-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-600" />
+              </label>
+            </div>
+          </div>
+
+          {/* Card 2: IP hiện tại của Admin & Tiện ích điền nhanh */}
+          <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-5 sm:p-6 shadow-sm">
+            <h2 className="text-base font-semibold text-zinc-900 dark:text-zinc-100 mb-2">
+              Địa chỉ IP hiện tại của bạn
+            </h2>
+            <p className="text-xs text-zinc-500 dark:text-zinc-400 mb-4">
+              Hệ thống tự động phát hiện IP máy bạn đang gửi yêu cầu lên máy chủ.
+            </p>
+
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 rounded-lg bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800">
+              <div className="flex items-center gap-2.5">
+                <span className="font-mono text-sm font-bold text-zinc-900 dark:text-zinc-100">
+                  {detectedIp || "Đang lấy..."}
+                </span>
+                {isCurrentIpInList ? (
+                  <span className="text-[11px] font-medium px-2 py-0.5 rounded bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
+                    Đã có trong danh sách hợp lệ
+                  </span>
+                ) : (
+                  <span className="text-[11px] font-medium px-2 py-0.5 rounded bg-amber-100 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800">
+                    Chưa có trong danh sách
+                  </span>
+                )}
+              </div>
+
+              {!isCurrentIpInList && detectedIp && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={handleAddDetectedIp}
+                  isLoading={savingIp}
+                  loadingText="Đang thêm & lưu..."
+                >
+                  + Thêm IP này vào danh sách
+                </Button>
+              )}
+            </div>
+          </div>
+
+          {/* Card 3: Danh sách IP Whitelist */}
+          <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-5 sm:p-6 shadow-sm">
+            <div className="flex items-center justify-between mb-2">
+              <h2 className="text-base font-semibold text-zinc-900 dark:text-zinc-100">
+                Danh sách IP văn phòng hợp lệ ({settings.allowedIps.length})
+              </h2>
+              <span className="text-xs text-zinc-400 font-mono">Hỗ trợ IP cố định & wildcard (VD: 192.168.1.*)</span>
+            </div>
+            <p className="text-xs text-zinc-500 dark:text-zinc-400 mb-4">
+              Chỉ những IP nằm trong danh sách này mới được quyền gửi yêu cầu chấm công thành công.
+            </p>
+
+            {/* Ô nhập thêm IP mới */}
+            <div className="flex gap-2 mb-4">
+              <input
+                type="text"
+                value={newIpInput}
+                onChange={(e) => setNewIpInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    handleAddInputIp();
+                  }
+                }}
+                placeholder="Nhập địa chỉ IP (VD: 113.161.72.15 hoặc 192.168.1.*)"
+                className="flex-1 px-3.5 py-2 rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-950 text-xs sm:text-sm font-mono text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-zinc-900 dark:focus:ring-zinc-100"
+              />
+              <Button
+                type="button"
+                variant="secondary"
+                size="md"
+                onClick={handleAddInputIp}
+                isLoading={savingIp}
+                loadingText="Đang thêm..."
+              >
+                Thêm IP
+              </Button>
+            </div>
+
+            {/* Danh sách Tags IP */}
+            {settings.allowedIps.length === 0 ? (
+              <div className="p-6 rounded-lg bg-zinc-50 dark:bg-zinc-950 border border-dashed border-zinc-300 dark:border-zinc-700 text-center text-xs text-zinc-500">
+                Chưa có địa chỉ IP nào. Hãy thêm ít nhất 1 IP văn phòng hoặc tắt tính năng kiểm tra IP.
+              </div>
+            ) : (
+              <div className="flex flex-wrap gap-2 p-3 rounded-lg bg-zinc-50/60 dark:bg-zinc-950/60 border border-zinc-200 dark:border-zinc-800">
+                {settings.allowedIps.map((ip) => (
+                  <span
+                    key={ip}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-xs font-mono text-zinc-800 dark:text-zinc-200 shadow-2xs"
+                  >
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                    <span>{ip}</span>
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveIp(ip)}
+                      disabled={savingIp}
+                      title="Xóa IP này"
+                      className="ml-1 text-zinc-400 hover:text-red-500 disabled:opacity-50 transition-colors cursor-pointer"
+                    >
+                      ✕
+                    </button>
+                  </span>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Card 4: Cấu hình khung giờ làm việc */}
+          <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-5 sm:p-6 shadow-sm">
+            <h2 className="text-base font-semibold text-zinc-900 dark:text-zinc-100 mb-1">
+              Quy định giờ giấc làm việc
+            </h2>
+            <p className="text-xs text-zinc-500 dark:text-zinc-400 mb-4">
+              Dùng để đối chiếu tính toán trạng thái Đúng giờ, Đi muộn hoặc Về sớm.
+            </p>
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div>
+                <label className="block text-xs font-medium text-zinc-700 dark:text-zinc-300 mb-1.5">
+                  Giờ bắt đầu làm việc
+                </label>
+                <input
+                  type="time"
+                  value={settings.workStartTime}
+                  onChange={(e) =>
+                    setSettings({ ...settings, workStartTime: e.target.value })
+                  }
+                  className="w-full px-3 py-2 rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-950 text-xs sm:text-sm font-mono text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-zinc-900 dark:focus:ring-zinc-100"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium text-zinc-700 dark:text-zinc-300 mb-1.5">
+                  Giờ kết thúc làm việc
+                </label>
+                <input
+                  type="time"
+                  value={settings.workEndTime}
+                  onChange={(e) =>
+                    setSettings({ ...settings, workEndTime: e.target.value })
+                  }
+                  className="w-full px-3 py-2 rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-950 text-xs sm:text-sm font-mono text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-zinc-900 dark:focus:ring-zinc-100"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium text-zinc-700 dark:text-zinc-300 mb-1.5">
+                  Khoảng ân hạn đi muộn (phút)
+                </label>
+                <input
+                  type="number"
+                  min="0"
+                  max="60"
+                  value={settings.lateThresholdMinutes ?? 0}
+                  onChange={(e) => {
+                    const val = e.target.value === "" ? 0 : parseInt(e.target.value, 10);
+                    setSettings({
+                      ...settings,
+                      lateThresholdMinutes: isNaN(val) ? 0 : Math.max(0, val),
+                    });
+                  }}
+                  className="w-full px-3 py-2 rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-950 text-xs sm:text-sm font-mono text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-zinc-900 dark:focus:ring-zinc-100"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Nút lưu cấu hình */}
+          <div className="flex justify-end gap-3 pt-2">
+            <Button
+              type="submit"
+              variant="primary"
+              size="lg"
+              isLoading={saving}
+              loadingText="Đang lưu cấu hình..."
+            >
+              Lưu thay đổi cài đặt
+            </Button>
+          </div>
         </div>
       </form>
     </div>

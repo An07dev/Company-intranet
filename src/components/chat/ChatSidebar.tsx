@@ -71,39 +71,41 @@ export function ChatSidebar({
     <div className="w-full md:w-80 lg:w-96 flex flex-col h-full border-r border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 shrink-0">
       {/* 1. Header Toolbar */}
       <div className="p-3 sm:p-4 border-b border-zinc-200 dark:border-zinc-800 flex items-center justify-between gap-2">
-        <div>
-          <h2 className="text-base font-bold text-zinc-900 dark:text-zinc-100 flex items-center gap-2">
-            <span>💬</span>
-            <span>Hộp Thoại Nội Bộ</span>
+        <div className="min-w-0 flex-1">
+          <h2 className="text-sm sm:text-base font-bold text-zinc-900 dark:text-zinc-100 flex items-center gap-1.5 sm:gap-2 truncate">
+            <span className="shrink-0">💬</span>
+            <span className="truncate">Hộp Thoại Nội Bộ</span>
           </h2>
-          <p className="text-[11px] text-zinc-400 mt-0.5">
+          <p className="text-[10px] sm:text-[11px] text-zinc-400 mt-0.5 truncate">
             {conversations.length} cuộc trò chuyện
           </p>
         </div>
 
         {/* Nút tạo mới */}
-        <div className="flex items-center gap-1.5">
+        <div className="flex items-center gap-1 sm:gap-1.5 shrink-0">
           <button
             type="button"
             onClick={onOpenDirectModal}
             title="Nhắn tin 1-1 với đồng nghiệp"
-            className="p-1.5 rounded-xl border border-zinc-200 dark:border-zinc-700 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition cursor-pointer text-xs font-semibold flex items-center gap-1 shadow-2xs"
+            className="px-2 sm:px-2.5 py-1.5 rounded-xl border border-zinc-200 dark:border-zinc-700 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition cursor-pointer text-xs font-semibold flex items-center gap-1 shadow-2xs active:scale-95"
           >
-            <span>💬 1-1</span>
+            <span>💬</span>
+            <span>1-1</span>
           </button>
           <button
             type="button"
             onClick={onOpenGroupModal}
             title="Tạo hội nhóm chat mới"
-            className="px-2.5 py-1.5 rounded-xl bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 hover:bg-zinc-800 dark:hover:bg-zinc-200 transition cursor-pointer text-xs font-semibold flex items-center gap-1 shadow-2xs"
+            className="px-2 sm:px-2.5 py-1.5 rounded-xl bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 hover:bg-zinc-800 dark:hover:bg-zinc-200 transition cursor-pointer text-xs font-semibold flex items-center gap-1 shadow-2xs active:scale-95"
           >
-            <span>+ Nhóm</span>
+            <span>+</span>
+            <span>Nhóm</span>
           </button>
         </div>
       </div>
 
       {/* 2. Thanh tìm kiếm */}
-      <div className="p-3 border-b border-zinc-100 dark:border-zinc-800/80">
+      <div className="p-2.5 sm:p-3 border-b border-zinc-100 dark:border-zinc-800/80">
         <div className="relative">
           <span className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-zinc-400">
             <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -115,16 +117,25 @@ export function ChatSidebar({
             placeholder="Tìm cuộc trò chuyện..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-8 pr-3 py-1.5 text-xs rounded-xl bg-zinc-50 dark:bg-zinc-800/60 border border-zinc-200 dark:border-zinc-700 text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 focus:outline-hidden"
+            className="w-full pl-8 pr-7 py-1.5 text-xs rounded-xl bg-zinc-50 dark:bg-zinc-800/60 border border-zinc-200 dark:border-zinc-700 text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 focus:outline-hidden"
           />
+          {searchQuery && (
+            <button
+              type="button"
+              onClick={() => setSearchQuery("")}
+              className="absolute inset-y-0 right-0 pr-2.5 flex items-center text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 cursor-pointer"
+            >
+              ✕
+            </button>
+          )}
         </div>
 
         {/* 3. Filter Tabs */}
-        <div className="flex items-center gap-1 mt-2.5 overflow-x-auto pb-0.5 no-scrollbar">
+        <div className="flex items-center gap-1 mt-2 overflow-x-auto pb-0.5 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
           <button
             type="button"
             onClick={() => setActiveTab("all")}
-            className={`px-2.5 py-1 text-xs font-semibold rounded-lg shrink-0 transition cursor-pointer ${
+            className={`px-2.5 py-1 text-xs font-semibold rounded-lg shrink-0 transition cursor-pointer active:scale-95 ${
               activeTab === "all"
                 ? "bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 shadow-2xs"
                 : "text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100"
@@ -224,7 +235,7 @@ export function ChatSidebar({
               <div
                 key={conv.id}
                 onClick={() => onSelectConversation(conv)}
-                className={`p-3 sm:px-3.5 flex items-center gap-3 transition cursor-pointer ${
+                className={`p-2.5 sm:p-3 sm:px-3.5 flex items-center gap-2.5 sm:gap-3 transition cursor-pointer active:scale-[0.99] ${
                   isSelected
                     ? "bg-zinc-100 dark:bg-zinc-800/80 border-l-4 border-blue-600"
                     : "hover:bg-zinc-50/80 dark:hover:bg-zinc-800/40"
@@ -252,13 +263,13 @@ export function ChatSidebar({
                 {/* Info */}
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between gap-1 mb-0.5">
-                    <div className="flex items-center gap-1.5 min-w-0">
-                      <span className={`text-xs truncate ${hasUnread ? "font-bold text-zinc-900 dark:text-zinc-100" : "font-semibold text-zinc-800 dark:text-zinc-200"}`}>
+                    <div className="flex items-center gap-1.5 min-w-0 flex-1">
+                      <span className={`text-xs truncate max-w-[130px] min-[380px]:max-w-[160px] sm:max-w-none ${hasUnread ? "font-bold text-zinc-900 dark:text-zinc-100" : "font-semibold text-zinc-800 dark:text-zinc-200"}`}>
                         {conv.name}
                       </span>
                       {getConvTypeBadge(conv.type)}
                     </div>
-                    <span className="text-[10px] text-zinc-400 shrink-0">
+                    <span className="text-[10px] text-zinc-400 shrink-0 font-mono">
                       {formatMessageTime(conv.lastMessage?.createdAt || conv.updatedAt)}
                     </span>
                   </div>

@@ -192,26 +192,26 @@ export function DepartmentMembersModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-black/50 backdrop-blur-xs animate-in fade-in duration-200 overflow-y-auto">
-      <div className="w-full max-w-3xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[92vh]">
+      <div className="w-full max-w-3xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[94vh] sm:max-h-[92vh]">
         {/* Header Modal */}
-        <div className="p-4 sm:p-5 border-b border-zinc-200 dark:border-zinc-800 flex items-center justify-between gap-3 bg-zinc-50/50 dark:bg-zinc-950/40 shrink-0">
-          <div className="flex items-center gap-3 min-w-0 flex-1">
-            <div className="w-10 h-10 rounded-xl bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 flex items-center justify-center font-bold text-base shadow-xs shrink-0">
+        <div className="p-3.5 sm:p-5 border-b border-zinc-200 dark:border-zinc-800 flex items-center justify-between gap-2.5 bg-zinc-50/50 dark:bg-zinc-950/40 shrink-0">
+          <div className="flex items-center gap-2.5 sm:gap-3 min-w-0 flex-1">
+            <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 flex items-center justify-center font-bold text-sm sm:text-base shadow-xs shrink-0">
               👥
             </div>
             <div className="min-w-0 flex-1">
-              <div className="flex items-center gap-2 flex-wrap">
-                <h3 className="text-base font-bold text-zinc-900 dark:text-zinc-100 truncate">
+              <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
+                <h3 className="text-sm sm:text-base font-bold text-zinc-900 dark:text-zinc-100 truncate">
                   {department.name}
                 </h3>
-                <span className="px-2 py-0.5 text-xs font-semibold rounded-md bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-700 shrink-0">
+                <span className="px-1.5 py-0.2 sm:px-2 sm:py-0.5 text-[10px] sm:text-xs font-semibold rounded-md bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-700 shrink-0 font-mono">
                   {department.code}
                 </span>
-                <span className="px-2 py-0.5 text-xs font-medium rounded-full bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-400 border border-blue-200 dark:border-blue-900/50 shrink-0">
+                <span className="px-2 py-0.5 text-[10px] sm:text-xs font-medium rounded-full bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-400 border border-blue-200 dark:border-blue-900/50 shrink-0">
                   {members.length} nhân sự
                 </span>
               </div>
-              <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5 truncate">
+              <p className="text-[11px] sm:text-xs text-zinc-500 dark:text-zinc-400 mt-0.5 truncate">
                 {canEdit
                   ? "Điều chỉnh nhân sự, phân bổ thành viên & bổ nhiệm trưởng phòng"
                   : "Danh sách nhân sự & cơ cấu tổ chức phòng ban (Chế độ xem)"}
@@ -229,7 +229,7 @@ export function DepartmentMembersModal({
 
         {/* Thông báo quyền xem nếu không thể edit */}
         {!canEdit && (
-          <div className="bg-amber-50 dark:bg-amber-950/30 px-4 py-2 border-b border-amber-200 dark:border-amber-900/40 text-xs text-amber-800 dark:text-amber-300 flex items-center gap-2 shrink-0">
+          <div className="bg-amber-50 dark:bg-amber-950/30 px-3.5 sm:px-4 py-2 border-b border-amber-200 dark:border-amber-900/40 text-xs text-amber-800 dark:text-amber-300 flex items-center gap-2 shrink-0">
             <span>ℹ️</span>
             <span>
               Bạn đang ở chế độ xem thông tin phòng ban. Chỉ có <b>Quản trị viên</b> hoặc <b>Giám đốc</b> mới có quyền điều chỉnh nhân sự.
@@ -239,61 +239,61 @@ export function DepartmentMembersModal({
 
         {/* Thông báo Alert trạng thái */}
         {errorMsg && (
-          <div className="mx-5 mt-3 p-3 text-xs rounded-xl bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-900/50 text-red-600 dark:text-red-400 flex items-center justify-between shrink-0">
+          <div className="mx-3 sm:mx-5 mt-2.5 sm:mt-3 p-2.5 sm:p-3 text-xs rounded-xl bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-900/50 text-red-600 dark:text-red-400 flex items-center justify-between shrink-0">
             <div className="flex items-center gap-2 min-w-0">
               <svg className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
               <span className="truncate">{errorMsg}</span>
             </div>
-            <button type="button" onClick={() => setErrorMsg("")} className="text-xs hover:underline cursor-pointer shrink-0 ml-2">
+            <button type="button" onClick={() => setErrorMsg("")} className="text-xs hover:underline cursor-pointer shrink-0 ml-2 font-medium">
               Đóng
             </button>
           </div>
         )}
 
         {successMsg && (
-          <div className="mx-5 mt-3 p-3 text-xs rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-900/50 text-emerald-700 dark:text-emerald-400 flex items-center justify-between shrink-0">
+          <div className="mx-3 sm:mx-5 mt-2.5 sm:mt-3 p-2.5 sm:p-3 text-xs rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-900/50 text-emerald-700 dark:text-emerald-400 flex items-center justify-between shrink-0">
             <div className="flex items-center gap-2 min-w-0">
               <span className="shrink-0">✓</span>
               <span className="truncate">{successMsg}</span>
             </div>
-            <button type="button" onClick={() => setSuccessMsg("")} className="text-xs hover:underline cursor-pointer shrink-0 ml-2">
+            <button type="button" onClick={() => setSuccessMsg("")} className="text-xs hover:underline cursor-pointer shrink-0 ml-2 font-medium">
               Đóng
             </button>
           </div>
         )}
 
         {/* Body chính có thanh cuộn dọc duy nhất, TUYỆT ĐỐI KHÔNG tràn ngang */}
-        <div className="flex-1 overflow-y-auto overflow-x-hidden p-4 sm:p-5 space-y-5 min-w-0">
+        <div className="flex-1 overflow-y-auto overflow-x-hidden p-3.5 sm:p-5 space-y-4 sm:space-y-5 min-w-0">
           {/* Card Trưởng phòng ban */}
           {(manager || department.managerName) ? (
-            <div className="p-3.5 sm:p-4 rounded-xl border border-amber-200/80 dark:border-amber-900/50 bg-linear-to-r from-amber-50/60 via-amber-50/30 to-transparent dark:from-amber-950/20 dark:via-amber-950/10 dark:to-transparent flex items-center justify-between gap-3 min-w-0">
-              <div className="flex items-center gap-3 min-w-0">
+            <div className="p-3 sm:p-4 rounded-xl border border-amber-200/80 dark:border-amber-900/50 bg-linear-to-r from-amber-50/60 via-amber-50/30 to-transparent dark:from-amber-950/20 dark:via-amber-950/10 dark:to-transparent flex items-center justify-between gap-3 min-w-0">
+              <div className="flex items-center gap-2.5 sm:gap-3 min-w-0 flex-1">
                 {manager?.avatarUrl || department.managerAvatar ? (
                   <img
                     src={manager?.avatarUrl || department.managerAvatar}
                     alt={manager?.name || department.managerName}
-                    className="w-10 h-10 rounded-full object-cover shrink-0 ring-2 ring-amber-400/60 shadow-xs"
+                    className="w-9 h-9 sm:w-10 sm:h-10 rounded-full object-cover shrink-0 ring-2 ring-amber-400/60 shadow-xs"
                   />
                 ) : (
-                  <div className="w-10 h-10 rounded-full bg-amber-100 dark:bg-amber-900/60 text-amber-700 dark:text-amber-300 font-bold flex items-center justify-center text-sm border border-amber-300 dark:border-amber-800 shrink-0 shadow-xs">
+                  <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-amber-100 dark:bg-amber-900/60 text-amber-700 dark:text-amber-300 font-bold flex items-center justify-center text-sm border border-amber-300 dark:border-amber-800 shrink-0 shadow-xs">
                     {(manager?.name || department.managerName || "M").charAt(0).toUpperCase()}
                   </div>
                 )}
-                <div className="min-w-0">
-                  <div className="flex items-center gap-2">
-                    <span className="font-bold text-sm text-zinc-900 dark:text-zinc-100 truncate">
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
+                    <span className="font-bold text-xs sm:text-sm text-zinc-900 dark:text-zinc-100 truncate">
                       {manager?.name || department.managerName}
                     </span>
-                    <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 dark:bg-amber-950 text-amber-800 dark:text-amber-300 border border-amber-300/60 shrink-0">
+                    <span className="px-1.5 sm:px-2 py-0.5 rounded-full text-[9px] sm:text-[10px] font-bold bg-amber-100 dark:bg-amber-950 text-amber-800 dark:text-amber-300 border border-amber-300/60 shrink-0">
                       👑 Trưởng phòng
                     </span>
                   </div>
-                  <div className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5 truncate flex items-center gap-2">
-                    <span>{manager?.email || department.managerEmail}</span>
+                  <div className="text-[11px] sm:text-xs text-zinc-500 dark:text-zinc-400 mt-0.5 truncate flex items-center gap-2">
+                    <span className="truncate">{manager?.email || department.managerEmail}</span>
                     {manager?.employeeCode && (
-                      <span className="font-mono text-[10px] px-1.5 py-0.2 rounded bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-300">
+                      <span className="font-mono text-[10px] px-1.5 py-0.2 rounded bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-300 shrink-0">
                         {manager.employeeCode}
                       </span>
                     )}
@@ -310,29 +310,29 @@ export function DepartmentMembersModal({
 
           {/* Vùng Thêm / Chuyển nhân sự vào phòng (Dành cho Admin/Director) */}
           {canEdit && (
-            <div className="p-4 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50/70 dark:bg-zinc-950/40 space-y-3 min-w-0">
+            <div className="p-3.5 sm:p-4 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50/70 dark:bg-zinc-950/40 space-y-3 min-w-0">
               {/* Header chuyển đổi tab thêm nhân viên */}
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                <div className="flex items-center gap-1.5 p-1 rounded-xl bg-zinc-200/80 dark:bg-zinc-800 shrink-0">
+                <div className="grid grid-cols-2 gap-1 p-1 rounded-xl bg-zinc-200/80 dark:bg-zinc-800 w-full sm:w-auto shrink-0">
                   <button
                     type="button"
                     onClick={() => setAddMode("transfer")}
-                    className={`px-3 py-1 text-xs font-semibold rounded-lg transition cursor-pointer ${addMode === "transfer"
+                    className={`px-2.5 sm:px-3 py-1.5 text-xs font-semibold rounded-lg transition cursor-pointer text-center truncate ${addMode === "transfer"
                       ? "bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 shadow-xs"
                       : "text-zinc-600 dark:text-zinc-400 hover:text-zinc-900"
                       }`}
                   >
-                    Chọn nhân sự có sẵn ({availableUsers.length})
+                    Có sẵn ({availableUsers.length})
                   </button>
                   <button
                     type="button"
                     onClick={() => setAddMode("create")}
-                    className={`px-3 py-1 text-xs font-semibold rounded-lg transition cursor-pointer flex items-center gap-1 ${addMode === "create"
+                    className={`px-2.5 sm:px-3 py-1.5 text-xs font-semibold rounded-lg transition cursor-pointer text-center truncate flex items-center justify-center gap-1 ${addMode === "create"
                       ? "bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 shadow-xs"
                       : "text-zinc-600 dark:text-zinc-400 hover:text-zinc-900"
                       }`}
                   >
-                    <span>➕ Tạo nhân sự mới</span>
+                    <span>➕ Tạo mới</span>
                   </button>
                 </div>
 
@@ -365,7 +365,7 @@ export function DepartmentMembersModal({
                     type="button"
                     onClick={() => selectedUserToAdd && handleAdjustMembers("add", selectedUserToAdd)}
                     disabled={!selectedUserToAdd || submittingAction !== null}
-                    className="w-full sm:w-auto px-4 py-2 text-xs font-semibold text-white bg-zinc-900 dark:bg-zinc-100 dark:text-zinc-900 rounded-xl hover:bg-zinc-800 dark:hover:bg-zinc-200 transition disabled:opacity-50 flex items-center justify-center gap-1.5 shrink-0 cursor-pointer shadow-xs whitespace-nowrap"
+                    className="w-full sm:w-auto px-4 py-2 text-xs font-semibold text-white bg-zinc-900 dark:bg-zinc-100 dark:text-zinc-900 rounded-xl hover:bg-zinc-800 dark:hover:bg-zinc-200 transition disabled:opacity-50 flex items-center justify-center gap-1.5 shrink-0 cursor-pointer shadow-xs whitespace-nowrap active:scale-98"
                   >
                     {submittingAction?.startsWith("add_") ? (
                       <>
@@ -492,8 +492,8 @@ export function DepartmentMembersModal({
             </div>
           )}
 
-          {/* Thanh tìm kiếm & lọc thành viên nội bộ */}
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 pt-1 min-w-0">
+          {/* Thanh tìm kiếm & lọc thành viên nội bộ (Chung 1 hàng ngang) */}
+          <div className="flex items-center gap-2 pt-1 min-w-0">
             <div className="relative flex-1 min-w-0">
               <span className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-zinc-400">
                 <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -502,18 +502,28 @@ export function DepartmentMembersModal({
               </span>
               <input
                 type="text"
-                placeholder="Tìm thành viên theo tên, email, mã nhân viên..."
+                placeholder="Tìm tên, email, mã NV..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full min-w-0 pl-8 pr-3 py-1.5 text-xs rounded-xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 focus:outline-hidden focus:ring-1 focus:ring-zinc-400"
+                className="w-full h-9 min-w-0 pl-8 pr-7 text-xs rounded-xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 focus:outline-hidden focus:ring-1 focus:ring-zinc-400"
               />
+              {searchTerm && (
+                <button
+                  type="button"
+                  onClick={() => setSearchTerm("")}
+                  className="absolute inset-y-0 right-0 pr-2.5 flex items-center text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 cursor-pointer"
+                  title="Xóa tìm kiếm"
+                >
+                  ✕
+                </button>
+              )}
             </div>
 
-            <div className="flex items-center gap-2 shrink-0">
+            <div className="shrink-0">
               <select
                 value={contractFilter}
                 onChange={(e) => setContractFilter(e.target.value)}
-                className="px-2.5 py-1.5 text-xs rounded-xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-zinc-700 dark:text-zinc-300 focus:outline-hidden"
+                className="h-9 px-2.5 sm:px-3 text-xs rounded-xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-zinc-700 dark:text-zinc-300 focus:outline-hidden cursor-pointer"
               >
                 <option value="all">Tất cả hình thức</option>
                 <option value="official">Chính thức</option>
@@ -548,23 +558,23 @@ export function DepartmentMembersModal({
                   return (
                     <div
                       key={member.id}
-                      className="p-3 sm:px-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:bg-zinc-50/60 dark:hover:bg-zinc-800/40 transition min-w-0"
+                      className="p-3 sm:px-4 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 hover:bg-zinc-50/60 dark:hover:bg-zinc-800/40 transition min-w-0"
                     >
                       {/* Thông tin nhân viên */}
-                      <div className="flex items-center gap-3 min-w-0 flex-1">
+                      <div className="flex items-start sm:items-center gap-2.5 sm:gap-3 min-w-0 flex-1">
                         {member.avatarUrl ? (
                           <img
                             src={member.avatarUrl}
                             alt={member.name}
-                            className="w-8 h-8 rounded-full object-cover shrink-0 ring-1 ring-zinc-200 dark:ring-zinc-700"
+                            className="w-8 h-8 rounded-full object-cover shrink-0 ring-1 ring-zinc-200 dark:ring-zinc-700 mt-0.5 sm:mt-0"
                           />
                         ) : (
-                          <div className="w-8 h-8 rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 font-bold flex items-center justify-center text-xs shrink-0 border border-zinc-200 dark:border-zinc-700">
+                          <div className="w-8 h-8 rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 font-bold flex items-center justify-center text-xs shrink-0 border border-zinc-200 dark:border-zinc-700 mt-0.5 sm:mt-0">
                             {member.name.charAt(0).toUpperCase()}
                           </div>
                         )}
                         <div className="min-w-0 flex-1">
-                          <div className="flex items-center gap-2 flex-wrap">
+                          <div className="flex items-center gap-1.5 flex-wrap">
                             <span className="font-semibold text-xs text-zinc-900 dark:text-zinc-100 truncate">
                               {member.name}
                             </span>
@@ -579,28 +589,27 @@ export function DepartmentMembersModal({
                               </span>
                             )}
                           </div>
-                          <div className="flex items-center gap-2 text-[11px] text-zinc-500 dark:text-zinc-400 mt-0.5 truncate">
-                            <span className="truncate">{member.email}</span>
-                            <span className="shrink-0 font-medium text-zinc-700 dark:text-zinc-300">
-                              •{" "}
+                          <div className="text-[11px] text-zinc-400 truncate mt-0.5">
+                            {member.email}
+                          </div>
+                          <div className="flex items-center gap-1.5 flex-wrap mt-1">
+                            <span className="text-[10px] px-1.5 py-0.2 rounded bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-300 font-medium">
                               {member.role === "admin"
                                 ? "Quản trị viên"
                                 : member.role === "director"
                                 ? "Giám đốc"
                                 : member.role === "manager"
-                                ? "Trưởng phòng (Quản lý)"
+                                ? "Quản lý"
                                 : "Nhân viên"}
                             </span>
-                            <span className="shrink-0">
-                              •{" "}
-                              <span
-                                className={`font-medium ${member.contractType === "official"
-                                  ? "text-emerald-600 dark:text-emerald-400"
-                                  : "text-amber-600 dark:text-amber-400"
-                                  }`}
-                              >
-                                {member.contractType === "official" ? "Chính thức" : "Thử việc"}
-                              </span>
+                            <span
+                              className={`text-[10px] px-1.5 py-0.2 rounded font-medium ${
+                                member.contractType === "official"
+                                  ? "bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300"
+                                  : "bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300"
+                              }`}
+                            >
+                              {member.contractType === "official" ? "Chính thức" : "Thử việc"}
                             </span>
                           </div>
                         </div>
@@ -608,14 +617,14 @@ export function DepartmentMembersModal({
 
                       {/* Các thao tác dành cho Admin / Director */}
                       {canEdit && (
-                        <div className="flex items-center gap-2 self-start sm:self-center shrink-0">
+                        <div className="flex items-center justify-end gap-1.5 w-full sm:w-auto pt-1 sm:pt-0 border-t sm:border-t-0 border-zinc-100 dark:border-zinc-800/60 shrink-0">
                           {!isManager && (
                             <button
                               type="button"
                               onClick={() => handleAdjustMembers("set_manager", member.id)}
                               disabled={isBusy}
                               title="Bổ nhiệm làm Trưởng phòng"
-                              className="px-2.5 py-1 text-[11px] font-medium text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/50 rounded-lg hover:bg-amber-100 dark:hover:bg-amber-900/40 transition disabled:opacity-50 cursor-pointer flex items-center gap-1 whitespace-nowrap"
+                              className="px-2.5 py-1 text-[11px] font-medium text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/50 rounded-lg hover:bg-amber-100 dark:hover:bg-amber-900/40 transition disabled:opacity-50 cursor-pointer flex items-center gap-1 whitespace-nowrap active:scale-95"
                             >
                               <span>👑</span>
                               <span>Bổ nhiệm</span>
@@ -627,7 +636,7 @@ export function DepartmentMembersModal({
                             onClick={() => handleAdjustMembers("remove", member.id)}
                             disabled={isBusy}
                             title="Rút nhân sự khỏi phòng ban này"
-                            className="px-2.5 py-1 text-[11px] font-medium text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-900/40 rounded-lg hover:bg-red-100 dark:hover:bg-red-900/40 transition disabled:opacity-50 cursor-pointer flex items-center gap-1 whitespace-nowrap"
+                            className="px-2.5 py-1 text-[11px] font-medium text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-900/40 rounded-lg hover:bg-red-100 dark:hover:bg-red-900/40 transition disabled:opacity-50 cursor-pointer flex items-center gap-1 whitespace-nowrap active:scale-95"
                           >
                             <span>✕</span>
                             <span>Rút khỏi phòng</span>
@@ -643,14 +652,14 @@ export function DepartmentMembersModal({
         </div>
 
         {/* Footer Modal */}
-        <div className="p-4 sm:p-5 border-t border-zinc-200 dark:border-zinc-800 flex items-center justify-between bg-zinc-50/50 dark:bg-zinc-950/40 shrink-0">
+        <div className="p-3 sm:p-4 border-t border-zinc-200 dark:border-zinc-800 flex items-center justify-between bg-zinc-50/50 dark:bg-zinc-950/40 shrink-0">
           <div className="text-xs text-zinc-500 dark:text-zinc-400">
-            Tổng cộng: <b className="text-zinc-900 dark:text-zinc-100">{members.length}</b> thành viên
+            Tổng cộng: <b className="text-zinc-900 dark:text-zinc-100">{members.length}</b> nhân sự
           </div>
           <button
             type="button"
             onClick={onClose}
-            className="px-4 py-2 text-xs font-semibold text-zinc-700 dark:text-zinc-300 bg-white dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-700 rounded-xl hover:bg-zinc-50 dark:hover:bg-zinc-700 transition cursor-pointer"
+            className="px-4 py-1.5 text-xs font-semibold text-zinc-700 dark:text-zinc-300 bg-white dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-700 rounded-xl hover:bg-zinc-50 dark:hover:bg-zinc-700 transition cursor-pointer active:scale-95"
           >
             Đóng
           </button>

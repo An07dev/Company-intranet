@@ -64,7 +64,59 @@ export default function UserProfileSettingsPage() {
     }
   }, [message]);
 
-  // Xử lý upload ảnh đại diện từ máy tính
+  // Hàm nén ảnh sang định dạng Base64 Data URL tối ưu lưu trực tiếp vào DB (~30KB - 80KB)
+  const compressImageToBase64 = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      if (!file.type.startsWith("image/")) {
+        reject(new Error("Vui lòng chọn tệp hình ảnh hợp lệ (PNG, JPG, WEBP, GIF)"));
+        return;
+      }
+
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const img = new Image();
+        img.onload = () => {
+          // Chuẩn hóa kích thước avatar tối đa 400x400 px để tối ưu tốc độ và dung lượng DB
+          const MAX_DIMENSION = 400;
+          let width = img.width;
+          let height = img.height;
+
+          if (width > height) {
+            if (width > MAX_DIMENSION) {
+              height = Math.round((height * MAX_DIMENSION) / width);
+              width = MAX_DIMENSION;
+            }
+          } else {
+            if (height > MAX_DIMENSION) {
+              width = Math.round((width * MAX_DIMENSION) / height);
+              height = MAX_DIMENSION;
+            }
+          }
+
+          const canvas = document.createElement("canvas");
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext("2d");
+
+          if (!ctx) {
+            resolve(event.target?.result as string);
+            return;
+          }
+
+          ctx.drawImage(img, 0, 0, width, height);
+          // Xuất ra chuỗi Base64 Data URL định dạng JPEG chất lượng cao 85%
+          const base64Data = canvas.toDataURL("image/jpeg", 0.85);
+          resolve(base64Data);
+        };
+        img.onerror = () => reject(new Error("Không thể đọc dữ liệu tệp ảnh"));
+        img.src = event.target?.result as string;
+      };
+      reader.onerror = () => reject(new Error("Lỗi khi đọc file ảnh"));
+      reader.readAsDataURL(file);
+    });
+  };
+
+  // Xử lý upload ảnh đại diện từ máy tính và lưu trực tiếp dạng Base64 vào DB
   const handleAvatarFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -73,12 +125,14 @@ export default function UserProfileSettingsPage() {
       setUploadingAvatar(true);
       setMessage(null);
 
-      const formData = new FormData();
-      formData.append("file", file);
+      // 1. Chuyển đổi và nén ảnh thành chuỗi Base64 Data URL (~30KB - 80KB)
+      const base64String = await compressImageToBase64(file);
 
+      // 2. Gửi Base64 lên Server để lưu trực tiếp vào Database (MongoDB)
       const res = await fetch("/api/users/avatar", {
         method: "POST",
-        body: formData,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ base64: base64String }),
       });
 
       const json = await res.json();
@@ -86,7 +140,7 @@ export default function UserProfileSettingsPage() {
         throw new Error(json.error || json.message || "Tải ảnh đại diện thất bại");
       }
 
-      const newAvatar = json.data?.avatarUrl;
+      const newAvatar = json.data?.avatarUrl || base64String;
       setAvatarUrl(newAvatar);
 
       if (json.data?.user) {
@@ -95,7 +149,10 @@ export default function UserProfileSettingsPage() {
         await refreshSession();
       }
 
-      setMessage({ type: "success", text: "Đã cập nhật ảnh đại diện thành công!" });
+      setMessage({
+        type: "success",
+        text: "Ảnh đại diện đã được lưu trực tiếp vào Cơ sở dữ liệu (định dạng Base64) thành công!",
+      });
     } catch (err) {
       setMessage({
         type: "error",
@@ -269,16 +326,28 @@ export default function UserProfileSettingsPage() {
   const strength = getPasswordStrength(newPassword);
 
   return (
-    <div className="w-full px-4 sm:px-6 lg:px-8 py-6 sm:py-8 space-y-6 max-w-6xl mx-auto">
+    <div className="w-full px-3.5 sm:px-6 lg:px-8 py-4 sm:py-8 space-y-4 sm:space-y-6 max-w-6xl mx-auto">
+      {/* Ẩn file input chung để cả mobile và desktop đều kích hoạt được */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/jpeg,image/png,image/webp,image/gif"
+        onChange={handleAvatarFileChange}
+        className="hidden"
+      />
+
       {/* 1. Header Trang */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-zinc-200 dark:border-zinc-800">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 sm:gap-4 pb-3 sm:pb-4 border-b border-zinc-200 dark:border-zinc-800">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-zinc-900 dark:text-zinc-100 flex items-center gap-2.5">
+          <h1 className="text-xl sm:text-3xl font-extrabold tracking-tight text-zinc-900 dark:text-zinc-100 flex items-center gap-2 sm:gap-2.5">
             <span>⚙️</span>
             <span>Cài Đặt Tài Khoản & Thông Tin Cá Nhân</span>
           </h1>
-          <p className="text-xs sm:text-sm text-zinc-500 dark:text-zinc-400 mt-1">
+          <p className="hidden sm:block text-xs sm:text-sm text-zinc-500 dark:text-zinc-400 mt-1">
             Quản lý thông tin hồ sơ của bạn, cập nhật ảnh đại diện và thiết lập mật khẩu bảo mật tài khoản.
+          </p>
+          <p className="sm:hidden text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">
+            Quản lý thông tin hồ sơ và bảo mật tài khoản.
           </p>
         </div>
       </div>
@@ -286,13 +355,13 @@ export default function UserProfileSettingsPage() {
       {/* Thông báo toàn cục */}
       {message && (
         <div
-          className={`p-4 rounded-2xl flex items-center justify-between gap-3 text-xs sm:text-sm font-medium animate-in fade-in slide-in-from-top-2 duration-200 ${
+          className={`p-3.5 sm:p-4 rounded-2xl flex items-center justify-between gap-3 text-xs sm:text-sm font-medium animate-in fade-in slide-in-from-top-2 duration-200 ${
             message.type === "success"
               ? "bg-emerald-50 dark:bg-emerald-950/50 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800"
               : "bg-rose-50 dark:bg-rose-950/50 text-rose-800 dark:text-rose-300 border border-rose-200 dark:border-rose-800"
           }`}
         >
-          <div className="flex items-center gap-2.5">
+          <div className="flex items-center gap-2 sm:gap-2.5">
             <span className="text-base">{message.type === "success" ? "✅" : "⚠️"}</span>
             <span>{message.text}</span>
           </div>
@@ -306,12 +375,114 @@ export default function UserProfileSettingsPage() {
         </div>
       )}
 
-      {/* 2. Grid Bố cục 2 cột */}
+      {/* =========================================================================
+          MOBILE ONLY: COMPACT PROFILE HEADER (lg:hidden)
+          Tối ưu không gian dọc, tránh trùng lặp thông tin với form bên dưới
+         ========================================================================= */}
+      <div className="lg:hidden rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-4 shadow-xs relative overflow-hidden">
+        <div className="absolute top-0 inset-x-0 h-14 bg-gradient-to-b from-blue-500/10 to-transparent pointer-events-none" />
+        
+        <div className="flex items-center gap-3.5 relative">
+          {/* Avatar thu nhỏ với nút chụp ảnh */}
+          <div className="relative shrink-0">
+            <div className="w-16 h-16 rounded-full ring-3 ring-zinc-100 dark:ring-zinc-800 overflow-hidden bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center text-xl font-extrabold text-zinc-600 dark:text-zinc-300 shadow-sm">
+              {avatarUrl ? (
+                <img src={avatarUrl} alt={user.name} className="w-full h-full object-cover" />
+              ) : (
+                user.name.slice(0, 2).toUpperCase()
+              )}
+            </div>
+
+            {uploadingAvatar && (
+              <div className="absolute inset-0 rounded-full bg-black/60 flex items-center justify-center text-white">
+                <Spinner size="sm" className="text-white" />
+              </div>
+            )}
+
+            <button
+              type="button"
+              disabled={uploadingAvatar}
+              onClick={() => fileInputRef.current?.click()}
+              title="Đổi ảnh đại diện"
+              className="absolute -bottom-1 -right-1 p-1.5 rounded-full bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 shadow-md cursor-pointer disabled:opacity-50"
+            >
+              <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+              </svg>
+            </button>
+          </div>
+
+          {/* Thông tin chính & nút thao tác ảnh */}
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center gap-1.5 flex-wrap">
+              <h2 className="text-base font-bold text-zinc-900 dark:text-zinc-100 truncate">{user.name}</h2>
+              <span className="text-[10px] font-mono text-zinc-400 bg-zinc-100 dark:bg-zinc-800 px-1.5 py-0.5 rounded">
+                {user.employeeCode || "NV-CHƯA ĐẶT"}
+              </span>
+            </div>
+            <div className="flex flex-wrap items-center gap-1.5 mt-1">
+              <span
+                className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border ${
+                  user.role === "admin"
+                    ? "bg-purple-100 text-purple-700 dark:bg-purple-950/80 dark:text-purple-300 border-purple-200 dark:border-purple-800"
+                    : user.role === "director"
+                    ? "bg-amber-100 text-amber-800 dark:bg-amber-950/80 dark:text-amber-300 border-amber-200 dark:border-amber-800"
+                    : user.role === "manager"
+                    ? "bg-blue-100 text-blue-700 dark:bg-blue-950/80 dark:text-blue-300 border-blue-200 dark:border-blue-800"
+                    : "bg-zinc-100 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300 border-zinc-200 dark:border-zinc-700"
+                }`}
+              >
+                {USER_ROLE_LABELS[user.role] || user.role}
+              </span>
+
+              {user.contractType === "probation" ? (
+                <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-amber-50 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800">
+                  Thử việc
+                </span>
+              ) : (
+                <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800">
+                  Chính thức
+                </span>
+              )}
+
+              {avatarUrl && avatarUrl.startsWith("data:image/") && (
+                <span className="text-[9px] font-medium font-mono px-1.5 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200/80 dark:border-emerald-800/80 flex items-center gap-0.5">
+                  <span>💾</span>
+                  <span>DB (Base64)</span>
+                </span>
+              )}
+            </div>
+
+            {/* Nút thao tác ảnh trên mobile */}
+            <div className="flex items-center gap-2 mt-2.5">
+              <button
+                type="button"
+                disabled={uploadingAvatar}
+                onClick={() => fileInputRef.current?.click()}
+                className="px-2.5 py-1 rounded-lg border border-zinc-200 dark:border-zinc-700 text-[11px] font-semibold text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 active:scale-95 transition cursor-pointer"
+              >
+                Tải ảnh
+              </button>
+              <button
+                type="button"
+                disabled={uploadingAvatar}
+                onClick={() => setShowPresetModal(true)}
+                className="px-2.5 py-1 rounded-lg border border-zinc-200 dark:border-zinc-700 text-[11px] font-semibold text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 active:scale-95 transition cursor-pointer"
+              >
+                Chọn ảnh mẫu
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* 2. Grid Bố cục 2 cột (Desktop) */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
         {/* =========================================================================
-            CỘT TRÁI: PROFILE CARD & ẢNH ĐẠI DIỆN (4 CỘT)
+            CỘT TRÁI: PROFILE CARD & ẢNH ĐẠI DIỆN (CHỈ HIỂN THỊ TRÊN DESKTOP: hidden lg:flex)
            ========================================================================= */}
-        <div className="lg:col-span-4 rounded-3xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-6 shadow-xs flex flex-col items-center text-center relative overflow-hidden">
+        <div className="hidden lg:flex lg:col-span-4 rounded-3xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-6 shadow-xs flex-col items-center text-center relative overflow-hidden">
           {/* Background Glow */}
           <div className="absolute top-0 inset-x-0 h-24 bg-gradient-to-b from-blue-500/10 to-transparent pointer-events-none" />
 
@@ -333,13 +504,6 @@ export default function UserProfileSettingsPage() {
             )}
 
             {/* Nút bấm tải ảnh */}
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/jpeg,image/png,image/webp,image/gif"
-              onChange={handleAvatarFileChange}
-              className="hidden"
-            />
             <button
               type="button"
               disabled={uploadingAvatar}
@@ -403,6 +567,13 @@ export default function UserProfileSettingsPage() {
                 Chính thức
               </span>
             )}
+
+            {avatarUrl && avatarUrl.startsWith("data:image/") && (
+              <span className="text-[10px] font-medium font-mono px-2 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200/80 dark:border-emerald-800/80 flex items-center gap-1">
+                <span>💾</span>
+                <span>Lưu trong DB (Base64)</span>
+              </span>
+            )}
           </div>
 
           {/* Chi tiết tài khoản */}
@@ -437,44 +608,46 @@ export default function UserProfileSettingsPage() {
         {/* =========================================================================
             CỘT PHẢI: FORM CHỈNH SỬA & ĐỔI MẬT KHẨU (8 CỘT)
            ========================================================================= */}
-        <div className="lg:col-span-8 rounded-3xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-xs overflow-hidden">
+        <div className="lg:col-span-8 rounded-2xl sm:rounded-3xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-xs overflow-hidden">
           {/* Header Tabs */}
           <div className="flex border-b border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-900/50">
             <button
               type="button"
               onClick={() => setActiveTab("info")}
-              className={`flex-1 sm:flex-none px-6 py-4 text-xs sm:text-sm font-semibold border-b-2 transition cursor-pointer flex items-center justify-center gap-2 ${
+              className={`flex-1 sm:flex-none px-3.5 sm:px-6 py-3 sm:py-4 text-xs sm:text-sm font-semibold border-b-2 transition cursor-pointer flex items-center justify-center gap-1.5 sm:gap-2 ${
                 activeTab === "info"
                   ? "border-zinc-900 dark:border-zinc-100 text-zinc-900 dark:text-zinc-100 bg-white dark:bg-zinc-900"
                   : "border-transparent text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100"
               }`}
             >
               <span>👤</span>
-              <span>Thông Tin Cá Nhân</span>
+              <span className="sm:hidden">Thông Tin</span>
+              <span className="hidden sm:inline">Thông Tin Cá Nhân</span>
             </button>
 
             <button
               type="button"
               onClick={() => setActiveTab("password")}
-              className={`flex-1 sm:flex-none px-6 py-4 text-xs sm:text-sm font-semibold border-b-2 transition cursor-pointer flex items-center justify-center gap-2 ${
+              className={`flex-1 sm:flex-none px-3.5 sm:px-6 py-3 sm:py-4 text-xs sm:text-sm font-semibold border-b-2 transition cursor-pointer flex items-center justify-center gap-1.5 sm:gap-2 ${
                 activeTab === "password"
                   ? "border-zinc-900 dark:border-zinc-100 text-zinc-900 dark:text-zinc-100 bg-white dark:bg-zinc-900"
                   : "border-transparent text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100"
               }`}
             >
               <span>🔒</span>
-              <span>Đổi Mật Khẩu Bảo Mật</span>
+              <span className="sm:hidden">Đổi Mật Khẩu</span>
+              <span className="hidden sm:inline">Đổi Mật Khẩu Bảo Mật</span>
             </button>
           </div>
 
-          <div className="p-6 sm:p-8">
+          <div className="p-4 sm:p-8">
             {/* =====================================================================
                 TAB 1: THÔNG TIN CÁ NHÂN
                ===================================================================== */}
             {activeTab === "info" && (
-              <form onSubmit={handleSaveInfo} className="space-y-6">
+              <form onSubmit={handleSaveInfo} className="space-y-4 sm:space-y-6">
                 <div>
-                  <h3 className="text-base font-bold text-zinc-900 dark:text-zinc-100">
+                  <h3 className="text-sm sm:text-base font-bold text-zinc-900 dark:text-zinc-100">
                     Cập nhật thông tin cơ bản
                   </h3>
                   <p className="text-xs text-zinc-400 mt-0.5">
@@ -482,7 +655,7 @@ export default function UserProfileSettingsPage() {
                   </p>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 sm:gap-4">
                   {/* Họ và tên */}
                   <div>
                     <label className="block text-xs font-semibold text-zinc-700 dark:text-zinc-300 mb-1.5">
@@ -512,8 +685,11 @@ export default function UserProfileSettingsPage() {
                     />
                   </div>
 
+                  {/* =================================================================
+                      CÁC TRƯỜNG CỐ ĐỊNH TRÊN DESKTOP (giữ nguyên bố cục PC ban đầu)
+                     ================================================================= */}
                   {/* Email (Read-only) */}
-                  <div>
+                  <div className="hidden sm:block">
                     <label className="block text-xs font-semibold text-zinc-700 dark:text-zinc-300 mb-1.5 flex items-center justify-between">
                       <span>Địa chỉ Email công vụ</span>
                       <span className="text-[10px] text-zinc-400 font-normal">Cố định</span>
@@ -530,7 +706,7 @@ export default function UserProfileSettingsPage() {
                   </div>
 
                   {/* Mã nhân viên (Read-only) */}
-                  <div>
+                  <div className="hidden sm:block">
                     <label className="block text-xs font-semibold text-zinc-700 dark:text-zinc-300 mb-1.5 flex items-center justify-between">
                       <span>Mã định danh nhân sự</span>
                       <span className="text-[10px] text-zinc-400 font-normal">Cố định</span>
@@ -544,7 +720,7 @@ export default function UserProfileSettingsPage() {
                   </div>
 
                   {/* Phòng ban (Read-only) */}
-                  <div>
+                  <div className="hidden sm:block">
                     <label className="block text-xs font-semibold text-zinc-700 dark:text-zinc-300 mb-1.5">
                       Phòng ban trực thuộc
                     </label>
@@ -557,7 +733,7 @@ export default function UserProfileSettingsPage() {
                   </div>
 
                   {/* Vai trò / Quyền hạn (Read-only) */}
-                  <div>
+                  <div className="hidden sm:block">
                     <label className="block text-xs font-semibold text-zinc-700 dark:text-zinc-300 mb-1.5">
                       Chức danh & Vai trò hệ thống
                     </label>
@@ -570,12 +746,49 @@ export default function UserProfileSettingsPage() {
                   </div>
                 </div>
 
+                {/* =================================================================
+                    MOBILE ONLY: THÔNG TIN HỆ THỐNG GỌN GÀNG (sm:hidden)
+                    Tối ưu không chiếm cuộn trang trên điện thoại
+                   ================================================================= */}
+                <div className="sm:hidden rounded-2xl bg-zinc-50 dark:bg-zinc-800/40 border border-zinc-200/80 dark:border-zinc-800 p-3.5 space-y-2.5 text-xs">
+                  <div className="text-[11px] font-semibold text-zinc-400 uppercase tracking-wider flex items-center justify-between">
+                    <span>Thông tin cố định hệ thống</span>
+                    <span className="text-[10px] lowercase text-zinc-400">chỉ xem</span>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2.5 pt-0.5">
+                    <div className="min-w-0">
+                      <span className="text-zinc-400 block text-[10px]">Email công vụ</span>
+                      <span className="font-mono text-xs text-zinc-800 dark:text-zinc-200 truncate block" title={user.email}>
+                        {user.email}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-zinc-400 block text-[10px]">Mã nhân viên</span>
+                      <span className="font-mono text-xs font-semibold text-zinc-800 dark:text-zinc-200 block">
+                        {user.employeeCode || "Chưa cấp"}
+                      </span>
+                    </div>
+                    <div className="min-w-0">
+                      <span className="text-zinc-400 block text-[10px]">Phòng ban</span>
+                      <span className="text-xs text-zinc-800 dark:text-zinc-200 truncate block">
+                        {user.department || "Chưa phân bổ"}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-zinc-400 block text-[10px]">Chức vụ</span>
+                      <span className="text-xs font-semibold text-zinc-800 dark:text-zinc-200 block">
+                        {USER_ROLE_LABELS[user.role] || user.role}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
                 {/* Hàng nút submit */}
-                <div className="pt-4 border-t border-zinc-100 dark:border-zinc-800 flex items-center justify-end gap-3">
+                <div className="pt-3 sm:pt-4 border-t border-zinc-100 dark:border-zinc-800 flex items-center justify-end">
                   <button
                     type="submit"
                     disabled={savingInfo}
-                    className="px-6 py-2.5 bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 rounded-xl font-semibold text-xs sm:text-sm hover:bg-zinc-800 dark:hover:bg-zinc-200 transition shadow-sm flex items-center gap-2 cursor-pointer disabled:opacity-50"
+                    className="w-full sm:w-auto px-6 py-2.5 bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 rounded-xl font-semibold text-xs sm:text-sm hover:bg-zinc-800 dark:hover:bg-zinc-200 active:scale-[0.99] transition shadow-xs flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
                   >
                     {savingInfo && <Spinner size="sm" className="text-white dark:text-zinc-900" />}
                     <span>Lưu Thay Đổi Thông Tin</span>
@@ -588,9 +801,9 @@ export default function UserProfileSettingsPage() {
                 TAB 2: ĐỔI MẬT KHẨU
                ===================================================================== */}
             {activeTab === "password" && (
-              <form onSubmit={handleChangePassword} className="space-y-6">
+              <form onSubmit={handleChangePassword} className="space-y-4 sm:space-y-6">
                 <div>
-                  <h3 className="text-base font-bold text-zinc-900 dark:text-zinc-100">
+                  <h3 className="text-sm sm:text-base font-bold text-zinc-900 dark:text-zinc-100">
                     Đổi mật khẩu tài khoản
                   </h3>
                   <p className="text-xs text-zinc-400 mt-0.5">
@@ -598,7 +811,7 @@ export default function UserProfileSettingsPage() {
                   </p>
                 </div>
 
-                <div className="space-y-4 max-w-lg">
+                <div className="space-y-3.5 sm:space-y-4 max-w-lg">
                   {/* Mật khẩu hiện tại */}
                   <div>
                     <label className="block text-xs font-semibold text-zinc-700 dark:text-zinc-300 mb-1.5">
@@ -691,11 +904,11 @@ export default function UserProfileSettingsPage() {
                 </div>
 
                 {/* Hàng nút submit đổi mật khẩu */}
-                <div className="pt-4 border-t border-zinc-100 dark:border-zinc-800 flex items-center justify-end gap-3">
+                <div className="pt-3 sm:pt-4 border-t border-zinc-100 dark:border-zinc-800 flex items-center justify-end">
                   <button
                     type="submit"
                     disabled={savingPassword || (confirmPassword ? newPassword !== confirmPassword : false)}
-                    className="px-6 py-2.5 bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 rounded-xl font-semibold text-xs sm:text-sm hover:bg-zinc-800 dark:hover:bg-zinc-200 transition shadow-sm flex items-center gap-2 cursor-pointer disabled:opacity-50"
+                    className="w-full sm:w-auto px-6 py-2.5 bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 rounded-xl font-semibold text-xs sm:text-sm hover:bg-zinc-800 dark:hover:bg-zinc-200 active:scale-[0.99] transition shadow-xs flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
                   >
                     {savingPassword && <Spinner size="sm" className="text-white dark:text-zinc-900" />}
                     <span>Cập Nhật Mật Khẩu Mới</span>
@@ -711,8 +924,8 @@ export default function UserProfileSettingsPage() {
           MODAL CHỌN ẢNH ĐẠI DIỆN MẪU
          ========================================================================= */}
       {showPresetModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs animate-in fade-in duration-200">
-          <div className="w-full max-w-md bg-white dark:bg-zinc-900 rounded-3xl border border-zinc-200 dark:border-zinc-800 p-6 shadow-2xl space-y-4">
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/50 backdrop-blur-xs animate-in fade-in duration-200">
+          <div className="w-full sm:max-w-md bg-white dark:bg-zinc-900 rounded-t-3xl sm:rounded-3xl border border-zinc-200 dark:border-zinc-800 p-5 sm:p-6 shadow-2xl space-y-4 max-h-[85dvh] overflow-y-auto">
             <div className="flex items-center justify-between pb-3 border-b border-zinc-100 dark:border-zinc-800">
               <h3 className="text-sm sm:text-base font-bold text-zinc-900 dark:text-zinc-100">
                 Chọn ảnh đại diện mẫu
@@ -720,7 +933,7 @@ export default function UserProfileSettingsPage() {
               <button
                 type="button"
                 onClick={() => setShowPresetModal(false)}
-                className="p-1 rounded-lg text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 cursor-pointer"
+                className="p-1.5 rounded-lg text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 cursor-pointer"
               >
                 ✕
               </button>
@@ -730,13 +943,13 @@ export default function UserProfileSettingsPage() {
               Nhấp vào một hình ảnh bên dưới để áp dụng ngay làm ảnh đại diện hồ sơ của bạn:
             </p>
 
-            <div className="grid grid-cols-4 gap-3 py-2">
+            <div className="grid grid-cols-4 gap-2.5 sm:gap-3 py-1">
               {PRESET_AVATARS.map((url, idx) => (
                 <button
                   key={idx}
                   type="button"
                   onClick={() => handleSelectPresetAvatar(url)}
-                  className={`w-16 h-16 sm:w-20 sm:h-20 rounded-2xl overflow-hidden border-2 transition hover:scale-105 cursor-pointer ${
+                  className={`aspect-square rounded-2xl overflow-hidden border-2 transition hover:scale-105 active:scale-95 cursor-pointer ${
                     avatarUrl === url
                       ? "border-zinc-900 dark:border-zinc-100 ring-2 ring-blue-500"
                       : "border-transparent hover:border-zinc-400"
@@ -751,7 +964,7 @@ export default function UserProfileSettingsPage() {
               <button
                 type="button"
                 onClick={() => setShowPresetModal(false)}
-                className="px-4 py-2 rounded-xl border border-zinc-200 dark:border-zinc-700 text-xs font-semibold text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition cursor-pointer"
+                className="w-full sm:w-auto px-4 py-2 rounded-xl border border-zinc-200 dark:border-zinc-700 text-xs font-semibold text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition cursor-pointer"
               >
                 Đóng
               </button>

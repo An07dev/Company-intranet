@@ -19,6 +19,8 @@ export default function RequestsPage() {
   const [selectedDept, setSelectedDept] = useState<string>("all");
   const [sortBy, setSortBy] = useState<string>("newest");
   const [searchQuery, setSearchQuery] = useState<string>("");
+  // Trạng thái mở rộng bộ lọc trên Mobile
+  const [showMobileFilters, setShowMobileFilters] = useState<boolean>(false);
 
   // Phân trang: Đúng 10 bản ghi mỗi trang theo yêu cầu
   const [currentPage, setCurrentPage] = useState<number>(1);
@@ -320,26 +322,26 @@ export default function RequestsPage() {
   }
 
   return (
-    <div className="w-full px-4 sm:px-6 lg:px-8 py-4 sm:py-6 space-y-5 sm:space-y-6">
+    <div className="w-full px-3 sm:px-6 lg:px-8 py-3 sm:py-6 space-y-4 sm:space-y-6">
       {/* =========================================================================
           1. HEADER TRANG & NÚT TẠO ĐƠN
          ========================================================================= */}
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 pb-4 border-b border-zinc-200 dark:border-zinc-800">
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 sm:gap-4 pb-3 sm:pb-4 border-b border-zinc-200 dark:border-zinc-800">
         <div>
-          <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold tracking-tight text-zinc-900 dark:text-zinc-100">
+          <h1 className="text-lg sm:text-2xl lg:text-3xl font-bold tracking-tight text-zinc-900 dark:text-zinc-100">
             Nghỉ Phép &amp; Làm Thêm Giờ (OT)
           </h1>
-          <p className="text-xs sm:text-sm text-zinc-500 dark:text-zinc-400 mt-1">
-            Gửi đơn xin nghỉ phép, đăng ký làm thêm ngoài giờ và theo dõi quy trình xét duyệt trực tuyến.
+          <p className="text-xs sm:text-sm text-zinc-500 dark:text-zinc-400 mt-0.5 sm:mt-1">
+            Gửi đơn xin nghỉ phép, đăng ký làm thêm ngoài giờ và theo dõi quy trình xét duyệt.
           </p>
         </div>
 
-        {/* Nút Tạo đơn */}
-        <div className="flex flex-wrap items-center gap-2.5 shrink-0">
+        {/* Nút Tạo đơn: Cân đối 2 cột trên Mobile, flex trên Desktop */}
+        <div className="grid grid-cols-2 sm:flex sm:items-center gap-2 sm:gap-2.5 shrink-0">
           <button
             type="button"
             onClick={() => setIsLeaveModalOpen(true)}
-            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold shadow-xs cursor-pointer transition-colors"
+            className="inline-flex items-center justify-center gap-1.5 px-3 py-2 sm:py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white text-xs font-semibold shadow-xs cursor-pointer transition-all min-h-[42px] sm:min-h-0"
           >
             <span>🏖️</span>
             <span>Xin Nghỉ Phép</span>
@@ -348,7 +350,7 @@ export default function RequestsPage() {
           <button
             type="button"
             onClick={() => setIsOtModalOpen(true)}
-            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold shadow-xs cursor-pointer transition-colors"
+            className="inline-flex items-center justify-center gap-1.5 px-3 py-2 sm:py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white text-xs font-semibold shadow-xs cursor-pointer transition-all min-h-[42px] sm:min-h-0"
           >
             <span>⚡</span>
             <span>Đăng Ký OT</span>
@@ -356,128 +358,136 @@ export default function RequestsPage() {
         </div>
       </div>
 
-
       {/* =========================================================================
-          2. HÀNG 4 THẺ CHỈ SỐ KPI TÓM TẮT
+          2. HÀNG 4 THẺ CHỈ SỐ KPI TÓM TẮT (Tối ưu gọn gàng không tràn trên mobile)
          ========================================================================= */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-4">
         {/* Thẻ 1: Đối với Giám đốc: Tổng đơn toàn đơn vị. Đối với nhân sự: Phép năm còn lại */}
         {isDirectorOrAdmin ? (
-          <div className="p-4 sm:p-5 rounded-xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-xs">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-medium text-zinc-500 dark:text-zinc-400">
-                Tổng đơn toàn đơn vị
-              </span>
-              <span className="text-base">📑</span>
+          <div className="p-3 sm:p-5 rounded-xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-xs flex flex-col justify-between">
+            <div>
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-medium text-zinc-500 dark:text-zinc-400 truncate">
+                  Tổng đơn công ty
+                </span>
+                <span className="text-sm sm:text-base">📑</span>
+              </div>
+              <div className="text-xl sm:text-3xl font-extrabold font-mono mt-1 text-zinc-900 dark:text-zinc-100">
+                {(stats?.pendingCount ?? 0) + (stats?.approvedCount ?? 0) + (stats?.rejectedCount ?? 0)}
+                <span className="text-xs text-zinc-400 font-sans font-normal ml-1">đơn</span>
+              </div>
             </div>
-            <div className="text-2xl sm:text-3xl font-extrabold font-mono mt-1 text-zinc-900 dark:text-zinc-100">
-              {(stats?.pendingCount ?? 0) + (stats?.approvedCount ?? 0) + (stats?.rejectedCount ?? 0)}
-              <span className="text-xs text-zinc-400 font-sans font-normal ml-1">đơn</span>
-            </div>
-            <div className="text-[11px] text-zinc-400 dark:text-zinc-500 mt-2 truncate">
+            <div className="hidden sm:block text-[11px] text-zinc-400 dark:text-zinc-500 mt-2 truncate">
               Gồm tất cả nghỉ phép &amp; làm thêm OT
             </div>
           </div>
         ) : (
-          <div className="p-4 sm:p-5 rounded-xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-xs">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-medium text-zinc-500 dark:text-zinc-400">
-                Phép năm còn lại
-              </span>
-              <span className="text-base">🏖️</span>
+          <div className="p-3 sm:p-5 rounded-xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-xs flex flex-col justify-between">
+            <div>
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-medium text-zinc-500 dark:text-zinc-400 truncate">
+                  Phép năm còn lại
+                </span>
+                <span className="text-sm sm:text-base">🏖️</span>
+              </div>
+              {(stats?.contractType === "probation" || user?.contractType === "probation") ? (
+                <>
+                  <div className="text-xl sm:text-3xl font-extrabold font-mono mt-1 text-amber-600 dark:text-amber-400">
+                    0 <span className="text-xs text-zinc-400 font-sans font-normal ml-1">/ 0 ngày</span>
+                  </div>
+                  <div className="mt-1.5 inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium bg-amber-50 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300 border border-amber-200 dark:border-amber-800 truncate">
+                    <span>⏳ Thử việc</span>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="text-xl sm:text-3xl font-extrabold font-mono mt-1 text-emerald-600 dark:text-emerald-400">
+                    {stats?.annualLeaveRemaining ?? 0}
+                    <span className="text-xs text-zinc-400 font-sans font-normal ml-1">
+                      / {stats?.annualLeaveTotal ?? 0}
+                    </span>
+                  </div>
+                  <div className="w-full bg-zinc-100 dark:bg-zinc-800 h-1 sm:h-1.5 rounded-full mt-2 overflow-hidden">
+                    <div
+                      style={{
+                        width: `${
+                          (stats?.annualLeaveTotal ?? 0) > 0
+                            ? Math.round(
+                                ((stats?.annualLeaveRemaining ?? 0) / (stats?.annualLeaveTotal ?? 1)) * 100
+                              )
+                            : 0
+                        }%`,
+                      }}
+                      className="bg-emerald-500 h-full rounded-full transition-all duration-500"
+                    />
+                  </div>
+                  <div className="hidden sm:flex text-[10px] text-zinc-400 dark:text-zinc-500 mt-1 justify-between">
+                    <span>+1 phép/tháng</span>
+                    <span>Tối đa: 12 ngày</span>
+                  </div>
+                </>
+              )}
             </div>
-            {(stats?.contractType === "probation" || user?.contractType === "probation") ? (
-              <>
-                <div className="text-2xl sm:text-3xl font-extrabold font-mono mt-1 text-amber-600 dark:text-amber-400">
-                  0 <span className="text-xs text-zinc-400 font-sans font-normal ml-1">/ 0 ngày</span>
-                </div>
-                <div className="mt-2 inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-[11px] font-medium bg-amber-50 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300 border border-amber-200 dark:border-amber-800">
-                  <span>⏳</span>
-                  <span>Đang thử việc (Chưa có phép năm)</span>
-                </div>
-              </>
-            ) : (
-              <>
-                <div className="text-2xl sm:text-3xl font-extrabold font-mono mt-1 text-emerald-600 dark:text-emerald-400">
-                  {stats?.annualLeaveRemaining ?? 0}
-                  <span className="text-xs text-zinc-400 font-sans font-normal ml-1">
-                    / {stats?.annualLeaveTotal ?? 0} ngày
-                  </span>
-                </div>
-                <div className="w-full bg-zinc-100 dark:bg-zinc-800 h-1.5 rounded-full mt-2 overflow-hidden">
-                  <div
-                    style={{
-                      width: `${
-                        (stats?.annualLeaveTotal ?? 0) > 0
-                          ? Math.round(
-                              ((stats?.annualLeaveRemaining ?? 0) / (stats?.annualLeaveTotal ?? 1)) * 100
-                            )
-                          : 0
-                      }%`,
-                    }}
-                    className="bg-emerald-500 h-full rounded-full transition-all duration-500"
-                  />
-                </div>
-                <div className="text-[10px] text-zinc-400 dark:text-zinc-500 mt-1 flex justify-between">
-                  <span>+1 phép/tháng từ lúc chính thức</span>
-                  <span>Tối đa: 12 ngày</span>
-                </div>
-              </>
-            )}
           </div>
         )}
 
         {/* Giờ OT được duyệt tháng này */}
-        <div className="p-4 sm:p-5 rounded-xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-xs">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-medium text-zinc-500 dark:text-zinc-400">
-              {isDirectorOrAdmin ? "Tổng giờ OT đã duyệt" : "Giờ OT đã duyệt (Tháng này)"}
-            </span>
-            <span className="text-base">⚡</span>
+        <div className="p-3 sm:p-5 rounded-xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-xs flex flex-col justify-between">
+          <div>
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-medium text-zinc-500 dark:text-zinc-400 truncate">
+                {isDirectorOrAdmin ? "Giờ OT toàn cty" : "Giờ OT đã duyệt"}
+              </span>
+              <span className="text-sm sm:text-base">⚡</span>
+            </div>
+            <div className="text-xl sm:text-3xl font-extrabold font-mono mt-1 text-blue-600 dark:text-blue-400">
+              {stats?.approvedOtHoursThisMonth ?? 0}
+              <span className="text-xs text-zinc-400 font-sans font-normal ml-1">giờ</span>
+            </div>
           </div>
-          <div className="text-2xl sm:text-3xl font-extrabold font-mono mt-1 text-blue-600 dark:text-blue-400">
-            {stats?.approvedOtHoursThisMonth ?? 0}
-            <span className="text-xs text-zinc-400 font-sans font-normal ml-1">giờ</span>
-          </div>
-          <div className="text-[11px] text-zinc-400 dark:text-zinc-500 mt-2 truncate">
+          <div className="hidden sm:block text-[11px] text-zinc-400 dark:text-zinc-500 mt-2 truncate">
             {isDirectorOrAdmin ? "Đã duyệt trong tháng này" : "Được tính hệ số theo quy định lương"}
           </div>
         </div>
 
         {/* Đơn đang chờ Giám đốc duyệt */}
-        <div className={`p-4 sm:p-5 rounded-xl bg-white dark:bg-zinc-900 border shadow-xs transition-all ${(stats?.pendingCount ?? 0) > 0 && isDirectorOrAdmin
+        <div className={`p-3 sm:p-5 rounded-xl bg-white dark:bg-zinc-900 border shadow-xs transition-all flex flex-col justify-between ${(stats?.pendingCount ?? 0) > 0 && isDirectorOrAdmin
           ? "border-amber-400/80 dark:border-amber-600 ring-1 ring-amber-400/30 bg-amber-50/10"
           : "border-zinc-200 dark:border-zinc-800"
           }`}>
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-medium text-amber-600 dark:text-amber-400 font-semibold flex items-center gap-1.5">
-              <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
-              Chờ Giám đốc duyệt
-            </span>
-            <span className="text-base">⏳</span>
+          <div>
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-medium text-amber-600 dark:text-amber-400 font-semibold flex items-center gap-1 truncate">
+                <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse shrink-0" />
+                Chờ duyệt
+              </span>
+              <span className="text-sm sm:text-base">⏳</span>
+            </div>
+            <div className="text-xl sm:text-3xl font-extrabold font-mono mt-1 text-amber-600 dark:text-amber-400">
+              {stats?.pendingCount ?? 0}
+              <span className="text-xs text-zinc-400 font-sans font-normal ml-1">đơn</span>
+            </div>
           </div>
-          <div className="text-2xl sm:text-3xl font-extrabold font-mono mt-1 text-amber-600 dark:text-amber-400">
-            {stats?.pendingCount ?? 0}
-            <span className="text-xs text-zinc-400 font-sans font-normal ml-1">đơn</span>
-          </div>
-          <div className="text-[11px] text-zinc-400 dark:text-zinc-500 mt-2 truncate">
+          <div className="hidden sm:block text-[11px] text-zinc-400 dark:text-zinc-500 mt-2 truncate">
             {isDirectorOrAdmin ? "Cần Giám đốc xem xét duyệt ngay" : "Đang chờ Giám đốc phê duyệt"}
           </div>
         </div>
 
         {/* Đơn đã được phê duyệt */}
-        <div className="p-4 sm:p-5 rounded-xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-xs">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-medium text-zinc-500 dark:text-zinc-400">
-              Đơn đã được phê duyệt
-            </span>
-            <span className="text-base">✅</span>
+        <div className="p-3 sm:p-5 rounded-xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-xs flex flex-col justify-between">
+          <div>
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-medium text-zinc-500 dark:text-zinc-400 truncate">
+                Đã phê duyệt
+              </span>
+              <span className="text-sm sm:text-base">✅</span>
+            </div>
+            <div className="text-xl sm:text-3xl font-extrabold font-mono mt-1 text-zinc-900 dark:text-zinc-100">
+              {stats?.approvedCount ?? 0}
+              <span className="text-xs text-zinc-400 font-sans font-normal ml-1">đơn</span>
+            </div>
           </div>
-          <div className="text-2xl sm:text-3xl font-extrabold font-mono mt-1 text-zinc-900 dark:text-zinc-100">
-            {stats?.approvedCount ?? 0}
-            <span className="text-xs text-zinc-400 font-sans font-normal ml-1">đơn</span>
-          </div>
-          <div className="text-[11px] text-zinc-400 dark:text-zinc-500 mt-2 truncate">
+          <div className="hidden sm:block text-[11px] text-zinc-400 dark:text-zinc-500 mt-2 truncate">
             {stats?.rejectedCount ? `Có ${stats.rejectedCount} đơn bị từ chối` : "Không có đơn bị từ chối"}
           </div>
         </div>
@@ -487,41 +497,41 @@ export default function RequestsPage() {
           3. KHUNG DANH SÁCH & BỘ LỌC ĐƠN YÊU CẦU
          ========================================================================= */}
       <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl shadow-xs overflow-hidden">
-        {/* Thanh tiêu đề trực tiếp cho Giám đốc (Bỏ tab Đơn của tôi) HOẶC Tab chuyển đổi cho Quản lý */}
+        {/* Thanh tiêu đề trực tiếp cho Giám đốc HOẶC Tab chuyển đổi cho Quản lý */}
         {isDirectorOrAdmin ? (
           /* VỚI ROLE GIÁM ĐỐC / ADMIN: BỎ TAB 'ĐƠN CỦA TÔI', HIỂN THỊ TRỰC TIẾP 'XÉT DUYỆT ĐƠN TOÀN ĐƠN VỊ' */
-          <div className="px-4 sm:px-5 py-3.5 border-b border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-950/20 flex flex-wrap items-center justify-between gap-2">
-            <div className="flex items-center gap-2.5">
-              <span className="text-lg">👑</span>
-              <div>
-                <h2 className="text-sm font-bold text-zinc-900 dark:text-zinc-100 flex items-center gap-2">
-                  <span>Xét Duyệt Đơn Toàn Đơn Vị</span>
+          <div className="px-3 sm:px-5 py-2.5 sm:py-3.5 border-b border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-950/20 flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2 min-w-0">
+              <span className="text-base sm:text-lg shrink-0">👑</span>
+              <div className="min-w-0">
+                <h2 className="text-xs sm:text-sm font-bold text-zinc-900 dark:text-zinc-100 flex items-center gap-1.5 flex-wrap">
+                  <span className="truncate">Xét Duyệt Toàn Đơn Vị</span>
                   {stats?.pendingCount ? (
-                    <span className="px-2 py-0.5 rounded-full text-[11px] font-semibold bg-amber-500 text-white font-mono shadow-xs animate-pulse">
-                      {stats.pendingCount} đơn chờ duyệt
+                    <span className="px-1.5 py-0.5 rounded-full text-[10px] sm:text-[11px] font-semibold bg-amber-500 text-white font-mono shadow-xs animate-pulse shrink-0">
+                      {stats.pendingCount} chờ duyệt
                     </span>
                   ) : (
-                    <span className="px-2 py-0.5 rounded-full text-[11px] font-medium bg-emerald-100 text-emerald-800 dark:bg-emerald-950/80 dark:text-emerald-300">
-                      Tất cả đã được xử lý
+                    <span className="px-1.5 py-0.5 rounded-full text-[10px] sm:text-[11px] font-medium bg-emerald-100 text-emerald-800 dark:bg-emerald-950/80 dark:text-emerald-300 shrink-0">
+                      Đã xử lý hết
                     </span>
                   )}
                 </h2>
-                <p className="text-[11px] text-zinc-500 dark:text-zinc-400 mt-0.5">
+                <p className="hidden sm:block text-[11px] text-zinc-500 dark:text-zinc-400 mt-0.5">
                   Thẩm quyền phê duyệt trực tiếp của Giám đốc điều hành
                 </p>
               </div>
             </div>
-            <div className="text-[11px] text-zinc-400 font-mono">
-              Hiển thị {filteredRequests.length} / {requestsList.length} yêu cầu
+            <div className="text-[10px] sm:text-[11px] text-zinc-400 font-mono shrink-0">
+              {filteredRequests.length} / {requestsList.length} đơn
             </div>
           </div>
         ) : isManager ? (
           /* VỚI CẤP QUẢN LÝ / TRƯỞNG PHÒNG */
-          <div className="px-4 sm:px-5 pt-3 border-b border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-950/20 flex items-center gap-2">
+          <div className="px-3 sm:px-5 pt-2 sm:pt-3 border-b border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-950/20 flex items-center gap-2">
             <button
               type="button"
               onClick={() => setScope("my")}
-              className={`pb-2.5 px-2 text-xs font-semibold border-b-2 transition-all cursor-pointer flex items-center gap-1.5 ${scope === "my"
+              className={`pb-2 px-2 text-xs font-semibold border-b-2 transition-all cursor-pointer flex items-center gap-1 ${scope === "my"
                 ? "border-emerald-600 text-emerald-700 dark:border-emerald-400 dark:text-emerald-300"
                 : "border-transparent text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100"
                 }`}
@@ -532,13 +542,13 @@ export default function RequestsPage() {
             <button
               type="button"
               onClick={() => setScope("manage")}
-              className={`pb-2.5 px-2 text-xs font-semibold border-b-2 transition-all cursor-pointer flex items-center gap-1.5 ${scope === "manage"
+              className={`pb-2 px-2 text-xs font-semibold border-b-2 transition-all cursor-pointer flex items-center gap-1 ${scope === "manage"
                 ? "border-emerald-600 text-emerald-700 dark:border-emerald-400 dark:text-emerald-300"
                 : "border-transparent text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100"
                 }`}
             >
               <span>📋</span>
-              <span>Theo Dõi Đơn Toàn Đơn Vị (Chờ GĐ duyệt)</span>
+              <span>Toàn Đơn Vị</span>
               {stats?.pendingCount ? (
                 <span className="px-1.5 py-0.2 rounded-full text-[10px] bg-amber-500 text-white font-mono">
                   {stats.pendingCount}
@@ -548,8 +558,198 @@ export default function RequestsPage() {
           </div>
         ) : null}
 
-        {/* Thanh công cụ lọc & Tìm kiếm (Gom gọn gàng trên 1 HÀNG DUY NHẤT) */}
-        <div className="p-3 sm:p-3.5 border-b border-zinc-200 dark:border-zinc-800 flex items-center gap-2 overflow-x-auto text-xs">
+        {/* 1. BỘ LỌC DÀNH CHO MOBILE (< sm) */}
+        <div className="sm:hidden p-2.5 border-b border-zinc-200 dark:border-zinc-800 bg-zinc-50/70 dark:bg-zinc-950/40 text-xs space-y-2">
+          {/* Hàng 1: 3 Tabs loại đơn (Tất cả / Nghỉ phép / OT) chia đều 3 cột */}
+          <div className="grid grid-cols-3 gap-1 bg-zinc-100 dark:bg-zinc-800/80 p-0.5 rounded-lg border border-zinc-200/80 dark:border-zinc-700/60">
+            {[
+              { key: "all", label: "Tất cả", count: typeCounts.all },
+              { key: "leave", label: "🏖️ Phép", count: typeCounts.leave },
+              { key: "overtime", label: "⚡ OT", count: typeCounts.overtime },
+            ].map((tab) => (
+              <button
+                key={tab.key}
+                type="button"
+                onClick={() => setTypeFilter(tab.key)}
+                className={`py-1.5 px-1 rounded-md text-[11px] font-medium transition-colors cursor-pointer flex items-center justify-center gap-1 ${
+                  typeFilter === tab.key
+                    ? "bg-white text-zinc-900 dark:bg-zinc-900 dark:text-zinc-100 shadow-2xs font-bold"
+                    : "text-zinc-600 dark:text-zinc-400"
+                }`}
+              >
+                <span>{tab.label}</span>
+                <span
+                  className={`text-[10px] px-1 py-0.2 rounded-full font-mono ${
+                    typeFilter === tab.key
+                      ? "bg-zinc-100 dark:bg-zinc-800 text-zinc-800 dark:text-zinc-200"
+                      : "bg-zinc-200/70 dark:bg-zinc-700/60 text-zinc-500 dark:text-zinc-400"
+                  }`}
+                >
+                  {tab.count}
+                </span>
+              </button>
+            ))}
+          </div>
+
+          {/* Hàng 2: Ô tìm kiếm + Nút Lọc */}
+          <div className="flex items-center gap-1.5">
+            <div className="relative flex-1 min-w-0">
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Tìm tên, mã NV, lý do..."
+                className="w-full pl-7 pr-6 py-1.5 rounded-lg border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-xs text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 focus:outline-none focus:ring-1 focus:ring-zinc-900"
+              />
+              <svg
+                className="w-3.5 h-3.5 absolute left-2 top-1/2 -translate-y-1/2 text-zinc-400 pointer-events-none"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
+              {searchQuery && (
+                <button
+                  type="button"
+                  onClick={() => setSearchQuery("")}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 cursor-pointer"
+                  title="Xóa tìm kiếm"
+                >
+                  ✕
+                </button>
+              )}
+            </div>
+
+            <button
+              type="button"
+              onClick={() => setShowMobileFilters((p) => !p)}
+              className={`relative px-2.5 py-1.5 rounded-lg text-xs font-medium border transition-colors flex items-center gap-1 cursor-pointer shrink-0 ${
+                showMobileFilters || (statusFilter !== "all" || selectedDept !== "all" || sortBy !== "newest")
+                  ? "bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 border-zinc-900 dark:border-zinc-100 font-semibold shadow-2xs"
+                  : "bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 text-zinc-700 dark:text-zinc-300"
+              }`}
+            >
+              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
+              </svg>
+              <span>Lọc</span>
+              {(statusFilter !== "all" || selectedDept !== "all" || sortBy !== "newest") && (
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 absolute -top-0.5 -right-0.5 ring-2 ring-white dark:ring-zinc-900" />
+              )}
+            </button>
+          </div>
+
+          {/* Dải Chips hiển thị điều kiện lọc đang active (khi menu lọc đóng) */}
+          {(statusFilter !== "all" || selectedDept !== "all" || sortBy !== "newest") && !showMobileFilters && (
+            <div className="flex items-center gap-1.5 flex-wrap pt-0.5 text-[11px]">
+              <span className="text-zinc-400 font-medium">Đang lọc:</span>
+              {statusFilter !== "all" && (
+                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-zinc-200 dark:bg-zinc-800 text-zinc-800 dark:text-zinc-200 text-[10px]">
+                  {statusFilter === "pending" ? "Chờ duyệt" : statusFilter === "approved" ? "Đã duyệt" : statusFilter === "rejected" ? "Từ chối" : "Đã hủy"}
+                  <button type="button" onClick={() => setStatusFilter("all")} className="hover:text-red-500 font-bold ml-0.5">×</button>
+                </span>
+              )}
+              {selectedDept !== "all" && (
+                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-zinc-200 dark:bg-zinc-800 text-zinc-800 dark:text-zinc-200 text-[10px]">
+                  {selectedDept}
+                  <button type="button" onClick={() => setSelectedDept("all")} className="hover:text-red-500 font-bold ml-0.5">×</button>
+                </span>
+              )}
+              {sortBy !== "newest" && (
+                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-zinc-200 dark:bg-zinc-800 text-zinc-800 dark:text-zinc-200 text-[10px]">
+                  {sortBy === "oldest" ? "Cũ nhất" : sortBy === "name_asc" ? "Tên A-Z" : "Thời lượng"}
+                  <button type="button" onClick={() => setSortBy("newest")} className="hover:text-red-500 font-bold ml-0.5">×</button>
+                </span>
+              )}
+              <button
+                type="button"
+                onClick={handleResetAllFilters}
+                className="text-red-600 dark:text-red-400 text-[10px] underline ml-auto cursor-pointer"
+              >
+                Xóa tất cả
+              </button>
+            </div>
+          )}
+
+          {/* Hàng 3: Khối Bộ Lọc Mở Rộng trên Mobile */}
+          {showMobileFilters && (
+            <div className="p-2.5 rounded-lg bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 space-y-2 shadow-2xs">
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="text-[10px] text-zinc-400 block mb-0.5">Trạng thái:</label>
+                  <select
+                    value={statusFilter}
+                    onChange={(e) => setStatusFilter(e.target.value)}
+                    className="w-full px-2 py-1 rounded-md border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800/60 text-xs text-zinc-900 dark:text-zinc-100"
+                  >
+                    <option value="all">Tất cả</option>
+                    <option value="pending">Chờ duyệt</option>
+                    <option value="approved">Đã duyệt</option>
+                    <option value="rejected">Từ chối</option>
+                    <option value="cancelled">Đã hủy</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="text-[10px] text-zinc-400 block mb-0.5">Phòng ban:</label>
+                  <select
+                    value={selectedDept}
+                    onChange={(e) => {
+                      setSelectedDept(e.target.value);
+                      setCurrentPage(1);
+                    }}
+                    className="w-full px-2 py-1 rounded-md border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800/60 text-xs text-zinc-900 dark:text-zinc-100 truncate"
+                  >
+                    <option value="all">Tất cả</option>
+                    {departmentOptions.map((dept) => (
+                      <option key={dept} value={dept}>
+                        {dept}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label className="text-[10px] text-zinc-400 block mb-0.5">Sắp xếp:</label>
+                <select
+                  value={sortBy}
+                  onChange={(e) => setSortBy(e.target.value)}
+                  className="w-full px-2 py-1 rounded-md border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800/60 text-xs text-zinc-900 dark:text-zinc-100"
+                >
+                  <option value="newest">Ngày nộp: Mới nhất</option>
+                  <option value="oldest">Ngày nộp: Cũ nhất</option>
+                  <option value="name_asc">Tên nhân sự: A → Z</option>
+                  <option value="duration_desc">Thời lượng: Giảm dần</option>
+                </select>
+              </div>
+
+              <div className="flex items-center justify-between pt-1 border-t border-zinc-100 dark:border-zinc-800 text-[11px]">
+                {hasActiveFilters ? (
+                  <button
+                    type="button"
+                    onClick={handleResetAllFilters}
+                    className="text-red-600 dark:text-red-400 font-medium flex items-center gap-1 cursor-pointer"
+                  >
+                    ✕ Xóa bộ lọc
+                  </button>
+                ) : (
+                  <span className="text-zinc-400">Chưa áp dụng bộ lọc</span>
+                )}
+                <button
+                  type="button"
+                  onClick={() => setShowMobileFilters(false)}
+                  className="text-zinc-600 dark:text-zinc-300 font-medium px-2.5 py-0.5 rounded bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 cursor-pointer"
+                >
+                  Đóng ▲
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* 2. THANH CÔNG CỤ DESKTOP (>= sm) */}
+        <div className="hidden sm:flex p-3 sm:p-3.5 border-b border-zinc-200 dark:border-zinc-800 items-center gap-2 overflow-x-auto text-xs">
           {/* 1. Tabs phân loại đơn (Tất cả / Nghỉ phép / Làm thêm OT) */}
           <div className="flex items-center gap-1 shrink-0 bg-zinc-100 dark:bg-zinc-800/80 p-0.5 rounded-lg border border-zinc-200/80 dark:border-zinc-700/60">
             {[
@@ -584,7 +784,7 @@ export default function RequestsPage() {
           {/* Đường ngăn cách nhẹ */}
           <div className="hidden xl:block h-5 w-px bg-zinc-200 dark:bg-zinc-800 shrink-0 mx-0.5" />
 
-          {/* 2. Lọc theo phòng ban - Ăn khớp 100% với Quản Lý Phòng Ban & Nhân Sự */}
+          {/* 2. Lọc theo phòng ban */}
           <select
             value={selectedDept}
             onChange={(e) => {
@@ -629,7 +829,7 @@ export default function RequestsPage() {
             <option value="duration_desc">Thời lượng: Giảm dần</option>
           </select>
 
-          {/* 5. Ô tìm kiếm linh hoạt (co giãn tự nhiên chiếm phần còn lại) */}
+          {/* 5. Ô tìm kiếm linh hoạt */}
           <div className="relative flex-1 min-w-[180px]">
             <input
               type="text"
@@ -897,7 +1097,7 @@ export default function RequestsPage() {
             </div>
           ) : paginatedRequests.length === 0 ? (
             <div className="p-8 text-center text-xs text-zinc-400 space-y-2">
-              <p className="font-medium text-zinc-600 dark:text-zinc-400">Không tìm thấy đơn nào.</p>
+              <p className="font-medium text-zinc-600 dark:text-zinc-400">Không tìm thấy đơn nào phù hợp.</p>
               {hasActiveFilters && (
                 <button
                   type="button"
@@ -918,92 +1118,132 @@ export default function RequestsPage() {
               const isOwner = req.userId === user?.id;
 
               return (
-                <div key={req.id} className="p-4 space-y-2.5 text-xs">
+                <div key={req.id} className="p-3.5 space-y-2.5 text-xs hover:bg-zinc-50/60 dark:hover:bg-zinc-800/30 transition-colors">
+                  {/* Hàng 1: Avatar + Tên + Mã NV + Badge trạng thái súc tích */}
                   <div className="flex items-start justify-between gap-2">
-                    <div className="flex items-center gap-2.5 min-w-0">
+                    <div className="flex items-center gap-2 min-w-0">
                       {req.userAvatar ? (
                         <img
                           src={req.userAvatar}
                           alt={req.userName}
-                          className="w-9 h-9 rounded-full object-cover shrink-0 ring-1 ring-zinc-200 dark:ring-zinc-700"
+                          className="w-8 h-8 rounded-full object-cover shrink-0 ring-1 ring-zinc-200 dark:ring-zinc-700"
                         />
                       ) : (
-                        <div className="w-9 h-9 rounded-full bg-linear-to-tr from-blue-600 to-indigo-600 text-white font-bold flex items-center justify-center text-xs shrink-0 shadow-xs">
+                        <div className="w-8 h-8 rounded-full bg-linear-to-tr from-blue-600 to-indigo-600 text-white font-bold flex items-center justify-center text-xs shrink-0 shadow-xs">
                           {req.userName.slice(0, 1).toUpperCase()}
                         </div>
                       )}
                       <div className="min-w-0">
                         <div className="font-bold text-zinc-900 dark:text-zinc-100 text-xs flex items-center gap-1.5">
                           <span className="truncate">{req.userName}</span>
-                          <span className="font-mono text-[10px] px-1.5 py-0.2 rounded bg-zinc-100 dark:bg-zinc-800 shrink-0">
+                          <span className="font-mono text-[10px] px-1.5 py-0.2 rounded bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-300 shrink-0">
                             {req.employeeCode}
                           </span>
                         </div>
-                        <div className="text-[11px] text-zinc-500 mt-0.5 truncate">
-                          {isLeave
-                            ? `🏖️ Nghỉ phép • ${leaveTypeLabels[req.leaveType || ""] || ""}`
-                            : `⚡ Làm thêm OT • ${otTypeLabels[req.otType || ""] || ""}`}
-                        </div>
-                        <div className="text-[10px] text-zinc-400 mt-0.5 truncate font-medium">
+                        <div className="text-[11px] text-zinc-400 mt-0.5 truncate">
                           📁 {req.department}
                         </div>
                       </div>
                     </div>
 
                     <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold shrink-0 ${badge.class}`}>
-                      {badge.label}
+                      {req.status === "pending"
+                        ? "Chờ duyệt"
+                        : req.status === "approved"
+                          ? "Đã duyệt"
+                          : req.status === "rejected"
+                            ? "Từ chối"
+                            : "Đã hủy"}
                     </span>
                   </div>
 
-                  {/* Thời gian */}
-                  <div className="p-2.5 rounded-lg bg-zinc-50 dark:bg-zinc-950 font-mono text-xs border border-zinc-100 dark:border-zinc-800 flex items-center justify-between">
-                    <span className="text-zinc-500 font-sans text-[11px]">Thời gian:</span>
-                    <strong className="text-zinc-900 dark:text-zinc-100">
+                  {/* Hàng 2: Hộp thời gian & phân loại đơn */}
+                  <div className="p-2.5 rounded-lg bg-zinc-50 dark:bg-zinc-950 border border-zinc-100 dark:border-zinc-800 space-y-1">
+                    <div className="flex items-center justify-between text-[11px]">
+                      <span className={`font-semibold px-1.5 py-0.2 rounded text-[10px] ${isLeave ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300" : "bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300"}`}>
+                        {isLeave ? "🏖️ Nghỉ phép" : "⚡ Làm thêm OT"}
+                      </span>
+                      <span className="font-mono font-bold text-xs text-zinc-900 dark:text-zinc-100">
+                        {isLeave ? `${req.durationDays} ngày` : `${req.durationHours} giờ`}
+                      </span>
+                    </div>
+
+                    <div className="font-mono text-xs text-zinc-700 dark:text-zinc-300 flex items-center gap-1">
+                      <span>📅</span>
+                      <span>
+                        {isLeave
+                          ? `${req.startDate} ${req.startDate !== req.endDate ? `→ ${req.endDate}` : ""}`
+                          : `${req.otDate} • ${req.startTime} - ${req.endTime}`}
+                      </span>
+                    </div>
+
+                    <div className="text-[11px] text-zinc-500 dark:text-zinc-400 truncate">
                       {isLeave
-                        ? `${req.startDate} (${req.durationDays} ngày)`
-                        : `${req.otDate} • ${req.startTime}-${req.endTime} (${req.durationHours}h)`}
-                    </strong>
+                        ? (leaveTypeLabels[req.leaveType || ""] || req.leaveType)
+                        : (otTypeLabels[req.otType || ""] || req.otType)}
+                    </div>
                   </div>
 
-                  {/* Lý do */}
-                  <div className="text-[11px] text-zinc-600 dark:text-zinc-300 italic">
-                    "{req.reason}"
+                  {/* Hàng 3: Dự án (nếu có) & Lý do */}
+                  <div className="space-y-1 text-xs">
+                    {req.projectOrTask && (
+                      <div className="font-semibold text-zinc-800 dark:text-zinc-200 text-[11px] flex items-center gap-1 truncate">
+                        <span>💼</span>
+                        <span>Dự án: {req.projectOrTask}</span>
+                      </div>
+                    )}
+                    <div className="text-[11px] text-zinc-600 dark:text-zinc-400 italic">
+                      "{req.reason}"
+                    </div>
                   </div>
 
-                  {/* Thao tác mobile */}
-                  <div className="pt-1 flex items-center justify-between">
+                  {/* Hàng 4: Ý kiến người duyệt (nếu có) */}
+                  {req.approverName && (
+                    <div className="p-2 rounded-lg bg-amber-50/60 dark:bg-amber-950/20 border border-amber-200/60 dark:border-amber-900/40 text-[11px] text-amber-900 dark:text-amber-200 flex items-start gap-1.5">
+                      <span className="shrink-0">👑</span>
+                      <div className="min-w-0">
+                        <strong className="font-semibold">{req.approverName}:</strong>{" "}
+                        <span className="italic">{req.approvalNote || "Đã đồng ý phê duyệt đơn."}</span>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Hàng 5: Ngày nộp & Các nút hành động */}
+                  <div className="pt-1.5 border-t border-zinc-100 dark:border-zinc-800 flex items-center justify-between">
                     <span className="text-[10px] text-zinc-400 font-mono">
-                      {new Date(req.createdAt).toLocaleDateString("vi-VN")}
+                      Nộp: {new Date(req.createdAt).toLocaleDateString("vi-VN")}
                     </span>
 
-                    {scope === "manage" && req.status === "pending" && isExecutive ? (
-                      <button
-                        type="button"
-                        onClick={() => setReviewingRequest(req)}
-                        className={`px-3 py-1 rounded-lg text-xs font-semibold ${isDirectorOrAdmin
-                          ? "bg-emerald-600 text-white"
-                          : "bg-zinc-200 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300"
-                          }`}
-                      >
-                        {isDirectorOrAdmin ? "👑 Giám đốc duyệt" : "Xem chi tiết"}
-                      </button>
-                    ) : isOwner && req.status === "pending" ? (
-                      <button
-                        type="button"
-                        onClick={() => handleCancelRequest(req.id)}
-                        className="px-2.5 py-1 rounded-lg border border-zinc-200 dark:border-zinc-700 text-rose-600 text-xs"
-                      >
-                        Hủy đơn
-                      </button>
-                    ) : (
-                      <button
-                        type="button"
-                        onClick={() => setReviewingRequest(req)}
-                        className="text-xs text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200"
-                      >
-                        Chi tiết
-                      </button>
-                    )}
+                    <div className="flex items-center gap-1.5">
+                      {scope === "manage" && req.status === "pending" && isExecutive ? (
+                        <button
+                          type="button"
+                          onClick={() => setReviewingRequest(req)}
+                          className={`px-3 py-1.5 rounded-lg text-xs font-semibold cursor-pointer shadow-2xs ${isDirectorOrAdmin
+                            ? "bg-emerald-600 hover:bg-emerald-700 text-white"
+                            : "bg-zinc-200 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300"
+                            }`}
+                        >
+                          {isDirectorOrAdmin ? "👑 Giám đốc duyệt" : "Xem duyệt"}
+                        </button>
+                      ) : isOwner && req.status === "pending" ? (
+                        <button
+                          type="button"
+                          onClick={() => handleCancelRequest(req.id)}
+                          className="px-2.5 py-1.5 rounded-lg border border-rose-300 dark:border-rose-800 text-rose-600 dark:text-rose-400 text-xs font-medium cursor-pointer"
+                        >
+                          Hủy đơn
+                        </button>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => setReviewingRequest(req)}
+                          className="px-2.5 py-1.5 rounded-lg text-xs font-medium text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200 bg-zinc-100 dark:bg-zinc-800 cursor-pointer"
+                        >
+                          Chi tiết ➔
+                        </button>
+                      )}
+                    </div>
                   </div>
                 </div>
               );
@@ -1012,11 +1252,11 @@ export default function RequestsPage() {
         </div>
 
         {/* ========================================================
-            6. KHỐI PHÂN TRANG (PAGINATION) - Đúng 10 bản ghi/trang
+            6. KHỐI PHÂN TRANG (PAGINATION) - Tối ưu chống vỡ layout trên Mobile
            ======================================================== */}
-        <div className="p-3.5 sm:p-4 border-t border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-950/20 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs">
+        <div className="p-3 sm:p-4 border-t border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-950/20 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs">
           {/* Thông tin số lượng hiển thị */}
-          <div className="text-zinc-500 dark:text-zinc-400 font-mono text-center sm:text-left">
+          <div className="text-zinc-500 dark:text-zinc-400 font-mono text-center sm:text-left text-xs">
             {totalRecords > 0 ? (
               <>
                 Hiển thị{" "}
@@ -1027,100 +1267,127 @@ export default function RequestsPage() {
                 <strong className="text-zinc-900 dark:text-zinc-100">
                   {Math.min(currentPage * pageSize, totalRecords)}
                 </strong>{" "}
-                trong tổng số{" "}
-                <strong className="text-zinc-900 dark:text-zinc-100">{totalRecords}</strong> đơn
-                {totalPages > 1 && ` (Trang ${currentPage}/${totalPages})`}
+                / <strong className="text-zinc-900 dark:text-zinc-100">{totalRecords}</strong> đơn
+                <span className="hidden sm:inline">
+                  {totalPages > 1 && ` (Trang ${currentPage}/${totalPages})`}
+                </span>
               </>
             ) : (
               <span>0 đơn yêu cầu</span>
             )}
           </div>
 
-          {/* Nút điều hướng trang */}
+          {/* Phân trang: Dạng nhỏ gọn trên Mobile (Trước / Trang X / Sau), dạng đầy đủ trên Desktop */}
           {totalPages > 1 && (
-            <div className="flex items-center gap-1">
-              {/* Nút Về Trang Đầu */}
-              <button
-                type="button"
-                disabled={currentPage === 1}
-                onClick={() => handlePageChange(1)}
-                className="p-1.5 rounded-md border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-zinc-600 dark:text-zinc-400 disabled:opacity-30 disabled:cursor-not-allowed hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
-                title="Về trang đầu"
-              >
-                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 19l-7-7 7-7m8 14l-7-7 7-7" />
-                </svg>
-              </button>
+            <div>
+              {/* Phiên bản Mobile (< sm): Chỉ hiển thị 2 nút Trước / Sau và text trang */}
+              <div className="sm:hidden flex items-center gap-2">
+                <button
+                  type="button"
+                  disabled={currentPage === 1}
+                  onClick={() => handlePageChange(currentPage - 1)}
+                  className="px-3 py-1.5 rounded-lg border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-zinc-700 dark:text-zinc-300 disabled:opacity-30 disabled:cursor-not-allowed font-medium text-xs cursor-pointer shadow-2xs"
+                >
+                  ← Trước
+                </button>
+                <span className="px-2.5 py-1 text-xs font-mono font-semibold text-zinc-800 dark:text-zinc-200">
+                  {currentPage} / {totalPages}
+                </span>
+                <button
+                  type="button"
+                  disabled={currentPage === totalPages}
+                  onClick={() => handlePageChange(currentPage + 1)}
+                  className="px-3 py-1.5 rounded-lg border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-zinc-700 dark:text-zinc-300 disabled:opacity-30 disabled:cursor-not-allowed font-medium text-xs cursor-pointer shadow-2xs"
+                >
+                  Sau →
+                </button>
+              </div>
 
-              {/* Nút Trang Trước */}
-              <button
-                type="button"
-                disabled={currentPage === 1}
-                onClick={() => handlePageChange(currentPage - 1)}
-                className="p-1.5 rounded-md border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-zinc-600 dark:text-zinc-400 disabled:opacity-30 disabled:cursor-not-allowed hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
-                title="Trang trước"
-              >
-                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                </svg>
-              </button>
+              {/* Phiên bản Desktop (>= sm): Dãy số trang đầy đủ */}
+              <div className="hidden sm:flex items-center gap-1">
+                {/* Nút Về Trang Đầu */}
+                <button
+                  type="button"
+                  disabled={currentPage === 1}
+                  onClick={() => handlePageChange(1)}
+                  className="p-1.5 rounded-md border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-zinc-600 dark:text-zinc-400 disabled:opacity-30 disabled:cursor-not-allowed hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
+                  title="Về trang đầu"
+                >
+                  <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 19l-7-7 7-7m8 14l-7-7 7-7" />
+                  </svg>
+                </button>
 
-              {/* Các số trang */}
-              {paginationItems.map((item, idx) => {
-                if (item === "...") {
+                {/* Nút Trang Trước */}
+                <button
+                  type="button"
+                  disabled={currentPage === 1}
+                  onClick={() => handlePageChange(currentPage - 1)}
+                  className="p-1.5 rounded-md border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-zinc-600 dark:text-zinc-400 disabled:opacity-30 disabled:cursor-not-allowed hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
+                  title="Trang trước"
+                >
+                  <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                  </svg>
+                </button>
+
+                {/* Các số trang */}
+                {paginationItems.map((item, idx) => {
+                  if (item === "...") {
+                    return (
+                      <span
+                        key={`dots-${idx}`}
+                        className="px-2 py-1 text-zinc-400 font-mono select-none"
+                      >
+                        …
+                      </span>
+                    );
+                  }
+
+                  const pageNum = item as number;
+                  const isActive = pageNum === currentPage;
+
                   return (
-                    <span
-                      key={`dots-${idx}`}
-                      className="px-2 py-1 text-zinc-400 font-mono select-none"
+                    <button
+                      key={pageNum}
+                      type="button"
+                      onClick={() => handlePageChange(pageNum)}
+                      className={`min-w-8 h-8 px-2 rounded-md font-mono text-xs font-semibold transition-colors cursor-pointer ${isActive
+                          ? "bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 shadow-2xs"
+                          : "border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800"
+                        }`}
                     >
-                      …
-                    </span>
+                      {pageNum}
+                    </button>
                   );
-                }
+                })}
 
-                const pageNum = item as number;
-                const isActive = pageNum === currentPage;
+                {/* Nút Trang Sau */}
+                <button
+                  type="button"
+                  disabled={currentPage === totalPages}
+                  onClick={() => handlePageChange(currentPage + 1)}
+                  className="p-1.5 rounded-md border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-zinc-600 dark:text-zinc-400 disabled:opacity-30 disabled:cursor-not-allowed hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
+                  title="Trang kế tiếp"
+                >
+                  <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                  </svg>
+                </button>
 
-                return (
-                  <button
-                    key={pageNum}
-                    type="button"
-                    onClick={() => handlePageChange(pageNum)}
-                    className={`min-w-8 h-8 px-2 rounded-md font-mono text-xs font-semibold transition-colors cursor-pointer ${isActive
-                        ? "bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 shadow-2xs"
-                        : "border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800"
-                      }`}
-                  >
-                    {pageNum}
-                  </button>
-                );
-              })}
-
-              {/* Nút Trang Sau */}
-              <button
-                type="button"
-                disabled={currentPage === totalPages}
-                onClick={() => handlePageChange(currentPage + 1)}
-                className="p-1.5 rounded-md border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-zinc-600 dark:text-zinc-400 disabled:opacity-30 disabled:cursor-not-allowed hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
-                title="Trang kế tiếp"
-              >
-                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                </svg>
-              </button>
-
-              {/* Nút Đến Trang Cuối */}
-              <button
-                type="button"
-                disabled={currentPage === totalPages}
-                onClick={() => handlePageChange(totalPages)}
-                className="p-1.5 rounded-md border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-zinc-600 dark:text-zinc-400 disabled:opacity-30 disabled:cursor-not-allowed hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
-                title="Trang cuối"
-              >
-                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 5l7 7-7 7M5 5l7 7-7 7" />
-                </svg>
-              </button>
+                {/* Nút Đến Trang Cuối */}
+                <button
+                  type="button"
+                  disabled={currentPage === totalPages}
+                  onClick={() => handlePageChange(totalPages)}
+                  className="p-1.5 rounded-md border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-zinc-600 dark:text-zinc-400 disabled:opacity-30 disabled:cursor-not-allowed hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
+                  title="Trang cuối"
+                >
+                  <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 5l7 7-7 7M5 5l7 7-7 7" />
+                  </svg>
+                </button>
+              </div>
             </div>
           )}
         </div>

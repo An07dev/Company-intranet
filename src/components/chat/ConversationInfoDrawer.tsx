@@ -37,20 +37,29 @@ export function ConversationInfoDrawer({
   const addableUsers = allUsers.filter((u) => !existingMemberIds.has(u.id));
 
   return (
-    <div className="w-80 border-l border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 flex flex-col h-full shrink-0 animate-in slide-in-from-right duration-200">
-      {/* Header Drawer */}
-      <div className="p-4 border-b border-zinc-200 dark:border-zinc-800 flex items-center justify-between">
-        <h3 className="text-sm font-bold text-zinc-900 dark:text-zinc-100">
-          Thông Tin Hội Thoại
-        </h3>
-        <button
-          type="button"
-          onClick={onClose}
-          className="p-1 rounded-lg text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 transition cursor-pointer"
-        >
-          ✕
-        </button>
-      </div>
+    <>
+      {/* Backdrop trên Mobile (< md) */}
+      <div
+        onClick={onClose}
+        className="fixed inset-0 z-40 bg-black/50 backdrop-blur-xs md:hidden animate-in fade-in duration-200"
+      />
+
+      {/* Drawer Container: Slide-over Drawer trên Mobile, Cột bên phải cố định trên Desktop */}
+      <div className="fixed inset-y-0 right-0 z-50 w-[85vw] max-w-sm md:static md:z-auto md:w-80 border-l border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 flex flex-col h-full shrink-0 shadow-2xl md:shadow-none animate-in slide-in-from-right duration-200">
+        {/* Header Drawer */}
+        <div className="p-3.5 sm:p-4 border-b border-zinc-200 dark:border-zinc-800 flex items-center justify-between">
+          <h3 className="text-sm font-bold text-zinc-900 dark:text-zinc-100 flex items-center gap-2">
+            <span>ℹ️</span>
+            <span>Thông Tin Hội Thoại</span>
+          </h3>
+          <button
+            type="button"
+            onClick={onClose}
+            className="w-7 h-7 rounded-lg text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition flex items-center justify-center cursor-pointer active:scale-95"
+          >
+            ✕
+          </button>
+        </div>
 
       {/* Info Overview */}
       <div className="p-5 flex flex-col items-center text-center border-b border-zinc-100 dark:border-zinc-800/80">
@@ -220,6 +229,7 @@ export function ConversationInfoDrawer({
           )}
         </div>
       )}
-    </div>
+      </div>
+    </>
   );
 }

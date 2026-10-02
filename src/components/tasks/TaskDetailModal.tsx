@@ -157,18 +157,18 @@ export function TaskDetailModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs animate-in fade-in duration-200">
-      <div className="w-full max-w-2xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[92vh]">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-2.5 sm:p-4 bg-black/50 backdrop-blur-xs animate-in fade-in duration-200 overflow-y-auto">
+      <div className="w-full max-w-2xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[94vh] sm:max-h-[92vh]">
         {/* Header */}
-        <div className="p-4 sm:p-5 border-b border-zinc-200 dark:border-zinc-800 flex items-center justify-between bg-zinc-50/50 dark:bg-zinc-950/40">
-          <div className="flex items-center gap-2.5 min-w-0">
-            <span className={`px-2.5 py-1 rounded-full text-xs font-semibold shrink-0 ${currentBadge.badgeClass}`}>
+        <div className="p-3.5 sm:p-5 border-b border-zinc-200 dark:border-zinc-800 flex items-center justify-between bg-zinc-50/50 dark:bg-zinc-950/40 shrink-0">
+          <div className="flex items-center gap-2 sm:gap-2.5 min-w-0 flex-wrap">
+            <span className={`px-2.5 py-0.5 sm:py-1 rounded-full text-[11px] sm:text-xs font-semibold shrink-0 ${currentBadge.badgeClass}`}>
               {currentBadge.label}
             </span>
-            <span className={`px-2 py-0.5 rounded-md text-[11px] font-semibold shrink-0 ${priorityBadge.class}`}>
+            <span className={`px-2 py-0.5 rounded-md text-[10px] sm:text-[11px] font-semibold shrink-0 ${priorityBadge.class}`}>
               {priorityBadge.label}
             </span>
-            <span className="text-xs text-zinc-400 font-mono truncate hidden sm:inline">
+            <span className="text-[11px] sm:text-xs text-zinc-400 font-mono truncate hidden sm:inline">
               #{task.id}
             </span>
           </div>
@@ -176,14 +176,14 @@ export function TaskDetailModal({
           <button
             type="button"
             onClick={onClose}
-            className="p-1.5 rounded-lg text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition cursor-pointer"
+            className="p-1.5 rounded-lg text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition cursor-pointer shrink-0"
           >
             ✕
           </button>
         </div>
 
         {/* Content Body */}
-        <div className="p-4 sm:p-6 overflow-y-auto flex-1 space-y-5 text-xs">
+        <div className="p-3.5 sm:p-6 overflow-y-auto overflow-x-hidden flex-1 space-y-4 sm:space-y-5 text-xs min-w-0">
           {errorMsg && (
             <div className="p-3 rounded-xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900/50 text-rose-700 dark:text-rose-300 flex items-center gap-2">
               <span>⚠️</span>
@@ -363,7 +363,7 @@ export function TaskDetailModal({
               <span className="text-xs font-semibold text-zinc-700 dark:text-zinc-300 block">
                 Chuyển trạng thái công việc:
               </span>
-              <div className="flex items-center gap-2 flex-wrap">
+              <div className="flex flex-wrap gap-1.5 sm:gap-2">
                 {statusOptions.map((opt) => {
                   const isActive = task.status === opt.value;
                   return (
@@ -372,7 +372,7 @@ export function TaskDetailModal({
                       type="button"
                       disabled={isActive || submitting}
                       onClick={() => handleChangeStatus(opt.value)}
-                      className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition cursor-pointer flex items-center gap-1.5 ${
+                      className={`px-2.5 sm:px-3 py-1.5 rounded-xl text-xs font-semibold transition cursor-pointer flex items-center gap-1.5 active:scale-95 ${
                         isActive
                           ? "bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 shadow-xs"
                           : "bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-700"
@@ -388,22 +388,22 @@ export function TaskDetailModal({
 
           {/* Vùng Xóa công việc nếu có quyền */}
           {canDelete && (
-            <div className="pt-3 border-t border-zinc-100 dark:border-zinc-800 flex items-center justify-between">
+            <div className="pt-3 border-t border-zinc-100 dark:border-zinc-800 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
               {confirmDelete ? (
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 flex-wrap">
                   <span className="text-rose-600 text-xs font-medium">Bạn có chắc chắn muốn xóa?</span>
                   <button
                     type="button"
                     onClick={handleDeleteTask}
                     disabled={submitting}
-                    className="px-3 py-1 bg-rose-600 text-white rounded-lg text-xs font-semibold hover:bg-rose-700 transition cursor-pointer"
+                    className="px-3 py-1 bg-rose-600 text-white rounded-lg text-xs font-semibold hover:bg-rose-700 transition cursor-pointer active:scale-95"
                   >
                     Xác nhận xóa
                   </button>
                   <button
                     type="button"
                     onClick={() => setConfirmDelete(false)}
-                    className="px-3 py-1 bg-zinc-200 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 rounded-lg text-xs transition cursor-pointer"
+                    className="px-3 py-1 bg-zinc-200 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 rounded-lg text-xs transition cursor-pointer active:scale-95"
                   >
                     Hủy
                   </button>
@@ -427,11 +427,11 @@ export function TaskDetailModal({
         </div>
 
         {/* Footer */}
-        <div className="p-4 border-t border-zinc-200 dark:border-zinc-800 flex items-center justify-end bg-zinc-50/50 dark:bg-zinc-950/40">
+        <div className="p-3 sm:p-4 border-t border-zinc-200 dark:border-zinc-800 flex items-center justify-end bg-zinc-50/50 dark:bg-zinc-950/40 shrink-0">
           <button
             type="button"
             onClick={onClose}
-            className="px-4 py-2 text-xs font-semibold text-zinc-700 dark:text-zinc-300 bg-white dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-700 rounded-xl hover:bg-zinc-50 dark:hover:bg-zinc-700 transition cursor-pointer"
+            className="px-4 py-1.5 sm:py-2 text-xs font-semibold text-zinc-700 dark:text-zinc-300 bg-white dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-700 rounded-xl hover:bg-zinc-50 dark:hover:bg-zinc-700 transition cursor-pointer active:scale-95"
           >
             Đóng
           </button>

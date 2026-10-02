@@ -114,22 +114,22 @@ export function ChatInput({
   };
 
   return (
-    <div className="p-3 sm:p-4 border-t border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 shrink-0">
+    <div className="p-2 sm:p-3 sm:px-4 border-t border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 shrink-0">
       {/* Khối xem trước khi đang trả lời tin nhắn (Reply) */}
       {replyingTo && (
         <div className="mb-2 p-2 rounded-xl bg-zinc-100 dark:bg-zinc-800/80 border-l-4 border-blue-600 flex items-center justify-between text-xs animate-in fade-in duration-150">
-          <div className="min-w-0">
-            <span className="font-semibold text-blue-600 dark:text-blue-400 block text-[11px]">
+          <div className="min-w-0 flex-1">
+            <span className="font-semibold text-blue-600 dark:text-blue-400 block text-[10px] sm:text-[11px]">
               Đang trả lời {replyingTo.senderName}:
             </span>
-            <p className="text-zinc-600 dark:text-zinc-300 truncate max-w-md">
+            <p className="text-zinc-600 dark:text-zinc-300 truncate max-w-md text-[11px]">
               {replyingTo.content || "[Tệp đính kèm]"}
             </p>
           </div>
           <button
             type="button"
             onClick={onCancelReply}
-            className="p-1 rounded-md text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 cursor-pointer"
+            className="p-1 rounded-md text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 cursor-pointer active:scale-95 shrink-0"
           >
             ✕
           </button>
@@ -138,11 +138,11 @@ export function ChatInput({
 
       {/* Danh sách tệp đang chờ gửi */}
       {pendingAttachments.length > 0 && (
-        <div className="mb-2 flex items-center gap-2 overflow-x-auto pb-1">
+        <div className="mb-2 flex items-center gap-2 overflow-x-auto pb-1 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
           {pendingAttachments.map((att) => (
             <div
               key={att.id}
-              className="relative p-1.5 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800 flex items-center gap-2 text-xs shrink-0 max-w-[200px]"
+              className="relative p-1.5 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800 flex items-center gap-2 text-xs shrink-0 max-w-[180px] sm:max-w-[200px]"
             >
               {att.type === "image" ? (
                 <img src={att.url} alt={att.name} className="w-8 h-8 rounded-lg object-cover" />
@@ -171,7 +171,7 @@ export function ChatInput({
       )}
 
       {/* Form nhập chính */}
-      <form onSubmit={handleSubmit} className="flex items-end gap-2">
+      <form onSubmit={handleSubmit} className="flex items-end gap-1.5 sm:gap-2">
         {/* Nút đính kèm ảnh, video, file */}
         <input
           ref={fileInputRef}
@@ -186,7 +186,7 @@ export function ChatInput({
           onClick={() => fileInputRef.current?.click()}
           disabled={disabled || uploading}
           title="Đính kèm ảnh, video hoặc tệp tin"
-          className="p-2.5 rounded-xl text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition cursor-pointer shrink-0 disabled:opacity-50"
+          className="w-9 h-9 sm:w-10 sm:h-10 flex items-center justify-center rounded-xl text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition cursor-pointer shrink-0 disabled:opacity-50 active:scale-95"
         >
           {uploading ? (
             <Spinner size="sm" />
@@ -203,19 +203,19 @@ export function ChatInput({
             type="button"
             onClick={() => setShowEmojiPicker(!showEmojiPicker)}
             title="Thêm biểu tượng cảm xúc"
-            className="p-2.5 rounded-xl text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition cursor-pointer shrink-0"
+            className="w-9 h-9 sm:w-10 sm:h-10 flex items-center justify-center rounded-xl text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition cursor-pointer shrink-0 active:scale-95 text-base"
           >
             😀
           </button>
 
           {showEmojiPicker && (
-            <div className="absolute bottom-full mb-2 left-0 z-30 flex items-center gap-1.5 p-2 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-2xl shadow-xl">
+            <div className="absolute bottom-full mb-2 left-0 z-30 grid grid-cols-5 gap-1 p-1.5 sm:p-2 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-2xl shadow-xl w-48 sm:w-auto sm:flex sm:items-center">
               {QUICK_EMOJIS.map((em) => (
                 <button
                   key={em}
                   type="button"
                   onClick={() => insertEmoji(em)}
-                  className="w-8 h-8 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-700 flex items-center justify-center text-base cursor-pointer transition"
+                  className="w-8 h-8 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-700 flex items-center justify-center text-base cursor-pointer transition active:scale-125"
                 >
                   {em}
                 </button>
@@ -225,16 +225,16 @@ export function ChatInput({
         </div>
 
         {/* Textarea nhập tin nhắn */}
-        <div className="flex-1 relative">
+        <div className="flex-1 relative min-w-0">
           <textarea
             ref={textareaRef}
             rows={1}
             value={content}
             onChange={handleTextareaInput}
             onKeyDown={handleKeyDown}
-            placeholder="Nhập tin nhắn... (Nhấn Enter để gửi, Shift+Enter xuống dòng)"
+            placeholder="Nhập tin nhắn..."
             disabled={disabled}
-            className="w-full py-2.5 px-3.5 text-xs sm:text-sm rounded-2xl bg-zinc-100 dark:bg-zinc-800/80 border border-transparent focus:border-zinc-300 dark:focus:border-zinc-600 focus:bg-white dark:focus:bg-zinc-900 text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 resize-none max-h-32 focus:outline-hidden transition"
+            className="w-full py-2 px-3 sm:py-2.5 sm:px-3.5 text-xs sm:text-sm rounded-xl sm:rounded-2xl bg-zinc-100 dark:bg-zinc-800/80 border border-transparent focus:border-zinc-300 dark:focus:border-zinc-600 focus:bg-white dark:focus:bg-zinc-900 text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 resize-none max-h-28 sm:max-h-32 focus:outline-hidden transition leading-snug"
           />
         </div>
 
@@ -242,12 +242,12 @@ export function ChatInput({
         <button
           type="submit"
           disabled={disabled || (!content.trim() && pendingAttachments.length === 0) || sending || uploading}
-          className="p-2.5 rounded-2xl bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 hover:bg-zinc-800 dark:hover:bg-zinc-200 transition cursor-pointer shrink-0 disabled:opacity-40 disabled:cursor-not-allowed shadow-xs"
+          className="w-9 h-9 sm:w-10 sm:h-10 flex items-center justify-center rounded-xl sm:rounded-2xl bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 hover:bg-zinc-800 dark:hover:bg-zinc-200 transition cursor-pointer shrink-0 disabled:opacity-40 disabled:cursor-not-allowed shadow-xs active:scale-95"
         >
           {sending ? (
             <Spinner size="sm" className="text-white dark:text-zinc-900" />
           ) : (
-            <svg className="w-5 h-5 transform rotate-90" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <svg className="w-4 h-4 sm:w-5 sm:h-5 transform rotate-90" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
             </svg>
           )}
