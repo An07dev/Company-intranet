@@ -8,10 +8,7 @@ import { USER_ROLE_LABELS } from "@/lib/constants";
 import { LoadingSection } from "@/components/ui/Loading";
 import { AttendanceTrendChart } from "@/components/dashboard/AttendanceTrendChart";
 import { AttendanceDonutChart } from "@/components/dashboard/AttendanceDonutChart";
-import { DepartmentStatsChart } from "@/components/dashboard/DepartmentStatsChart";
-import { HourlyArrivalChart } from "@/components/dashboard/HourlyArrivalChart";
 import { TaskProgressChart } from "@/components/dashboard/TaskProgressChart";
-import { OtLeaveAnalyticsChart } from "@/components/dashboard/OtLeaveAnalyticsChart";
 import { PunctualityLeaderboard } from "@/components/dashboard/PunctualityLeaderboard";
 import { EmployeeAttendanceTable } from "@/components/dashboard/EmployeeAttendanceTable";
 import { DashboardStatsResponse } from "@/app/api/dashboard/stats/route";
@@ -136,7 +133,7 @@ export default function DashboardPage() {
 
       {/* =========================================================================
           2. HÀNG 5 THẺ CHỈ SỐ KPI CHÍNH
-         ========================================================================= */}
+  
       {/* =========================================================================
           3. CÁC BIỂU ĐỒ THỐNG KÊ (CHARTS SECTION)
          ========================================================================= */}
@@ -160,7 +157,12 @@ export default function DashboardPage() {
             </div>
           </div>
 
-          {/* Hàng 4: Bảng Vinh Danh Chuyên Cần & Gương Mẫu Tháng */}
+          {/* Hàng biểu đồ 2: Tiến độ Công việc & Dự án */}
+          <div>
+            <TaskProgressChart data={statsData.taskStats} />
+          </div>
+
+          {/* Hàng 3: Bảng Vinh Danh Chuyên Cần & Gương Mẫu Tháng */}
           <div>
             <PunctualityLeaderboard data={statsData.punctualityLeaderboard} />
           </div>
