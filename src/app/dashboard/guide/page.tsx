@@ -324,6 +324,7 @@ const guideModules: GuideModule[] = [
 const roleMatrix = [
   {
     role: "Giám Đốc (Director)",
+    shortTitle: "Giám Đốc",
     icon: "👑",
     color: "border-amber-400 bg-amber-50/40 dark:bg-amber-950/20 text-amber-900 dark:text-amber-200",
     badgeClass: "bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300 border-amber-300",
@@ -337,6 +338,7 @@ const roleMatrix = [
   },
   {
     role: "Quản Trị Viên (Admin)",
+    shortTitle: "Admin",
     icon: "🛡️",
     color: "border-purple-400 bg-purple-50/40 dark:bg-purple-950/20 text-purple-900 dark:text-purple-200",
     badgeClass: "bg-purple-100 text-purple-800 dark:bg-purple-950 dark:text-purple-300 border-purple-300",
@@ -349,6 +351,7 @@ const roleMatrix = [
   },
   {
     role: "Trưởng Phòng / Quản Lý (Manager)",
+    shortTitle: "Quản Lý",
     icon: "⭐",
     color: "border-blue-400 bg-blue-50/40 dark:bg-blue-950/20 text-blue-900 dark:text-blue-200",
     badgeClass: "bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300 border-blue-300",
@@ -361,6 +364,7 @@ const roleMatrix = [
   },
   {
     role: "Nhân Viên (Employee)",
+    shortTitle: "Nhân Viên",
     icon: "👤",
     color: "border-zinc-300 dark:border-zinc-700 bg-zinc-50/60 dark:bg-zinc-900/60 text-zinc-900 dark:text-zinc-100",
     badgeClass: "bg-zinc-200 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 border-zinc-300 dark:border-zinc-700",
@@ -403,6 +407,18 @@ export default function GuidePage() {
   const [activeModuleId, setActiveModuleId] = useState<string>("attendance");
   const [expandedFaq, setExpandedFaq] = useState<number | null>(null);
 
+  // Vai trò mặc định cho chế độ Mobile: Tự động chọn theo vai trò của tài khoản hiện tại
+  const userRoleKey = user?.role || "";
+  const initialRoleIndex = roleMatrix.findIndex((r) => {
+    if (userRoleKey === "director") return r.role.includes("Giám Đốc");
+    if (userRoleKey === "admin") return r.role.includes("Quản Trị");
+    if (userRoleKey === "manager") return r.role.includes("Trưởng Phòng");
+    return r.role.includes("Nhân Viên");
+  });
+  const [selectedMobileRoleIdx, setSelectedMobileRoleIdx] = useState<number>(
+    initialRoleIndex >= 0 ? initialRoleIndex : 0
+  );
+
   // Lọc module theo từ khóa tìm kiếm
   const filteredModules = guideModules.filter((m) => {
     if (!searchQuery.trim()) return true;
@@ -418,26 +434,14 @@ export default function GuidePage() {
   const currentModule = guideModules.find((m) => m.id === activeModuleId) || guideModules[0];
 
   return (
-    <div className="w-full px-4 sm:px-6 lg:px-8 py-4 sm:py-6 space-y-6">
+    <div className="w-full px-3.5 sm:px-6 lg:px-8 py-4 sm:py-6 space-y-4 sm:space-y-6">
       {/* ========================================================
           1. HERO HEADER & THANH TÌM KIẾM HƯỚNG DẪN
          ======================================================== */}
-      <div className="relative overflow-hidden rounded-3xl bg-linear-to-br from-zinc-900 via-zinc-800 to-zinc-900 text-white p-6 sm:p-10 shadow-xl border border-zinc-800">
-        <div className="relative z-10 max-w-3xl space-y-3">
-          <div className="flex flex-wrap items-center gap-2">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold bg-white/10 text-zinc-200 backdrop-blur-md border border-white/10">
-              <span>📚</span>
-              <span>Tài Liệu Cẩm Nang Doanh Nghiệp</span>
-            </div>
-            <Link
-              href="/dashboard/regulations"
-              className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-500/20 text-emerald-300 hover:bg-emerald-500/30 transition border border-emerald-400/20 backdrop-blur-md"
-            >
-              <span>⚖️</span>
-              <span>Xem Quy Định Doanh Nghiệp →</span>
-            </Link>
-          </div>
-          <h1 className="text-2xl sm:text-4xl font-extrabold tracking-tight leading-tight">
+      <div className="relative overflow-hidden rounded-2xl sm:rounded-3xl bg-linear-to-br from-zinc-900 via-zinc-800 to-zinc-900 text-white p-4 sm:p-10 shadow-xl border border-zinc-800">
+        <div className="relative z-10 max-w-3xl space-y-2.5 sm:space-y-3">
+
+          <h1 className="text-xl sm:text-4xl font-extrabold tracking-tight leading-tight">
             Trung Tâm Hướng Dẫn Sử Dụng
           </h1>
           <p className="text-xs sm:text-sm text-zinc-300 leading-relaxed">
@@ -445,23 +449,23 @@ export default function GuidePage() {
           </p>
 
           {/* Ô tìm kiếm thông minh */}
-          <div className="pt-2">
+          <div className="pt-1 sm:pt-2">
             <div className="relative max-w-xl">
               <input
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Tìm kiếm tính năng: chấm công, duyệt đơn, tạo việc, chat..."
-                className="w-full pl-10 pr-10 py-3 rounded-2xl bg-white/10 dark:bg-black/30 border border-white/20 text-white placeholder-zinc-400 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-white/40 backdrop-blur-md"
+                placeholder="Tìm tính năng: chấm công, duyệt đơn, tạo việc, chat..."
+                className="w-full pl-9 sm:pl-10 pr-9 sm:pr-10 py-2.5 sm:py-3 rounded-xl sm:rounded-2xl bg-white/10 dark:bg-black/30 border border-white/20 text-white placeholder-zinc-400 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-white/40 backdrop-blur-md"
               />
-              <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-zinc-300 pointer-events-none text-base">
+              <span className="absolute left-3 sm:left-3.5 top-1/2 -translate-y-1/2 text-zinc-300 pointer-events-none text-sm sm:text-base">
                 🔍
               </span>
               {searchQuery && (
                 <button
                   type="button"
                   onClick={() => setSearchQuery("")}
-                  className="absolute right-3.5 top-1/2 -translate-y-1/2 text-zinc-300 hover:text-white cursor-pointer text-sm"
+                  className="absolute right-3 sm:right-3.5 top-1/2 -translate-y-1/2 text-zinc-300 hover:text-white cursor-pointer text-xs sm:text-sm"
                 >
                   ✕
                 </button>
@@ -476,7 +480,7 @@ export default function GuidePage() {
         </div>
 
         {/* Trang trí nền */}
-        <div className="absolute right-0 top-0 bottom-0 w-1/3 opacity-10 pointer-events-none flex items-center justify-center text-9xl">
+        <div className="absolute right-0 top-0 bottom-0 w-1/3 opacity-10 pointer-events-none flex items-center justify-center text-7xl sm:text-9xl">
           📖
         </div>
       </div>
@@ -484,10 +488,10 @@ export default function GuidePage() {
       {/* ========================================================
           2. MA TRẬN PHÂN QUYỀN VAI TRÒ TRONG HỆ THỐNG
          ======================================================== */}
-      <div className="space-y-4">
+      <div className="space-y-3 sm:space-y-4">
         <div className="flex items-center justify-between">
           <div>
-            <h2 className="text-lg sm:text-xl font-bold text-zinc-900 dark:text-zinc-100 flex items-center gap-2">
+            <h2 className="text-base sm:text-xl font-bold text-zinc-900 dark:text-zinc-100 flex items-center gap-1.5 sm:gap-2">
               <span>🛡️</span>
               <span>Cơ Cấu Phân Quyền 4 Cấp Bậc (Role Matrix)</span>
             </h2>
@@ -497,7 +501,68 @@ export default function GuidePage() {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        {/* Mobile View: Tab chuyển đổi 4 vai trò cực kỳ gọn gàng (sm:hidden) */}
+        <div className="sm:hidden space-y-2.5">
+          {/* Dải 4 chip vai trò */}
+          <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none -mx-3.5 px-3.5">
+            {roleMatrix.map((item, idx) => {
+              const isSelected = selectedMobileRoleIdx === idx;
+              const isMyRole = user?.role && item.role.toLowerCase().includes(user.role.toLowerCase());
+
+              return (
+                <button
+                  key={idx}
+                  type="button"
+                  onClick={() => setSelectedMobileRoleIdx(idx)}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition cursor-pointer flex items-center gap-1.5 shrink-0 ${isSelected
+                      ? "bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 shadow-xs"
+                      : "bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-700"
+                    }`}
+                >
+                  <span>{item.icon}</span>
+                  <span>{item.shortTitle}</span>
+                  {isMyRole && (
+                    <span className="w-1.5 h-1.5 rounded-full bg-blue-500 ring-2 ring-white dark:ring-zinc-900" />
+                  )}
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Chi tiết 1 vai trò đang được chọn trên Mobile */}
+          {(() => {
+            const activeRole = roleMatrix[selectedMobileRoleIdx] || roleMatrix[0];
+            const isMyRole = user?.role && activeRole.role.toLowerCase().includes(user.role.toLowerCase());
+
+            return (
+              <div className={`p-4 rounded-2xl border ${activeRole.color} shadow-xs space-y-2.5 relative`}>
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-2">
+                    <span className="text-2xl">{activeRole.icon}</span>
+                    <h3 className="font-bold text-sm">{activeRole.role}</h3>
+                  </div>
+                  {isMyRole && (
+                    <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-600 text-white shrink-0 shadow-xs">
+                      Vai trò của bạn
+                    </span>
+                  )}
+                </div>
+
+                <ul className="space-y-1.5 text-xs leading-relaxed pt-1">
+                  {activeRole.permissions.map((p, idx) => (
+                    <li key={idx} className="flex items-start gap-2">
+                      <span className="text-emerald-500 font-bold shrink-0 mt-0.5">✓</span>
+                      <span>{p}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            );
+          })()}
+        </div>
+
+        {/* Desktop View: Giữ nguyên vẹn 100% bố cục 4 cột ban đầu (hidden sm:grid) */}
+        <div className="hidden sm:grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           {roleMatrix.map((item) => {
             const isMyRole = user?.role === item.role.toLowerCase().split(" ")[0];
 
@@ -535,9 +600,9 @@ export default function GuidePage() {
       {/* ========================================================
           3. KHUNG CHI TIẾT 9 CHUYÊN MỤC HƯỚNG DẪN TÍNH NĂNG
          ======================================================== */}
-      <div className="space-y-4">
+      <div className="space-y-3 sm:space-y-4">
         <div>
-          <h2 className="text-lg sm:text-xl font-bold text-zinc-900 dark:text-zinc-100 flex items-center gap-2">
+          <h2 className="text-base sm:text-xl font-bold text-zinc-900 dark:text-zinc-100 flex items-center gap-1.5 sm:gap-2">
             <span>💡</span>
             <span>Hướng Dẫn Chi Tiết Từng Tính Năng</span>
           </h2>
@@ -546,9 +611,33 @@ export default function GuidePage() {
           </p>
         </div>
 
+        {/* Mobile View: Dải cuộn ngang 9 chuyên mục (lg:hidden - tiết kiệm 500px chiều cao) */}
+        <div className="lg:hidden">
+          <div className="flex items-center gap-1.5 overflow-x-auto pb-1.5 scrollbar-none text-xs -mx-3.5 px-3.5">
+            {filteredModules.map((m) => {
+              const isActive = m.id === activeModuleId;
+
+              return (
+                <button
+                  key={m.id}
+                  type="button"
+                  onClick={() => setActiveModuleId(m.id)}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition cursor-pointer flex items-center gap-1.5 shrink-0 ${isActive
+                      ? "bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 shadow-xs"
+                      : "bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-700"
+                    }`}
+                >
+                  <span className="text-sm">{m.icon}</span>
+                  <span>{m.badge}</span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-          {/* Menu chọn chuyên mục bên trái */}
-          <div className="lg:col-span-4 space-y-2">
+          {/* Menu chọn chuyên mục bên trái (CHỈ HIỂN THỊ TRÊN DESKTOP: hidden lg:block lg:col-span-4) */}
+          <div className="hidden lg:block lg:col-span-4 space-y-2">
             <div className="p-2 rounded-2xl bg-zinc-100/80 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 space-y-1">
               {filteredModules.map((m) => {
                 const isActive = m.id === activeModuleId;
@@ -558,11 +647,10 @@ export default function GuidePage() {
                     key={m.id}
                     type="button"
                     onClick={() => setActiveModuleId(m.id)}
-                    className={`w-full text-left p-3 rounded-xl transition flex items-center gap-3 cursor-pointer ${
-                      isActive
+                    className={`w-full text-left p-3 rounded-xl transition flex items-center gap-3 cursor-pointer ${isActive
                         ? "bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 shadow-xs border border-zinc-200/80 dark:border-zinc-700/80 font-bold"
                         : "text-zinc-600 dark:text-zinc-400 hover:bg-zinc-200/60 dark:hover:bg-zinc-800/50 font-medium"
-                    }`}
+                      }`}
                   >
                     <span className="text-xl shrink-0">{m.icon}</span>
                     <div className="min-w-0 flex-1">
@@ -577,13 +665,13 @@ export default function GuidePage() {
           </div>
 
           {/* Nội dung chi tiết của chuyên mục bên phải */}
-          <div className="lg:col-span-8 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-5 sm:p-7 shadow-xs space-y-6">
+          <div className="lg:col-span-8 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-4 sm:p-7 shadow-xs space-y-4 sm:space-y-6">
             {/* Header chuyên mục */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-zinc-100 dark:border-zinc-800">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 sm:pb-4 border-b border-zinc-100 dark:border-zinc-800">
               <div className="space-y-1">
                 <div className="flex items-center gap-2 flex-wrap">
-                  <span className="text-2xl">{currentModule.icon}</span>
-                  <h3 className="text-base sm:text-lg font-bold text-zinc-900 dark:text-zinc-100">
+                  <span className="text-xl sm:text-2xl">{currentModule.icon}</span>
+                  <h3 className="text-sm sm:text-lg font-bold text-zinc-900 dark:text-zinc-100">
                     {currentModule.title}
                   </h3>
                 </div>
@@ -603,7 +691,7 @@ export default function GuidePage() {
               {currentModule.actionUrl && (
                 <Link
                   href={currentModule.actionUrl}
-                  className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-zinc-900 hover:bg-zinc-800 dark:bg-zinc-100 dark:hover:bg-zinc-200 text-white dark:text-zinc-900 text-xs font-semibold shadow-xs transition shrink-0"
+                  className="inline-flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-xl bg-zinc-900 hover:bg-zinc-800 dark:bg-zinc-100 dark:hover:bg-zinc-200 text-white dark:text-zinc-900 text-xs font-semibold shadow-xs transition w-full sm:w-auto shrink-0"
                 >
                   <span>{currentModule.actionLabel || "Truy cập tính năng"}</span>
                   <span>➔</span>
@@ -612,13 +700,13 @@ export default function GuidePage() {
             </div>
 
             {/* Mô tả tóm tắt */}
-            <p className="text-xs sm:text-sm text-zinc-600 dark:text-zinc-300 leading-relaxed bg-zinc-50 dark:bg-zinc-950/40 p-3.5 rounded-xl border border-zinc-100 dark:border-zinc-800">
+            <p className="text-xs sm:text-sm text-zinc-600 dark:text-zinc-300 leading-relaxed bg-zinc-50 dark:bg-zinc-950/40 p-3 sm:p-3.5 rounded-xl border border-zinc-100 dark:border-zinc-800">
               {currentModule.summary}
             </p>
 
             {/* Lưu ý quan trọng nếu có */}
             {currentModule.importantNotice && (
-              <div className="p-3.5 rounded-xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900/40 text-amber-900 dark:text-amber-200 text-xs flex items-start gap-2.5">
+              <div className="p-3 sm:p-3.5 rounded-xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900/40 text-amber-900 dark:text-amber-200 text-xs flex items-start gap-2.5">
                 <span className="text-base shrink-0">⚠️</span>
                 <div className="leading-relaxed">
                   <strong className="block font-bold mb-0.5">QUY ĐỊNH BẮT BUỘC:</strong>
@@ -628,15 +716,15 @@ export default function GuidePage() {
             )}
 
             {/* Các bước thực hiện chi tiết */}
-            <div className="space-y-3">
+            <div className="space-y-2.5 sm:space-y-3">
               <h4 className="font-bold text-xs text-zinc-900 dark:text-zinc-100 uppercase tracking-wider">
                 Quy trình &amp; Các bước thao tác:
               </h4>
-              <div className="space-y-3">
+              <div className="space-y-2.5 sm:space-y-3">
                 {currentModule.steps.map((s, idx) => (
                   <div
                     key={idx}
-                    className="p-4 rounded-xl border border-zinc-200/80 dark:border-zinc-800 bg-white dark:bg-zinc-900/80 shadow-2xs space-y-1.5"
+                    className="p-3.5 sm:p-4 rounded-xl border border-zinc-200/80 dark:border-zinc-800 bg-white dark:bg-zinc-900/80 shadow-2xs space-y-1.5"
                   >
                     <h5 className="font-bold text-xs sm:text-sm text-zinc-900 dark:text-zinc-100 flex items-center gap-2">
                       <span className="w-5 h-5 rounded-full bg-blue-100 dark:bg-blue-950 text-blue-700 dark:text-blue-300 font-bold flex items-center justify-center text-[10px] shrink-0">
@@ -654,7 +742,7 @@ export default function GuidePage() {
 
             {/* Mẹo sử dụng (Tips) */}
             {currentModule.tips && currentModule.tips.length > 0 && (
-              <div className="p-4 rounded-xl bg-emerald-50/50 dark:bg-emerald-950/20 border border-emerald-200/60 dark:border-emerald-900/40 text-emerald-900 dark:text-emerald-200 space-y-1.5 text-xs">
+              <div className="p-3.5 sm:p-4 rounded-xl bg-emerald-50/50 dark:bg-emerald-950/20 border border-emerald-200/60 dark:border-emerald-900/40 text-emerald-900 dark:text-emerald-200 space-y-1.5 text-xs">
                 <span className="font-bold flex items-center gap-1.5 text-emerald-800 dark:text-emerald-300">
                   <span>💡</span>
                   <span>Mẹo hữu ích:</span>
@@ -673,9 +761,9 @@ export default function GuidePage() {
       {/* ========================================================
           4. CÂU HỎI THƯỜNG GẶP (FAQ)
          ======================================================== */}
-      <div className="space-y-4 pt-4 border-t border-zinc-200 dark:border-zinc-800">
+      <div className="space-y-3 sm:space-y-4 pt-3 sm:pt-4 border-t border-zinc-200 dark:border-zinc-800">
         <div>
-          <h2 className="text-lg sm:text-xl font-bold text-zinc-900 dark:text-zinc-100 flex items-center gap-2">
+          <h2 className="text-base sm:text-xl font-bold text-zinc-900 dark:text-zinc-100 flex items-center gap-1.5 sm:gap-2">
             <span>❓</span>
             <span>Câu Hỏi Thường Gặp (FAQ)</span>
           </h2>
@@ -684,7 +772,7 @@ export default function GuidePage() {
           </p>
         </div>
 
-        <div className="space-y-2.5">
+        <div className="space-y-2 sm:space-y-2.5">
           {faqList.map((faq, idx) => {
             const isOpen = expandedFaq === idx;
 
@@ -696,7 +784,7 @@ export default function GuidePage() {
                 <button
                   type="button"
                   onClick={() => setExpandedFaq(isOpen ? null : idx)}
-                  className="w-full text-left p-4 sm:p-5 flex items-center justify-between gap-3 cursor-pointer hover:bg-zinc-50/60 dark:hover:bg-zinc-800/40 transition"
+                  className="w-full text-left p-3.5 sm:p-5 flex items-center justify-between gap-3 cursor-pointer hover:bg-zinc-50/60 dark:hover:bg-zinc-800/40 transition"
                 >
                   <span className="font-bold text-xs sm:text-sm text-zinc-900 dark:text-zinc-100">
                     {faq.q}
@@ -707,7 +795,7 @@ export default function GuidePage() {
                 </button>
 
                 {isOpen && (
-                  <div className="px-4 pb-4 sm:px-5 sm:pb-5 text-xs text-zinc-600 dark:text-zinc-300 leading-relaxed border-t border-zinc-100 dark:border-zinc-800 pt-3">
+                  <div className="px-3.5 pb-3.5 sm:px-5 sm:pb-5 text-xs text-zinc-600 dark:text-zinc-300 leading-relaxed border-t border-zinc-100 dark:border-zinc-800 pt-2.5 sm:pt-3">
                     {faq.a}
                   </div>
                 )}

@@ -87,15 +87,15 @@ export function ReviewRequestModal({
               {isLeave ? "🏖️" : "⚡"}
             </div>
             <div>
-              <div className="flex items-center gap-2">
-                <h3 className="text-base font-bold text-zinc-900 dark:text-zinc-100">
-                  {isDirectorOrAdmin ? "Phê Duyệt" : "Xem Chi Tiết"} {isLeave ? "Đơn Nghỉ Phép" : "Đơn Xin Làm Thêm (OT)"}
+              <div className="flex items-center gap-1.5 flex-wrap">
+                <h3 className="text-sm sm:text-base font-bold text-zinc-900 dark:text-zinc-100">
+                  {isDirectorOrAdmin ? "Phê Duyệt" : "Xem Chi Tiết"} {isLeave ? "Đơn Nghỉ Phép" : "Đơn OT"}
                 </h3>
-                <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 dark:bg-amber-950/80 dark:text-amber-300 border border-amber-200 dark:border-amber-800">
+                <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 dark:bg-amber-950/80 dark:text-amber-300 border border-amber-200 dark:border-amber-800 shrink-0">
                   Cấp duyệt: Giám đốc
                 </span>
               </div>
-              <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">
+              <p className="text-[11px] sm:text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">
                 Mã đơn: <span className="font-mono">{request.id}</span>
               </p>
             </div>
@@ -254,23 +254,23 @@ export function ReviewRequestModal({
           )}
 
           {/* Footer nút hành động: Phê duyệt vs Từ chối */}
-          <div className="pt-2 flex items-center justify-end gap-2.5">
+          <div className="pt-2 flex flex-col-reverse sm:flex-row sm:items-center sm:justify-end gap-2 sm:gap-2.5">
             <button
               type="button"
               onClick={onClose}
               disabled={submitting}
-              className="px-3.5 py-2 rounded-lg border border-zinc-200 dark:border-zinc-700 text-xs font-medium text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 cursor-pointer transition-colors"
+              className="w-full sm:w-auto px-3.5 py-2.5 sm:py-2 rounded-lg border border-zinc-200 dark:border-zinc-700 text-xs font-medium text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 cursor-pointer transition-colors text-center"
             >
               {isDirectorOrAdmin ? "Hủy bỏ" : "Đóng"}
             </button>
 
             {isDirectorOrAdmin && (
-              <>
+              <div className="grid grid-cols-2 sm:flex sm:items-center gap-2">
                 <button
                   type="button"
                   onClick={() => handleReview("rejected")}
                   disabled={submitting}
-                  className="px-4 py-2 rounded-lg bg-rose-600 hover:bg-rose-700 text-white text-xs font-semibold shadow-xs cursor-pointer transition-colors flex items-center gap-1.5 disabled:opacity-50"
+                  className="w-full sm:w-auto px-4 py-2.5 sm:py-2 rounded-lg bg-rose-600 hover:bg-rose-700 active:bg-rose-800 text-white text-xs font-semibold shadow-xs cursor-pointer transition-colors flex items-center justify-center gap-1.5 disabled:opacity-50"
                 >
                   {submitting && <Spinner size="xs" color="white" />}
                   <span>Từ chối</span>
@@ -280,12 +280,12 @@ export function ReviewRequestModal({
                   type="button"
                   onClick={() => handleReview("approved")}
                   disabled={submitting}
-                  className="px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold shadow-xs cursor-pointer transition-colors flex items-center gap-1.5 disabled:opacity-50"
+                  className="w-full sm:w-auto px-4 py-2.5 sm:py-2 rounded-lg bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white text-xs font-semibold shadow-xs cursor-pointer transition-colors flex items-center justify-center gap-1.5 disabled:opacity-50"
                 >
                   {submitting && <Spinner size="xs" color="white" />}
-                  <span>Giám Đốc Phê Duyệt</span>
+                  <span>Phê Duyệt</span>
                 </button>
-              </>
+              </div>
             )}
           </div>
         </div>

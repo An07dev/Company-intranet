@@ -130,7 +130,7 @@ export function AttendanceCalendar({
 
   // Dữ liệu chấm công trong tháng
   const [recordsMap, setRecordsMap] = useState<Record<string, AttendanceRecord>>({});
-  
+
   // Dữ liệu đơn xin nghỉ phép & đơn OT đã được duyệt
   const [leaveMap, setLeaveMap] = useState<Record<string, LeaveOtRequest[]>>({});
   const [otMap, setOtMap] = useState<Record<string, LeaveOtRequest[]>>({});
@@ -498,169 +498,251 @@ export function AttendanceCalendar({
 
   return (
     <div className={`bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl shadow-xs overflow-hidden ${className}`}>
-      {/* 1. Header Lịch: Hiển thị trên 1 hàng duy nhất trên PC */}
-      <div className="px-3 py-2.5 sm:px-5 sm:py-3 border-b border-zinc-200 dark:border-zinc-800 flex flex-col md:flex-row md:items-center md:justify-between gap-2.5 sm:gap-3 bg-zinc-50/50 dark:bg-zinc-950/20">
-        {/* Khối bên trái: Tiêu đề + Mã NV + Điều hướng Tháng + Hôm nay */}
-        <div className="flex items-center gap-2 sm:gap-3 flex-wrap md:flex-nowrap shrink-0">
-          <div className="flex items-center gap-2 shrink-0">
-            <h2 className="text-sm sm:text-base font-bold text-zinc-900 dark:text-zinc-100 flex items-center gap-1.5 shrink-0">
-              <span>📅</span>
-              <span>Lịch Chấm Công</span>
-            </h2>
-            <span className="px-2 py-0.5 rounded-full text-xs font-mono font-medium bg-emerald-100 text-emerald-800 dark:bg-emerald-950/80 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 shrink-0">
-              {user?.employeeCode ? user.employeeCode : user?.name}
-            </span>
+      {/* 1. Header Lịch: Tối ưu trên Mobile thành 2 hàng gọn gàng, 1 hàng trên PC */}
+      <div className="px-3 py-2.5 sm:px-5 sm:py-3 border-b border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-950/20">
+        {/* Mobile (< md): 2 hàng tinh gọn, không tràn lề */}
+        <div className="md:hidden space-y-2">
+          {/* Hàng 1: Tiêu đề + Switcher Lưới / Danh sách */}
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-1.5 shrink-0">
+              <h2 className="text-sm font-bold text-zinc-900 dark:text-zinc-100 flex items-center gap-1">
+                <span>📅</span>
+                <span>Lịch Chấm Công</span>
+              </h2>
+            </div>
+
+            {/* Toggle Lưới / Danh sách */}
+            <div className="flex items-center p-0.5 bg-zinc-200/80 dark:bg-zinc-800 rounded-lg text-xs shrink-0">
+              <button
+                type="button"
+                onClick={() => setViewMode("grid")}
+                className={`px-2 py-0.5 rounded-md font-medium transition-colors cursor-pointer flex items-center gap-1 text-[11px] ${viewMode === "grid"
+                  ? "bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 shadow-2xs font-semibold"
+                  : "text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100"
+                  }`}
+                title="Chế độ xem lưới lịch"
+              >
+                <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
+                </svg>
+                <span>Lưới</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setViewMode("list")}
+                className={`px-2 py-0.5 rounded-md font-medium transition-colors cursor-pointer flex items-center gap-1 text-[11px] ${viewMode === "list"
+                  ? "bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 shadow-2xs font-semibold"
+                  : "text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100"
+                  }`}
+                title="Chế độ xem danh sách ngày"
+              >
+                <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                </svg>
+                <span>Danh sách</span>
+              </button>
+            </div>
           </div>
 
-          <div className="hidden sm:block h-4 w-px bg-zinc-300 dark:bg-zinc-700 shrink-0" />
+          {/* Hàng 2: Điều hướng tháng + Hôm nay */}
+          <div className="flex items-center justify-between gap-1.5 pt-0.5">
+            <div className="flex items-center gap-1">
+              <button
+                type="button"
+                onClick={handlePrevMonth}
+                disabled={loading}
+                className="p-1 rounded-lg border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 cursor-pointer shadow-2xs"
+                title="Tháng trước"
+                aria-label="Tháng trước"
+              >
+                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                </svg>
+              </button>
 
-          {/* Điều hướng tháng */}
-          <div className="flex items-center gap-1.5 shrink-0">
-            <button
-              type="button"
-              onClick={handlePrevMonth}
-              disabled={loading}
-              className="p-1.5 rounded-lg border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 cursor-pointer transition-colors shadow-2xs shrink-0"
-              title="Tháng trước"
-              aria-label="Tháng trước"
-            >
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-              </svg>
-            </button>
+              <span className="font-semibold text-xs text-zinc-900 dark:text-zinc-100 min-w-[95px] text-center font-mono">
+                {monthNames[currentMonth]}, {currentYear}
+              </span>
 
-            <span className="font-semibold text-xs sm:text-sm text-zinc-900 dark:text-zinc-100 min-w-[110px] sm:min-w-[125px] text-center font-mono shrink-0">
-              {monthNames[currentMonth]}, {currentYear}
-            </span>
+              <button
+                type="button"
+                onClick={handleNextMonth}
+                disabled={loading}
+                className="p-1 rounded-lg border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 cursor-pointer shadow-2xs"
+                title="Tháng sau"
+                aria-label="Tháng sau"
+              >
+                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
+              </button>
+            </div>
 
-            <button
-              type="button"
-              onClick={handleNextMonth}
-              disabled={loading}
-              className="p-1.5 rounded-lg border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 cursor-pointer transition-colors shadow-2xs shrink-0"
-              title="Tháng sau"
-              aria-label="Tháng sau"
-            >
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-              </svg>
-            </button>
-
-            <button
-              type="button"
-              onClick={handleToday}
-              className="px-2.5 py-1.5 rounded-lg border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-xs font-medium text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 cursor-pointer transition-colors shadow-2xs shrink-0"
-            >
-              Hôm nay
-            </button>
+            <div className="flex items-center gap-1.5">
+              <button
+                type="button"
+                onClick={handleToday}
+                className="px-2 py-1 rounded-lg border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-[11px] font-medium text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 cursor-pointer shadow-2xs"
+              >
+                Hôm nay
+              </button>
+            </div>
           </div>
         </div>
 
-        {/* Khối bên phải: Switcher Chế độ Lưới / Danh sách + Nút Xuất Excel */}
-        <div className="flex items-center justify-between md:justify-end gap-2 shrink-0">
-          {/* Toggle Chế độ xem: Lưới (Grid) vs Danh sách (List) */}
-          <div className="flex items-center p-0.5 bg-zinc-200/80 dark:bg-zinc-800 rounded-lg text-xs shrink-0">
-            <button
-              type="button"
-              onClick={() => setViewMode("grid")}
-              className={`px-2.5 py-1 rounded-md font-medium transition-colors cursor-pointer flex items-center gap-1 ${
-                viewMode === "grid"
-                  ? "bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 shadow-2xs font-semibold"
-                  : "text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100"
-              }`}
-              title="Chế độ xem lưới lịch"
-            >
-              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
-              </svg>
-              <span>Lưới</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => setViewMode("list")}
-              className={`px-2.5 py-1 rounded-md font-medium transition-colors cursor-pointer flex items-center gap-1 ${
-                viewMode === "list"
-                  ? "bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 shadow-2xs font-semibold"
-                  : "text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100"
-              }`}
-              title="Chế độ xem danh sách ngày"
-            >
-              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-              </svg>
-              <span>Danh sách</span>
-            </button>
+        {/* Desktop (>= md): 1 hàng ngang rộng rãi */}
+        <div className="hidden md:flex md:items-center md:justify-between gap-3">
+          {/* Khối bên trái: Tiêu đề + Mã NV + Điều hướng Tháng + Hôm nay */}
+          <div className="flex items-center gap-3 shrink-0">
+            <div className="flex items-center gap-2 shrink-0">
+              <h2 className="text-base font-bold text-zinc-900 dark:text-zinc-100 flex items-center gap-1.5 shrink-0">
+                <span>📅</span>
+                <span>Lịch Chấm Công</span>
+              </h2>
+
+            </div>
+
+            <div className="h-4 w-px bg-zinc-300 dark:bg-zinc-700 shrink-0" />
+
+            {/* Điều hướng tháng */}
+            <div className="flex items-center gap-1.5 shrink-0">
+              <button
+                type="button"
+                onClick={handlePrevMonth}
+                disabled={loading}
+                className="p-1.5 rounded-lg border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 cursor-pointer transition-colors shadow-2xs shrink-0"
+                title="Tháng trước"
+                aria-label="Tháng trước"
+              >
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                </svg>
+              </button>
+
+              <span className="font-semibold text-sm text-zinc-900 dark:text-zinc-100 min-w-[125px] text-center font-mono shrink-0">
+                {monthNames[currentMonth]}, {currentYear}
+              </span>
+
+              <button
+                type="button"
+                onClick={handleNextMonth}
+                disabled={loading}
+                className="p-1.5 rounded-lg border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 cursor-pointer transition-colors shadow-2xs shrink-0"
+                title="Tháng sau"
+                aria-label="Tháng sau"
+              >
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
+              </button>
+
+              <button
+                type="button"
+                onClick={handleToday}
+                className="px-2.5 py-1.5 rounded-lg border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-xs font-medium text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 cursor-pointer transition-colors shadow-2xs shrink-0"
+              >
+                Hôm nay
+              </button>
+            </div>
           </div>
 
-          {/* Nút Xuất Excel Tháng (Đầy đủ Chấm công, Nghỉ phép và OT) */}
-          <button
-            type="button"
-            onClick={handleExportMonthExcel}
-            disabled={
-              loading ||
-              (Object.keys(recordsMap).length === 0 &&
-                Object.keys(leaveMap).length === 0 &&
-                Object.keys(otMap).length === 0)
-            }
-            className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-medium transition-colors shrink-0 ${
-              loading ||
-              (Object.keys(recordsMap).length === 0 &&
-                Object.keys(leaveMap).length === 0 &&
-                Object.keys(otMap).length === 0)
+          {/* Khối bên phải: Switcher Chế độ Lưới / Danh sách + Nút Xuất Excel */}
+          <div className="flex items-center justify-end gap-2 shrink-0">
+            {/* Toggle Chế độ xem: Lưới (Grid) vs Danh sách (List) */}
+            <div className="flex items-center p-0.5 bg-zinc-200/80 dark:bg-zinc-800 rounded-lg text-xs shrink-0">
+              <button
+                type="button"
+                onClick={() => setViewMode("grid")}
+                className={`px-2.5 py-1 rounded-md font-medium transition-colors cursor-pointer flex items-center gap-1 ${viewMode === "grid"
+                  ? "bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 shadow-2xs font-semibold"
+                  : "text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100"
+                  }`}
+                title="Chế độ xem lưới lịch"
+              >
+                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
+                </svg>
+                <span>Lưới</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setViewMode("list")}
+                className={`px-2.5 py-1 rounded-md font-medium transition-colors cursor-pointer flex items-center gap-1 ${viewMode === "list"
+                  ? "bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 shadow-2xs font-semibold"
+                  : "text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100"
+                  }`}
+                title="Chế độ xem danh sách ngày"
+              >
+                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                </svg>
+                <span>Danh sách</span>
+              </button>
+            </div>
+
+            {/* Nút Xuất Excel Tháng (Đầy đủ Chấm công, Nghỉ phép và OT) */}
+            <button
+              type="button"
+              onClick={handleExportMonthExcel}
+              disabled={
+                loading ||
+                (Object.keys(recordsMap).length === 0 &&
+                  Object.keys(leaveMap).length === 0 &&
+                  Object.keys(otMap).length === 0)
+              }
+              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-medium transition-colors shrink-0 ${loading ||
+                (Object.keys(recordsMap).length === 0 &&
+                  Object.keys(leaveMap).length === 0 &&
+                  Object.keys(otMap).length === 0)
                 ? "opacity-50 cursor-not-allowed border-zinc-200 dark:border-zinc-800 text-zinc-400"
                 : "border-emerald-600/40 bg-emerald-50/70 hover:bg-emerald-100 text-emerald-700 dark:bg-emerald-950/40 dark:hover:bg-emerald-900/60 dark:text-emerald-300 dark:border-emerald-800 cursor-pointer shadow-2xs"
-            }`}
-            title="Xuất bảng tổng hợp chấm công, nghỉ phép và làm thêm giờ (OT) tháng này ra file Excel (.xlsx)"
-          >
-            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-            </svg>
-            <span>Xuất Excel</span>
-          </button>
+                }`}
+              title="Xuất bảng tổng hợp chấm công, nghỉ phép và làm thêm giờ (OT) tháng này ra file Excel (.xlsx)"
+            >
+              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg>
+              <span>Xuất Excel</span>
+            </button>
+          </div>
         </div>
       </div>
 
-      {/* 2. Thẻ thống kê tóm tắt tháng: Mở rộng thành 6 chỉ số gồm Nghỉ phép & OT đã duyệt */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 divide-x divide-y sm:divide-y-0 divide-zinc-200 dark:divide-zinc-800 border-b border-zinc-200 dark:border-zinc-800 text-[11px] sm:text-xs">
-        <div className="p-2.5 sm:p-3 bg-white dark:bg-zinc-900 flex items-center justify-between">
-          <span className="text-zinc-500 dark:text-zinc-400">Số ngày làm:</span>
-          <span className="font-bold font-mono text-zinc-900 dark:text-zinc-100">
+      {/* 2. Thẻ thống kê tóm tắt tháng: 3 cột trên Mobile (2 hàng cân xứng), 6 cột trên PC */}
+      <div className="grid grid-cols-3 lg:grid-cols-6 divide-x divide-y lg:divide-y-0 divide-zinc-200 dark:divide-zinc-800 border-b border-zinc-200 dark:border-zinc-800 text-[10px] sm:text-xs">
+        <div className="p-2 sm:p-3 bg-white dark:bg-zinc-900 flex flex-col sm:flex-row sm:items-center sm:justify-between text-center sm:text-left">
+          <span className="text-zinc-500 dark:text-zinc-400 text-[10px] sm:text-xs">Ngày làm</span>
+          <span className="font-bold font-mono text-zinc-900 dark:text-zinc-100 text-xs sm:text-xs">
             {stats.totalWorkingDays} ngày
           </span>
         </div>
-        <div className="p-2.5 sm:p-3 bg-white dark:bg-zinc-900 flex items-center justify-between">
-          <span className="text-emerald-600 dark:text-emerald-400 font-medium">Đúng giờ:</span>
-          <span className="font-bold font-mono text-emerald-600 dark:text-emerald-400">
+        <div className="p-2 sm:p-3 bg-white dark:bg-zinc-900 flex flex-col sm:flex-row sm:items-center sm:justify-between text-center sm:text-left">
+          <span className="text-emerald-600 dark:text-emerald-400 text-[10px] sm:text-xs font-medium">Đúng giờ</span>
+          <span className="font-bold font-mono text-emerald-600 dark:text-emerald-400 text-xs sm:text-xs">
             {stats.onTimeCount} ngày
           </span>
         </div>
-        <div className="p-2.5 sm:p-3 bg-white dark:bg-zinc-900 flex items-center justify-between">
-          <span className="text-amber-600 dark:text-amber-400 font-medium">Đi muộn:</span>
-          <span className="font-bold font-mono text-amber-600 dark:text-amber-400">
-            {stats.lateCount} ngày
-          </span>
-        </div>
-        <div className="p-2.5 sm:p-3 bg-white dark:bg-zinc-900 flex items-center justify-between">
-          <span className="text-zinc-500 dark:text-zinc-400">Tổng giờ:</span>
-          <span className="font-bold font-mono text-zinc-900 dark:text-zinc-100">
+        <div className="p-2 sm:p-3 bg-white dark:bg-zinc-900 flex flex-col sm:flex-row sm:items-center sm:justify-between text-center sm:text-left">
+          <span className="text-zinc-500 dark:text-zinc-400 text-[10px] sm:text-xs">Tổng giờ</span>
+          <span className="font-bold font-mono text-zinc-900 dark:text-zinc-100 text-xs sm:text-xs truncate">
             {stats.totalHoursString}
           </span>
         </div>
-        <div className="p-2.5 sm:p-3 bg-teal-50/50 dark:bg-teal-950/20 flex items-center justify-between">
-          <span className="text-teal-700 dark:text-teal-300 font-medium flex items-center gap-1">
-            <span>🏖️</span>
-            <span>Nghỉ phép (duyệt):</span>
+        <div className="p-2 sm:p-3 bg-white dark:bg-zinc-900 flex flex-col sm:flex-row sm:items-center sm:justify-between text-center sm:text-left">
+          <span className="text-amber-600 dark:text-amber-400 text-[10px] sm:text-xs font-medium">Đi muộn</span>
+          <span className="font-bold font-mono text-amber-600 dark:text-amber-400 text-xs sm:text-xs">
+            {stats.lateCount} ngày
           </span>
-          <span className="font-bold font-mono text-teal-700 dark:text-teal-300">
+        </div>
+        <div className="p-2 sm:p-3 bg-teal-50/50 dark:bg-teal-950/20 flex flex-col sm:flex-row sm:items-center sm:justify-between text-center sm:text-left">
+          <span className="text-teal-700 dark:text-teal-300 text-[10px] sm:text-xs font-medium">Phép duyệt</span>
+          <span className="font-bold font-mono text-teal-700 dark:text-teal-300 text-xs sm:text-xs">
             {stats.approvedLeaveDays} ngày
           </span>
         </div>
-        <div className="p-2.5 sm:p-3 bg-amber-50/50 dark:bg-amber-950/20 flex items-center justify-between">
-          <span className="text-amber-700 dark:text-amber-300 font-medium flex items-center gap-1">
-            <span>⚡</span>
-            <span>Giờ OT (duyệt):</span>
-          </span>
-          <span className="font-bold font-mono text-amber-700 dark:text-amber-300">
+        <div className="p-2 sm:p-3 bg-amber-50/50 dark:bg-amber-950/20 flex flex-col sm:flex-row sm:items-center sm:justify-between text-center sm:text-left">
+          <span className="text-amber-700 dark:text-amber-300 text-[10px] sm:text-xs font-medium">OT duyệt</span>
+          <span className="font-bold font-mono text-amber-700 dark:text-amber-300 text-xs sm:text-xs">
             {stats.approvedOtHours}h
           </span>
         </div>
@@ -703,25 +785,24 @@ export function AttendanceCalendar({
                 <div
                   key={day.dateStr}
                   onClick={() => handleDayClick(day.dateStr, day.record, day.leaves, day.ots)}
-                  className={`min-h-[64px] sm:min-h-[102px] p-1 sm:p-2 rounded-lg border transition-all cursor-pointer flex flex-col justify-between ${
-                    !day.isCurrentMonth
-                      ? "opacity-35 bg-zinc-50/50 dark:bg-zinc-950/20 border-zinc-200/50 dark:border-zinc-800/50"
-                      : isSelected
-                        ? "bg-emerald-50/70 dark:bg-emerald-950/40 border-emerald-500 dark:border-emerald-400 ring-2 ring-emerald-500/60 shadow-xs"
-                        : day.isToday
-                          ? "bg-zinc-50 dark:bg-zinc-800/60 border-zinc-900 dark:border-zinc-100 ring-1 ring-zinc-900 dark:ring-zinc-100"
-                          : hasLeave && !hasRecord
-                            ? "bg-teal-50/40 dark:bg-teal-950/30 border-teal-300/80 dark:border-teal-800/60 hover:border-teal-400"
-                            : hasRecord
-                              ? isLate
-                                ? "bg-amber-50/50 dark:bg-amber-950/20 border-amber-200 dark:border-amber-900/60 hover:border-amber-400"
-                                : "bg-emerald-50/40 dark:bg-emerald-950/20 border-emerald-200/80 dark:border-emerald-900/60 hover:border-emerald-400"
-                              : hasOt
-                                ? "bg-amber-50/30 dark:bg-amber-950/20 border-amber-200 dark:border-amber-900/50 hover:border-amber-300"
-                                : day.isWeekend
-                                  ? "bg-zinc-50/30 dark:bg-zinc-950/10 border-zinc-200 dark:border-zinc-800 hover:bg-zinc-100/50"
-                                  : "bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 hover:border-zinc-300 dark:hover:border-zinc-700"
-                  }`}
+                  className={`min-h-[50px] sm:min-h-[102px] p-1 sm:p-2 rounded-lg border transition-all cursor-pointer flex flex-col justify-between ${!day.isCurrentMonth
+                    ? "opacity-35 bg-zinc-50/50 dark:bg-zinc-950/20 border-zinc-200/50 dark:border-zinc-800/50"
+                    : isSelected
+                      ? "bg-emerald-50/70 dark:bg-emerald-950/40 border-emerald-500 dark:border-emerald-400 ring-2 ring-emerald-500/60 shadow-xs"
+                      : day.isToday
+                        ? "bg-zinc-50 dark:bg-zinc-800/60 border-zinc-900 dark:border-zinc-100 ring-1 ring-zinc-900 dark:ring-zinc-100"
+                        : hasLeave && !hasRecord
+                          ? "bg-teal-50/40 dark:bg-teal-950/30 border-teal-300/80 dark:border-teal-800/60 hover:border-teal-400"
+                          : hasRecord
+                            ? isLate
+                              ? "bg-amber-50/50 dark:bg-amber-950/20 border-amber-200 dark:border-amber-900/60 hover:border-amber-400"
+                              : "bg-emerald-50/40 dark:bg-emerald-950/20 border-emerald-200/80 dark:border-emerald-900/60 hover:border-emerald-400"
+                            : hasOt
+                              ? "bg-amber-50/30 dark:bg-amber-950/20 border-amber-200 dark:border-amber-900/50 hover:border-amber-300"
+                              : day.isWeekend
+                                ? "bg-zinc-50/30 dark:bg-zinc-950/10 border-zinc-200 dark:border-zinc-800 hover:bg-zinc-100/50"
+                                : "bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 hover:border-zinc-300 dark:hover:border-zinc-700"
+                    }`}
                 >
                   {/* Dòng ngày: Số ngày + Huy hiệu hôm nay + Icons trạng thái góc phải */}
                   <div className="flex items-center justify-between gap-1">
@@ -741,13 +822,12 @@ export function AttendanceCalendar({
                         </>
                       ) : (
                         <span
-                          className={`text-[11px] sm:text-xs font-mono font-bold ${
-                            day.isCurrentMonth
-                              ? day.isWeekend
-                                ? "text-zinc-400 dark:text-zinc-500"
-                                : "text-zinc-800 dark:text-zinc-200"
-                              : "text-zinc-400 dark:text-zinc-600"
-                          }`}
+                          className={`text-[11px] sm:text-xs font-mono font-bold ${day.isCurrentMonth
+                            ? day.isWeekend
+                              ? "text-zinc-400 dark:text-zinc-500"
+                              : "text-zinc-800 dark:text-zinc-200"
+                            : "text-zinc-400 dark:text-zinc-600"
+                            }`}
                         >
                           {day.dayNum}
                         </span>
@@ -768,13 +848,12 @@ export function AttendanceCalendar({
                       )}
                       {hasRecord && (
                         <span
-                          className={`w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full shrink-0 ${
-                            isLate
-                              ? "bg-amber-500 ring-2 ring-amber-300/40"
-                              : isEarly
-                                ? "bg-blue-500 ring-2 ring-blue-300/40"
-                                : "bg-emerald-500 ring-2 ring-emerald-300/40"
-                          }`}
+                          className={`w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full shrink-0 ${isLate
+                            ? "bg-amber-500 ring-2 ring-amber-300/40"
+                            : isEarly
+                              ? "bg-blue-500 ring-2 ring-blue-300/40"
+                              : "bg-emerald-500 ring-2 ring-emerald-300/40"
+                            }`}
                           title={isLate ? "Đi muộn" : isEarly ? "Về sớm" : "Đúng giờ"}
                         />
                       )}
@@ -789,9 +868,8 @@ export function AttendanceCalendar({
                         {/* Mobile: Giờ check-in */}
                         <div className="sm:hidden text-center">
                           <span
-                            className={`font-mono text-[9px] font-bold block truncate leading-tight ${
-                              isLate ? "text-amber-700 dark:text-amber-300" : "text-zinc-700 dark:text-zinc-300"
-                            }`}
+                            className={`font-mono text-[9px] font-bold block truncate leading-tight ${isLate ? "text-amber-700 dark:text-amber-300" : "text-zinc-700 dark:text-zinc-300"
+                              }`}
                           >
                             {formatTime(day.record?.checkInTime)}
                           </span>
@@ -816,11 +894,10 @@ export function AttendanceCalendar({
 
                           <div className="pt-0.5">
                             <span
-                              className={`inline-block px-1 py-0.2 rounded text-[8px] font-mono font-medium truncate max-w-full ${
-                                isLate
-                                  ? "bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300"
-                                  : "bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300"
-                              }`}
+                              className={`inline-block px-1 py-0.2 rounded text-[8px] font-mono font-medium truncate max-w-full ${isLate
+                                ? "bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300"
+                                : "bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300"
+                                }`}
                             >
                               {day.record?.workDurationMinutes
                                 ? `${Math.floor(day.record.workDurationMinutes / 60)}h${day.record.workDurationMinutes % 60}m`
@@ -842,11 +919,12 @@ export function AttendanceCalendar({
                           return (
                             <div
                               key={l.id}
-                              className={`px-1 py-0.5 rounded text-[8px] sm:text-[9px] font-medium border truncate leading-tight flex items-center gap-0.5 ${cfg.bg} ${cfg.text} ${cfg.border}`}
+                              className={`px-0.5 sm:px-1 py-0.5 rounded text-[7px] sm:text-[9px] font-medium border truncate leading-tight flex items-center justify-center sm:justify-start gap-0.5 ${cfg.bg} ${cfg.text} ${cfg.border}`}
                               title={`${cfg.label} - Phê duyệt bởi ${l.approverName || "Giám đốc"}`}
                             >
                               <span className="shrink-0">{cfg.icon}</span>
-                              <span className="truncate">{cfg.shortLabel} {shiftText && `(${shiftText})`}</span>
+                              <span className="hidden sm:inline truncate">{cfg.shortLabel} {shiftText && `(${shiftText})`}</span>
+                              <span className="sm:hidden font-bold">Phép</span>
                             </div>
                           );
                         })}
@@ -859,11 +937,12 @@ export function AttendanceCalendar({
                         {day.ots.map((ot) => (
                           <div
                             key={ot.id}
-                            className="px-1 py-0.5 rounded text-[8px] sm:text-[9px] font-mono font-medium border truncate leading-tight bg-amber-50 dark:bg-amber-950/70 text-amber-800 dark:text-amber-300 border-amber-200 dark:border-amber-800 flex items-center gap-0.5"
+                            className="px-0.5 sm:px-1 py-0.5 rounded text-[7px] sm:text-[9px] font-mono font-medium border truncate leading-tight bg-amber-50 dark:bg-amber-950/70 text-amber-800 dark:text-amber-300 border-amber-200 dark:border-amber-800 flex items-center justify-center sm:justify-start gap-0.5"
                             title={`Làm thêm OT: ${ot.startTime || ""} - ${ot.endTime || ""} (+${ot.durationHours}h) - Phê duyệt bởi ${ot.approverName || "Giám đốc"}`}
                           >
                             <span className="shrink-0">⚡</span>
-                            <span className="truncate">OT +{ot.durationHours}h</span>
+                            <span className="hidden sm:inline truncate">OT +{ot.durationHours}h</span>
+                            <span className="sm:hidden font-bold font-mono">+{ot.durationHours}h</span>
                           </div>
                         ))}
                       </div>
@@ -909,11 +988,10 @@ export function AttendanceCalendar({
                   <div
                     key={item.date}
                     onClick={() => handleDayClick(item.date, item.record, item.leaves, item.ots)}
-                    className={`p-3 rounded-xl border transition-all cursor-pointer ${
-                      isSelected
-                        ? "bg-emerald-50/70 dark:bg-emerald-950/40 border-emerald-500 ring-2 ring-emerald-500/50"
-                        : "bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 hover:border-zinc-300 dark:hover:border-zinc-700 hover:bg-zinc-50/50"
-                    }`}
+                    className={`p-3 rounded-xl border transition-all cursor-pointer ${isSelected
+                      ? "bg-emerald-50/70 dark:bg-emerald-950/40 border-emerald-500 ring-2 ring-emerald-500/50"
+                      : "bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 hover:border-zinc-300 dark:hover:border-zinc-700 hover:bg-zinc-50/50"
+                      }`}
                   >
                     <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
                       <div className="flex items-center gap-2">
@@ -931,18 +1009,16 @@ export function AttendanceCalendar({
                       <div className="flex items-center gap-1.5 flex-wrap">
                         {item.record && (
                           <span
-                            className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-semibold ${
-                              isLate
-                                ? "bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300"
-                                : isEarly
-                                  ? "bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300"
-                                  : "bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300"
-                            }`}
+                            className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-semibold ${isLate
+                              ? "bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300"
+                              : isEarly
+                                ? "bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300"
+                                : "bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300"
+                              }`}
                           >
                             <span
-                              className={`w-1.5 h-1.5 rounded-full ${
-                                isLate ? "bg-amber-500" : isEarly ? "bg-blue-500" : "bg-emerald-500"
-                              }`}
+                              className={`w-1.5 h-1.5 rounded-full ${isLate ? "bg-amber-500" : isEarly ? "bg-blue-500" : "bg-emerald-500"
+                                }`}
                             />
                             {isLate ? "Đi Muộn" : isEarly ? "Về Sớm" : "Đúng Giờ"}
                           </span>
@@ -1056,19 +1132,14 @@ export function AttendanceCalendar({
 
       {/* 4. Thẻ Chi Tiết Ngày Được Chọn (Bấm vào ngày bất kỳ để xem rõ ràng) */}
       {selectedDateStr && (
-        <div className="p-3.5 sm:p-5 bg-zinc-50/95 dark:bg-zinc-950/90 border-t border-zinc-200 dark:border-zinc-800 space-y-3 text-xs animate-in fade-in duration-150">
+        <div className="p-2.5 sm:p-4 bg-zinc-50/95 dark:bg-zinc-950/90 border-t border-zinc-200 dark:border-zinc-800 space-y-2.5 text-xs animate-in fade-in duration-150">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <span className="font-bold text-zinc-900 dark:text-zinc-100 text-sm sm:text-base flex items-center gap-1.5">
+            <div className="flex items-center gap-1.5 min-w-0">
+              <span className="font-bold text-zinc-900 dark:text-zinc-100 text-xs sm:text-sm flex items-center gap-1 truncate">
                 <span>📌</span>
                 <span>Chi tiết ngày:</span>
                 <span className="font-mono text-emerald-600 dark:text-emerald-400">{selectedDateStr}</span>
               </span>
-              {selectedDateStr === todayStr && (
-                <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900">
-                  Hôm nay
-                </span>
-              )}
             </div>
 
             <button
@@ -1079,179 +1150,181 @@ export function AttendanceCalendar({
                 setSelectedLeaves([]);
                 setSelectedOts([]);
               }}
-              className="px-3 py-1.5 text-xs font-medium rounded-lg bg-zinc-200 dark:bg-zinc-800 hover:bg-zinc-300 dark:hover:bg-zinc-700 text-zinc-700 dark:text-zinc-300 transition-colors cursor-pointer text-center shrink-0"
+              className="px-2.5 py-1 text-xs font-medium rounded-lg bg-zinc-200 dark:bg-zinc-800 hover:bg-zinc-300 dark:hover:bg-zinc-700 text-zinc-700 dark:text-zinc-300 transition-colors cursor-pointer text-center shrink-0"
             >
-              ✕ Đóng chi tiết
+              ✕ Đóng
             </button>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-            {/* THẺ 1: THÔNG TIN CHẤM CÔNG THỰC TẾ */}
-            <div className="p-3 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 space-y-2">
-              <div className="flex items-center justify-between pb-1.5 border-b border-zinc-100 dark:border-zinc-800">
-                <span className="font-bold text-zinc-900 dark:text-zinc-100 flex items-center gap-1">
-                  <span>⏱️</span>
-                  <span>Chấm công thực tế</span>
-                </span>
-                {selectedRecord && (
-                  <span
-                    className={`px-1.5 py-0.2 rounded text-[10px] font-semibold ${
-                      selectedRecord.status === "late"
-                        ? "bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300"
-                        : selectedRecord.status === "early_leave"
-                          ? "bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300"
-                          : "bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300"
-                    }`}
-                  >
-                    {selectedRecord.status === "late"
-                      ? "Đi Muộn"
-                      : selectedRecord.status === "early_leave"
-                        ? "Về Sớm"
-                        : "Đúng Giờ"}
-                  </span>
-                )}
-              </div>
+          {/* Nếu ngày không có bất kỳ dữ liệu nào (không chấm công, không phép, không OT) */}
+          {!selectedRecord && selectedLeaves.length === 0 && selectedOts.length === 0 ? (
+            <div className="py-6 px-4 text-center rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-zinc-500 dark:text-zinc-400">
+              <div className="text-xl mb-1">📅</div>
+              <div className="text-xs font-semibold text-zinc-700 dark:text-zinc-300">Không có dữ liệu</div>
+              <div className="text-[11px] text-zinc-400 mt-0.5">Không có bản ghi chấm công, đơn nghỉ phép hay làm thêm giờ (OT) trong ngày {selectedDateStr}.</div>
+            </div>
+          ) : (
+            <div className={`grid grid-cols-1 ${selectedLeaves.length > 0 || selectedOts.length > 0 ? "md:grid-cols-2 lg:grid-cols-3" : ""} gap-3`}>
+              {/* THẺ 1: THÔNG TIN CHẤM CÔNG THỰC TẾ (Hiển thị nếu có bản ghi chấm công hoặc là thẻ duy nhất) */}
+              {(selectedRecord || (selectedLeaves.length === 0 && selectedOts.length === 0)) && (
+                <div className="p-3 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 space-y-2">
+                  <div className="flex items-center justify-between pb-1.5 border-b border-zinc-100 dark:border-zinc-800">
+                    <span className="font-bold text-zinc-900 dark:text-zinc-100 flex items-center gap-1">
+                      <span>⏱️</span>
+                      <span>Chấm công thực tế</span>
+                    </span>
+                    {selectedRecord && (
+                      <span
+                        className={`px-1.5 py-0.2 rounded text-[10px] font-semibold ${selectedRecord.status === "late"
+                          ? "bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300"
+                          : selectedRecord.status === "early_leave"
+                            ? "bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300"
+                            : "bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300"
+                          }`}
+                      >
+                        {selectedRecord.status === "late"
+                          ? "Đi Muộn"
+                          : selectedRecord.status === "early_leave"
+                            ? "Về Sớm"
+                            : "Đúng Giờ"}
+                      </span>
+                    )}
+                  </div>
 
-              {selectedRecord ? (
-                <div className="space-y-1.5 font-mono text-[11px]">
-                  <div className="flex items-center justify-between">
-                    <span className="text-zinc-500">Giờ vào:</span>
-                    <strong className="text-zinc-900 dark:text-zinc-100">
-                      {formatTime(selectedRecord.checkInTime)}{" "}
-                      <span className="font-normal text-[10px] text-zinc-400">({selectedRecord.checkInIp || "—"})</span>
-                    </strong>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-zinc-500">Giờ về:</span>
-                    <strong className="text-zinc-900 dark:text-zinc-100">
-                      {formatTime(selectedRecord.checkOutTime)}{" "}
-                      <span className="font-normal text-[10px] text-zinc-400">({selectedRecord.checkOutIp || "—"})</span>
-                    </strong>
-                  </div>
-                  {selectedRecord.workDurationMinutes !== undefined && (
-                    <div className="flex items-center justify-between pt-1 border-t border-zinc-100 dark:border-zinc-800/60">
-                      <span className="text-zinc-500">Thời lượng:</span>
-                      <strong className="text-emerald-600 dark:text-emerald-400">
-                        {Math.floor(selectedRecord.workDurationMinutes / 60)}h {selectedRecord.workDurationMinutes % 60}m
-                      </strong>
+                  {selectedRecord ? (
+                    <div className="space-y-1.5 font-mono text-[11px]">
+                      <div className="flex items-center justify-between">
+                        <span className="text-zinc-500">Giờ vào:</span>
+                        <strong className="text-zinc-900 dark:text-zinc-100">
+                          {formatTime(selectedRecord.checkInTime)}{" "}
+                          <span className="hidden sm:inline font-normal text-[10px] text-zinc-400">({selectedRecord.checkInIp || "—"})</span>
+                        </strong>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-zinc-500">Giờ về:</span>
+                        <strong className="text-zinc-900 dark:text-zinc-100">
+                          {formatTime(selectedRecord.checkOutTime)}{" "}
+                          <span className="hidden sm:inline font-normal text-[10px] text-zinc-400">({selectedRecord.checkOutIp || "—"})</span>
+                        </strong>
+                      </div>
+                      {selectedRecord.workDurationMinutes !== undefined && (
+                        <div className="flex items-center justify-between pt-1 border-t border-zinc-100 dark:border-zinc-800/60">
+                          <span className="text-zinc-500">Thời lượng:</span>
+                          <strong className="text-emerald-600 dark:text-emerald-400">
+                            {Math.floor(selectedRecord.workDurationMinutes / 60)}h {selectedRecord.workDurationMinutes % 60}m
+                          </strong>
+                        </div>
+                      )}
+                      {selectedRecord.note && (
+                        <p className="text-[11px] font-sans text-zinc-500 italic pt-1">
+                          📝 {selectedRecord.note}
+                        </p>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="py-3 text-center text-zinc-400 text-xs italic">
+                      Không có lượt chấm công trong ngày này.
                     </div>
                   )}
-                  {selectedRecord.note && (
-                    <p className="text-[11px] font-sans text-zinc-500 italic pt-1">
-                      📝 {selectedRecord.note}
-                    </p>
-                  )}
-                </div>
-              ) : (
-                <div className="py-4 text-center text-zinc-400 text-xs italic">
-                  Không có dữ liệu chấm công trong ngày này.
                 </div>
               )}
-            </div>
 
-            {/* THẺ 2: ĐƠN NGHỈ PHÉP ĐÃ DUYỆT */}
-            <div className="p-3 rounded-xl border border-teal-200/80 dark:border-teal-900/50 bg-teal-50/20 dark:bg-teal-950/20 space-y-2">
-              <div className="flex items-center justify-between pb-1.5 border-b border-teal-200/60 dark:border-teal-900/40">
-                <span className="font-bold text-teal-900 dark:text-teal-200 flex items-center gap-1">
-                  <span>🏖️</span>
-                  <span>Đơn Nghỉ Phép</span>
-                </span>
-                <span className="px-1.5 py-0.2 rounded text-[10px] font-semibold bg-teal-100 dark:bg-teal-900/60 text-teal-800 dark:text-teal-300">
-                  {selectedLeaves.length} đơn
-                </span>
-              </div>
+              {/* THẺ 2: ĐƠN NGHỈ PHÉP ĐÃ DUYỆT (CHỈ HIỂN THỊ KHI CÓ ĐƠN NGHỈ PHÉP) */}
+              {selectedLeaves.length > 0 && (
+                <div className="p-3 rounded-xl border border-teal-200/80 dark:border-teal-900/50 bg-teal-50/20 dark:bg-teal-950/20 space-y-2">
+                  <div className="flex items-center justify-between pb-1.5 border-b border-teal-200/60 dark:border-teal-900/40">
+                    <span className="font-bold text-teal-900 dark:text-teal-200 flex items-center gap-1">
+                      <span>🏖️</span>
+                      <span>Đơn Nghỉ Phép</span>
+                    </span>
+                    <span className="px-1.5 py-0.2 rounded text-[10px] font-semibold bg-teal-100 dark:bg-teal-900/60 text-teal-800 dark:text-teal-300">
+                      {selectedLeaves.length} đơn
+                    </span>
+                  </div>
 
-              {selectedLeaves.length > 0 ? (
-                <div className="space-y-2">
-                  {selectedLeaves.map((leave) => {
-                    const cfg = leaveLabels[leave.leaveType || "annual"] || leaveLabels.annual;
-                    const shiftLabel = leave.durationShift === "all_day" ? "Cả ngày" : leave.durationShift === "morning" ? "Buổi sáng" : "Buổi chiều";
-                    return (
-                      <div key={leave.id} className="p-2.5 rounded-lg bg-white dark:bg-zinc-900 border border-teal-200 dark:border-teal-900/60 space-y-1.5">
-                        <div className="flex items-center justify-between">
-                          <span className={`px-2 py-0.5 rounded text-[10px] font-bold border ${cfg.bg} ${cfg.text} ${cfg.border}`}>
-                            {cfg.icon} {cfg.label}
-                          </span>
-                          <span className="px-1.5 py-0.2 rounded text-[9px] font-semibold bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300">
-                            ✓ Đã Duyệt
-                          </span>
-                        </div>
-                        <div className="text-[11px] text-zinc-600 dark:text-zinc-300 space-y-0.5">
-                          <div>Ca nghỉ: <strong className="text-zinc-900 dark:text-zinc-100">{shiftLabel}</strong> ({leave.durationDays} ngày)</div>
-                          <div>Thời gian: <span className="font-mono text-zinc-800 dark:text-zinc-200">{leave.startDate} {leave.endDate !== leave.startDate ? `đến ${leave.endDate}` : ""}</span></div>
-                          <div className="italic text-zinc-500">Lý do: &ldquo;{leave.reason}&rdquo;</div>
-                        </div>
-                        <div className="pt-1 border-t border-zinc-100 dark:border-zinc-800 text-[10px] text-zinc-500 flex items-center justify-between">
-                          <span>Người duyệt: <strong className="text-emerald-600 dark:text-emerald-400">👑 {leave.approverName || "Giám Đốc"}</strong></span>
-                        </div>
-                        {leave.approvalNote && (
-                          <div className="text-[10px] text-emerald-700 dark:text-emerald-400 bg-emerald-50/50 dark:bg-emerald-950/40 p-1.5 rounded">
-                            💬 Ý kiến: {leave.approvalNote}
+                  <div className="space-y-2">
+                    {selectedLeaves.map((leave) => {
+                      const cfg = leaveLabels[leave.leaveType || "annual"] || leaveLabels.annual;
+                      const shiftLabel = leave.durationShift === "all_day" ? "Cả ngày" : leave.durationShift === "morning" ? "Buổi sáng" : "Buổi chiều";
+                      return (
+                        <div key={leave.id} className="p-2.5 rounded-lg bg-white dark:bg-zinc-900 border border-teal-200 dark:border-teal-900/60 space-y-1.5">
+                          <div className="flex items-center justify-between">
+                            <span className={`px-2 py-0.5 rounded text-[10px] font-bold border ${cfg.bg} ${cfg.text} ${cfg.border}`}>
+                              {cfg.icon} {cfg.label}
+                            </span>
+                            <span className="px-1.5 py-0.2 rounded text-[9px] font-semibold bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300">
+                              ✓ Đã Duyệt
+                            </span>
                           </div>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
-              ) : (
-                <div className="py-4 text-center text-zinc-400 text-xs italic">
-                  Không có đơn nghỉ phép nào được duyệt vào ngày này.
-                </div>
-              )}
-            </div>
-
-            {/* THẺ 3: ĐƠN LÀM THÊM GIỜ (OT) ĐÃ DUYỆT */}
-            <div className="p-3 rounded-xl border border-amber-200/80 dark:border-amber-900/50 bg-amber-50/20 dark:bg-amber-950/20 space-y-2">
-              <div className="flex items-center justify-between pb-1.5 border-b border-amber-200/60 dark:border-amber-900/40">
-                <span className="font-bold text-amber-900 dark:text-amber-200 flex items-center gap-1">
-                  <span>⚡</span>
-                  <span>Đơn Làm Thêm Giờ (OT)</span>
-                </span>
-                <span className="px-1.5 py-0.2 rounded text-[10px] font-semibold bg-amber-100 dark:bg-amber-900/60 text-amber-800 dark:text-amber-300">
-                  {selectedOts.length} đơn
-                </span>
-              </div>
-
-              {selectedOts.length > 0 ? (
-                <div className="space-y-2">
-                  {selectedOts.map((ot) => {
-                    const otCfg = otTypeBadges[ot.otType || "weekday"] || otTypeBadges.weekday;
-                    return (
-                      <div key={ot.id} className="p-2.5 rounded-lg bg-white dark:bg-zinc-900 border border-amber-200 dark:border-amber-900/60 space-y-1.5">
-                        <div className="flex items-center justify-between">
-                          <span className={`px-2 py-0.5 rounded text-[10px] font-bold border ${otCfg.bg} ${otCfg.text} ${otCfg.border}`}>
-                            ⚡ {otCfg.label} ({otCfg.rate})
-                          </span>
-                          <span className="px-1.5 py-0.2 rounded text-[9px] font-semibold bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300">
-                            ✓ Đã Duyệt
-                          </span>
-                        </div>
-                        <div className="text-[11px] text-zinc-600 dark:text-zinc-300 space-y-0.5 font-mono">
-                          <div>Khung giờ: <strong className="text-amber-700 dark:text-amber-300">{ot.startTime} - {ot.endTime}</strong> (<span className="text-emerald-600 font-bold">+{ot.durationHours} giờ</span>)</div>
-                        </div>
-                        <div className="text-[11px] text-zinc-600 dark:text-zinc-300 space-y-0.5">
-                          <div>Dự án/Công việc: <strong className="text-zinc-900 dark:text-zinc-100">{ot.projectOrTask}</strong></div>
-                          <div className="italic text-zinc-500">Lý do: &ldquo;{ot.reason}&rdquo;</div>
-                        </div>
-                        <div className="pt-1 border-t border-zinc-100 dark:border-zinc-800 text-[10px] text-zinc-500 flex items-center justify-between">
-                          <span>Người duyệt: <strong className="text-emerald-600 dark:text-emerald-400">👑 {ot.approverName || "Giám Đốc"}</strong></span>
-                        </div>
-                        {ot.approvalNote && (
-                          <div className="text-[10px] text-amber-700 dark:text-amber-400 bg-amber-50/50 dark:bg-amber-950/40 p-1.5 rounded">
-                            💬 Ý kiến: {ot.approvalNote}
+                          <div className="text-[11px] text-zinc-600 dark:text-zinc-300 space-y-0.5">
+                            <div>Ca nghỉ: <strong className="text-zinc-900 dark:text-zinc-100">{shiftLabel}</strong> ({leave.durationDays} ngày)</div>
+                            <div>Thời gian: <span className="font-mono text-zinc-800 dark:text-zinc-200">{leave.startDate} {leave.endDate !== leave.startDate ? `đến ${leave.endDate}` : ""}</span></div>
+                            <div className="italic text-zinc-500">Lý do: &ldquo;{leave.reason}&rdquo;</div>
                           </div>
-                        )}
-                      </div>
-                    );
-                  })}
+                          <div className="pt-1 border-t border-zinc-100 dark:border-zinc-800 text-[10px] text-zinc-500 flex items-center justify-between">
+                            <span>Người duyệt: <strong className="text-emerald-600 dark:text-emerald-400">👑 {leave.approverName || "Giám Đốc"}</strong></span>
+                          </div>
+                          {leave.approvalNote && (
+                            <div className="text-[10px] text-emerald-700 dark:text-emerald-400 bg-emerald-50/50 dark:bg-emerald-950/40 p-1.5 rounded">
+                              💬 Ý kiến: {leave.approvalNote}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
                 </div>
-              ) : (
-                <div className="py-4 text-center text-zinc-400 text-xs italic">
-                  Không có đơn làm thêm giờ (OT) nào được duyệt vào ngày này.
+              )}
+
+              {/* THẺ 3: ĐƠN LÀM THÊM GIỜ (OT) ĐÃ DUYỆT (CHỈ HIỂN THỊ KHI CÓ ĐƠN OT) */}
+              {selectedOts.length > 0 && (
+                <div className="p-3 rounded-xl border border-amber-200/80 dark:border-amber-900/50 bg-amber-50/20 dark:bg-amber-950/20 space-y-2">
+                  <div className="flex items-center justify-between pb-1.5 border-b border-amber-200/60 dark:border-amber-900/40">
+                    <span className="font-bold text-amber-900 dark:text-amber-200 flex items-center gap-1">
+                      <span>⚡</span>
+                      <span>Đơn Làm Thêm Giờ (OT)</span>
+                    </span>
+                    <span className="px-1.5 py-0.2 rounded text-[10px] font-semibold bg-amber-100 dark:bg-amber-900/60 text-amber-800 dark:text-amber-300">
+                      {selectedOts.length} đơn
+                    </span>
+                  </div>
+
+                  <div className="space-y-2">
+                    {selectedOts.map((ot) => {
+                      const otCfg = otTypeBadges[ot.otType || "weekday"] || otTypeBadges.weekday;
+                      return (
+                        <div key={ot.id} className="p-2.5 rounded-lg bg-white dark:bg-zinc-900 border border-amber-200 dark:border-amber-900/60 space-y-1.5">
+                          <div className="flex items-center justify-between">
+                            <span className={`px-2 py-0.5 rounded text-[10px] font-bold border ${otCfg.bg} ${otCfg.text} ${otCfg.border}`}>
+                              ⚡ {otCfg.label} ({otCfg.rate})
+                            </span>
+                            <span className="px-1.5 py-0.2 rounded text-[9px] font-semibold bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300">
+                              ✓ Đã Duyệt
+                            </span>
+                          </div>
+                          <div className="text-[11px] text-zinc-600 dark:text-zinc-300 space-y-0.5 font-mono">
+                            <div>Khung giờ: <strong className="text-amber-700 dark:text-amber-300">{ot.startTime} - {ot.endTime}</strong> (<span className="text-emerald-600 font-bold">+{ot.durationHours} giờ</span>)</div>
+                          </div>
+                          <div className="text-[11px] text-zinc-600 dark:text-zinc-300 space-y-0.5">
+                            <div>Dự án/Công việc: <strong className="text-zinc-900 dark:text-zinc-100">{ot.projectOrTask}</strong></div>
+                            <div className="italic text-zinc-500">Lý do: &ldquo;{ot.reason}&rdquo;</div>
+                          </div>
+                          <div className="pt-1 border-t border-zinc-100 dark:border-zinc-800 text-[10px] text-zinc-500 flex items-center justify-between">
+                            <span>Người duyệt: <strong className="text-emerald-600 dark:text-emerald-400">👑 {ot.approverName || "Giám Đốc"}</strong></span>
+                          </div>
+                          {ot.approvalNote && (
+                            <div className="text-[10px] text-amber-700 dark:text-amber-400 bg-amber-50/50 dark:bg-amber-950/40 p-1.5 rounded">
+                              💬 Ý kiến: {ot.approvalNote}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
                 </div>
               )}
             </div>
-          </div>
+          )}
         </div>
       )}
     </div>

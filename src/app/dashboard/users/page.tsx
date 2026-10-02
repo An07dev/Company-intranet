@@ -26,6 +26,7 @@ export default function UsersManagementPage() {
   const [selectedDept, setSelectedDept] = useState<string>("all");
   const [sortBy, setSortBy] = useState<string>("code_asc");
   const [searchQuery, setSearchQuery] = useState<string>("");
+  const [showMobileFilters, setShowMobileFilters] = useState<boolean>(false);
 
   // Phân trang: Chuẩn 10 bản ghi mỗi trang
   const [currentPage, setCurrentPage] = useState<number>(1);
@@ -178,6 +179,17 @@ export default function UsersManagementPage() {
     sortBy !== "code_asc" ||
     searchQuery.trim().length > 0;
 
+  const activeFiltersCount = useMemo(() => {
+    let count = 0;
+    if (roleFilter !== "all") count++;
+    if (statusFilter !== "all") count++;
+    if (contractFilter !== "all") count++;
+    if (selectedDept !== "all") count++;
+    if (sortBy !== "code_asc") count++;
+    if (searchQuery.trim().length > 0) count++;
+    return count;
+  }, [roleFilter, statusFilter, contractFilter, selectedDept, sortBy, searchQuery]);
+
   const handleResetAllFilters = () => {
     setRoleFilter("all");
     setStatusFilter("all");
@@ -273,11 +285,40 @@ export default function UsersManagementPage() {
   }
 
   return (
-    <div className="w-full px-4 sm:px-6 lg:px-8 py-4 sm:py-6 space-y-5 sm:space-y-6">
+    <div className="w-full px-3.5 sm:px-6 lg:px-8 py-4 sm:py-6 space-y-4 sm:space-y-6">
       {/* =========================================================================
           1. HEADER TRANG & NÚT THÊM NGƯỜI DÙNG
          ========================================================================= */}
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 pb-4 border-b border-zinc-200 dark:border-zinc-800">
+      {/* 1.1 MOBILE HEADER (sm:hidden) */}
+      <div className="sm:hidden flex items-center justify-between gap-2 pb-3 border-b border-zinc-200 dark:border-zinc-800">
+        <div className="min-w-0">
+          <div className="flex items-center gap-1.5">
+            <span className="text-base shrink-0">👥</span>
+            <h1 className="text-base font-bold text-zinc-900 dark:text-zinc-100 truncate">
+              Quản Lý Người Dùng
+            </h1>
+          </div>
+          <div className="flex items-center gap-1.5 mt-0.5">
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-purple-100 text-purple-800 dark:bg-purple-950 dark:text-purple-300 border border-purple-200 dark:border-purple-800">
+              <span>👑</span>
+              <span>Admin &amp; Giám Đốc</span>
+            </span>
+          </div>
+        </div>
+
+        {/* Nút Thêm Mới Trên Mobile */}
+        <button
+          type="button"
+          onClick={() => setIsCreateOpen(true)}
+          className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-zinc-900 hover:bg-zinc-800 text-white dark:bg-zinc-100 dark:hover:bg-zinc-200 dark:text-zinc-900 text-xs font-semibold shadow-xs cursor-pointer transition-colors shrink-0"
+        >
+          <span className="text-xs">➕</span>
+          <span>Thêm mới</span>
+        </button>
+      </div>
+
+      {/* 1.2 DESKTOP HEADER (hidden sm:flex) - 100% UNTOUCHED */}
+      <div className="hidden sm:flex flex-col md:flex-row md:items-center md:justify-between gap-4 pb-4 border-b border-zinc-200 dark:border-zinc-800">
         <div>
           <div className="flex items-center gap-2">
             <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold tracking-tight text-zinc-900 dark:text-zinc-100">
@@ -306,8 +347,67 @@ export default function UsersManagementPage() {
       {/* =========================================================================
           2. HÀNG 4 THẺ CHỈ SỐ KPI TỔNG QUAN
          ========================================================================= */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-        {/* Thẻ 1: Tổng nhân sự */}
+      {/* 2.1 GIAO DIỆN MOBILE: Lưới 2x2 siêu gọn (sm:hidden) */}
+      <div className="sm:hidden grid grid-cols-2 gap-2">
+        {/* Thẻ 1: Tổng tài khoản */}
+        <div className="p-2.5 rounded-xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-2xs">
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] font-medium text-zinc-500 dark:text-zinc-400">
+              Tổng tài khoản
+            </span>
+            <span className="text-xs">👥</span>
+          </div>
+          <div className="text-xl font-extrabold font-mono mt-1 text-zinc-900 dark:text-zinc-100">
+            {stats.total}
+            <span className="text-[10px] text-zinc-400 font-sans font-normal ml-1">người</span>
+          </div>
+        </div>
+
+        {/* Thẻ 2: Nhân viên chính thức */}
+        <div className="p-2.5 rounded-xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-2xs">
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] font-medium text-zinc-500 dark:text-zinc-400">
+              Chính thức
+            </span>
+            <span className="text-xs">🏢</span>
+          </div>
+          <div className="text-xl font-extrabold font-mono mt-1 text-blue-600 dark:text-blue-400">
+            {stats.officialCount}
+            <span className="text-[10px] text-zinc-400 font-sans font-normal ml-1">nhân sự</span>
+          </div>
+        </div>
+
+        {/* Thẻ 3: Nhân sự thử việc */}
+        <div className="p-2.5 rounded-xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-2xs">
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] font-medium text-zinc-500 dark:text-zinc-400">
+              Thử việc
+            </span>
+            <span className="text-xs">⏳</span>
+          </div>
+          <div className="text-xl font-extrabold font-mono mt-1 text-amber-600 dark:text-amber-400">
+            {stats.probationCount}
+            <span className="text-[10px] text-zinc-400 font-sans font-normal ml-1">nhân sự</span>
+          </div>
+        </div>
+
+        {/* Thẻ 4: Đang hoạt động */}
+        <div className="p-2.5 rounded-xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-2xs">
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] font-medium text-zinc-500 dark:text-zinc-400">
+              Hoạt động
+            </span>
+            <span className="text-xs">🟢</span>
+          </div>
+          <div className="text-xl font-extrabold font-mono mt-1 text-emerald-600 dark:text-emerald-400">
+            {stats.active}
+            <span className="text-[10px] text-zinc-400 font-sans font-normal ml-1">/{stats.total}</span>
+          </div>
+        </div>
+      </div>
+
+      {/* 2.2 GIAO DIỆN DESKTOP: 4 Thẻ KPIs Đầy Đủ (hidden sm:grid) - 100% UNTOUCHED */}
+      <div className="hidden sm:grid sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         {/* Thẻ 1: Tổng số tài khoản */}
         <div className="p-4 sm:p-5 rounded-xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-xs">
           <div className="flex items-center justify-between">
@@ -381,8 +481,8 @@ export default function UsersManagementPage() {
           3. BẢNG DANH SÁCH & BỘ LỌC (GOM GỌN TRÊN 1 HÀNG)
          ========================================================================= */}
       <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl shadow-xs overflow-hidden">
-        {/* Header trên bảng */}
-        <div className="px-4 sm:px-5 py-3.5 border-b border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-950/20 flex flex-wrap items-center justify-between gap-2">
+        {/* 3.1 DESKTOP Header trên bảng (hidden sm:flex) - 100% UNTOUCHED */}
+        <div className="hidden sm:flex px-4 sm:px-5 py-3.5 border-b border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-950/20 flex-wrap items-center justify-between gap-2">
           <div className="flex items-center gap-2">
             <span className="text-base">📋</span>
             <h2 className="text-sm font-bold text-zinc-900 dark:text-zinc-100">
@@ -394,8 +494,21 @@ export default function UsersManagementPage() {
           </div>
         </div>
 
-        {/* Thanh công cụ lọc & Tìm kiếm (GOM TRÊN 1 HÀNG DUY NHẤT) */}
-        <div className="p-3 sm:p-3.5 border-b border-zinc-200 dark:border-zinc-800 flex items-center gap-2 overflow-x-auto text-xs">
+        {/* 3.2 MOBILE Header trên bảng (sm:hidden) */}
+        <div className="sm:hidden px-3.5 py-2.5 border-b border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-950/20 flex items-center justify-between">
+          <div className="flex items-center gap-1.5 min-w-0">
+            <span className="text-sm">📋</span>
+            <h2 className="text-xs font-bold text-zinc-900 dark:text-zinc-100 truncate">
+              Danh Sách Nhân Sự
+            </h2>
+          </div>
+          <span className="text-[10px] text-zinc-400 font-mono shrink-0">
+            {filteredUsers.length}/{usersList.length} NV
+          </span>
+        </div>
+
+        {/* 3.3 DESKTOP Thanh công cụ lọc & Tìm kiếm (hidden sm:flex) - 100% UNTOUCHED */}
+        <div className="hidden sm:flex p-3 sm:p-3.5 border-b border-zinc-200 dark:border-zinc-800 items-center gap-2 overflow-x-auto text-xs">
           {/* 1. Lọc theo vai trò (Role) */}
           <select
             value={roleFilter}
@@ -508,6 +621,243 @@ export default function UsersManagementPage() {
               <span>✕</span>
               <span>Xóa bộ lọc</span>
             </button>
+          )}
+        </div>
+
+        {/* 3.4 MOBILE Thanh công cụ lọc & Tìm kiếm (sm:hidden) */}
+        <div className="sm:hidden p-3 space-y-2 border-b border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900">
+          {/* Row 1: Search + Nút mở bộ lọc + Nút reset */}
+          <div className="flex items-center gap-1.5">
+            <div className="relative flex-1">
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => {
+                  setSearchQuery(e.target.value);
+                  setCurrentPage(1);
+                }}
+                placeholder="Tìm tên, mã NV, email..."
+                className="w-full pl-7 pr-6 py-1.5 rounded-lg border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-950 text-xs text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 focus:outline-none focus:ring-1 focus:ring-zinc-900 dark:focus:ring-zinc-100"
+              />
+              <svg
+                className="w-3.5 h-3.5 absolute left-2 top-1/2 -translate-y-1/2 text-zinc-400 pointer-events-none"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
+              {searchQuery && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSearchQuery("");
+                    setCurrentPage(1);
+                  }}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200"
+                >
+                  ✕
+                </button>
+              )}
+            </div>
+
+            {/* Nút bật/tắt bộ lọc chi tiết */}
+            <button
+              type="button"
+              onClick={() => setShowMobileFilters(!showMobileFilters)}
+              className={`shrink-0 inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg border text-xs font-medium transition-colors ${
+                showMobileFilters || activeFiltersCount > 0
+                  ? "bg-zinc-900 text-white border-zinc-900 dark:bg-zinc-100 dark:text-zinc-900 dark:border-zinc-100"
+                  : "bg-zinc-50 dark:bg-zinc-950 text-zinc-700 dark:text-zinc-300 border-zinc-200 dark:border-zinc-700"
+              }`}
+            >
+              <span>⚙️</span>
+              <span>Lọc</span>
+              {activeFiltersCount > 0 && (
+                <span className="w-4 h-4 rounded-full bg-blue-500 text-white text-[10px] flex items-center justify-center font-bold">
+                  {activeFiltersCount}
+                </span>
+              )}
+            </button>
+
+            {/* Nút reset nhanh nếu có filter */}
+            {hasActiveFilters && (
+              <button
+                type="button"
+                onClick={handleResetAllFilters}
+                className="shrink-0 p-1.5 rounded-lg border border-rose-200 dark:border-rose-900/50 bg-rose-50/50 dark:bg-rose-950/30 text-rose-600 dark:text-rose-400 hover:bg-rose-100 text-xs"
+                title="Đặt lại bộ lọc"
+              >
+                ✕
+              </button>
+            )}
+          </div>
+
+          {/* Row 2: Chip nhanh (Tất cả, Chính thức, Thử việc, Đã khóa) */}
+          <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5 text-[11px]">
+            <button
+              type="button"
+              onClick={() => {
+                setContractFilter("all");
+                setStatusFilter("all");
+                setCurrentPage(1);
+              }}
+              className={`px-2.5 py-1 rounded-full whitespace-nowrap transition-colors ${
+                contractFilter === "all" && statusFilter === "all"
+                  ? "bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 font-semibold"
+                  : "bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-300"
+              }`}
+            >
+              Tất cả
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setContractFilter(contractFilter === "official" ? "all" : "official");
+                setCurrentPage(1);
+              }}
+              className={`px-2.5 py-1 rounded-full whitespace-nowrap transition-colors ${
+                contractFilter === "official"
+                  ? "bg-blue-600 text-white font-semibold"
+                  : "bg-blue-50 text-blue-700 dark:bg-blue-950/50 dark:text-blue-300 border border-blue-200/50 dark:border-blue-800/40"
+              }`}
+            >
+              🏢 Chính thức ({stats.officialCount})
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setContractFilter(contractFilter === "probation" ? "all" : "probation");
+                setCurrentPage(1);
+              }}
+              className={`px-2.5 py-1 rounded-full whitespace-nowrap transition-colors ${
+                contractFilter === "probation"
+                  ? "bg-amber-600 text-white font-semibold"
+                  : "bg-amber-50 text-amber-700 dark:bg-amber-950/50 dark:text-amber-300 border border-amber-200/50 dark:border-amber-800/40"
+              }`}
+            >
+              ⏳ Thử việc ({stats.probationCount})
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setStatusFilter(statusFilter === "inactive" ? "all" : "inactive");
+                setCurrentPage(1);
+              }}
+              className={`px-2.5 py-1 rounded-full whitespace-nowrap transition-colors ${
+                statusFilter === "inactive"
+                  ? "bg-rose-600 text-white font-semibold"
+                  : "bg-rose-50 text-rose-700 dark:bg-rose-950/50 dark:text-rose-300 border border-rose-200/50 dark:border-rose-900/40"
+              }`}
+            >
+              🔴 Đã khóa
+            </button>
+          </div>
+
+          {/* Drawer bộ lọc chi tiết cho mobile */}
+          {showMobileFilters && (
+            <div className="pt-2 mt-1 border-t border-zinc-100 dark:border-zinc-800 space-y-2">
+              <div className="grid grid-cols-2 gap-2 text-[11px]">
+                {/* 1. Phòng ban */}
+                <div>
+                  <label className="block text-zinc-500 dark:text-zinc-400 mb-1 font-medium">Phòng ban</label>
+                  <select
+                    value={selectedDept}
+                    onChange={(e) => {
+                      setSelectedDept(e.target.value);
+                      setCurrentPage(1);
+                    }}
+                    className="w-full px-2 py-1.5 rounded-lg border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-950 text-zinc-800 dark:text-zinc-200 text-xs"
+                  >
+                    <option value="all">Tất cả phòng ban</option>
+                    {departmentsList.length > 0 ? (
+                      departmentsList.map((dept) => (
+                        <option key={dept.id} value={dept.name}>
+                          {dept.name}
+                        </option>
+                      ))
+                    ) : (
+                      availableDepartments.map((dept) => (
+                        <option key={dept} value={dept}>
+                          {dept}
+                        </option>
+                      ))
+                    )}
+                  </select>
+                </div>
+
+                {/* 2. Chức vụ */}
+                <div>
+                  <label className="block text-zinc-500 dark:text-zinc-400 mb-1 font-medium">Chức vụ</label>
+                  <select
+                    value={roleFilter}
+                    onChange={(e) => {
+                      setRoleFilter(e.target.value);
+                      setCurrentPage(1);
+                    }}
+                    className="w-full px-2 py-1.5 rounded-lg border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-950 text-zinc-800 dark:text-zinc-200 text-xs"
+                  >
+                    <option value="all">Tất cả chức vụ</option>
+                    <option value="director">👑 Giám đốc</option>
+                    <option value="admin">🛡️ Quản trị viên</option>
+                    <option value="manager">👔 Quản lý</option>
+                    <option value="employee">👤 Nhân viên</option>
+                  </select>
+                </div>
+
+                {/* 3. Trạng thái */}
+                <div>
+                  <label className="block text-zinc-500 dark:text-zinc-400 mb-1 font-medium">Trạng thái</label>
+                  <select
+                    value={statusFilter}
+                    onChange={(e) => {
+                      setStatusFilter(e.target.value);
+                      setCurrentPage(1);
+                    }}
+                    className="w-full px-2 py-1.5 rounded-lg border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-950 text-zinc-800 dark:text-zinc-200 text-xs"
+                  >
+                    <option value="all">Tất cả trạng thái</option>
+                    <option value="active">🟢 Đang hoạt động</option>
+                    <option value="inactive">🔴 Đã khóa / Tạm dừng</option>
+                  </select>
+                </div>
+
+                {/* 4. Sắp xếp */}
+                <div>
+                  <label className="block text-zinc-500 dark:text-zinc-400 mb-1 font-medium">Sắp xếp</label>
+                  <select
+                    value={sortBy}
+                    onChange={(e) => setSortBy(e.target.value)}
+                    className="w-full px-2 py-1.5 rounded-lg border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-950 text-zinc-800 dark:text-zinc-200 text-xs"
+                  >
+                    <option value="code_asc">Mã NV: Tăng dần</option>
+                    <option value="name_asc">Tên: A → Z</option>
+                    <option value="name_desc">Tên: Z → A</option>
+                    <option value="created_desc">Ngày tạo: Mới nhất</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* Hàng nút thu gọn / đặt lại */}
+              <div className="flex items-center justify-between pt-1">
+                {hasActiveFilters ? (
+                  <button
+                    type="button"
+                    onClick={handleResetAllFilters}
+                    className="text-xs text-rose-600 dark:text-rose-400 hover:underline"
+                  >
+                    ✕ Đặt lại tất cả lọc
+                  </button>
+                ) : <span />}
+                <button
+                  type="button"
+                  onClick={() => setShowMobileFilters(false)}
+                  className="text-xs text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300 font-medium"
+                >
+                  Thu gọn ▲
+                </button>
+              </div>
+            </div>
           )}
         </div>
 
@@ -766,119 +1116,133 @@ export default function UsersManagementPage() {
               const roleLabel = USER_ROLE_LABELS[u.role] || u.role;
               const isActive = u.status === "active";
               const isCurrent = u.id === currentUser?.id;
+              const isProbation = u.contractType === "probation";
 
               return (
-                <div key={u.id} className="p-4 space-y-2.5 text-xs">
-                  <div className="flex items-start justify-between gap-2">
+                <div key={u.id} className="p-3 space-y-2 text-xs">
+                  {/* Row 1: Avatar, Name, Employee Code, Status */}
+                  <div className="flex items-center justify-between gap-2">
                     <div className="flex items-center gap-2.5 min-w-0">
                       {u.avatarUrl ? (
                         <img
                           src={u.avatarUrl}
                           alt={u.name}
-                          className="w-9 h-9 rounded-full object-cover border border-zinc-200 dark:border-zinc-700 shrink-0"
+                          className="w-8 h-8 rounded-full object-cover border border-zinc-200 dark:border-zinc-700 shrink-0"
                         />
                       ) : (
-                        <div className="w-9 h-9 rounded-full bg-zinc-200 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-200 flex items-center justify-center font-bold text-xs shrink-0">
+                        <div className="w-8 h-8 rounded-full bg-zinc-200 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-200 flex items-center justify-center font-bold text-xs shrink-0">
                           {u.name.slice(0, 1)}
                         </div>
                       )}
                       <div className="min-w-0">
                         <div className="font-bold text-zinc-900 dark:text-zinc-100 flex items-center gap-1.5 truncate">
-                          <span>{u.name}</span>
+                          <span className="truncate">{u.name}</span>
                           {isCurrent && (
-                            <span className="px-1.5 py-0.2 rounded text-[10px] font-semibold bg-emerald-100 text-emerald-800">
+                            <span className="px-1.5 py-0.2 rounded text-[10px] font-semibold bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 shrink-0">
                               Bạn
                             </span>
                           )}
                         </div>
-                        <div className="text-[11px] text-zinc-400 font-mono">
-                          {u.employeeCode} • {u.department || "Khác"}
+                        <div className="text-[10px] text-zinc-400 font-mono truncate">
+                          {u.employeeCode}
                         </div>
                       </div>
                     </div>
 
                     <span
-                      className={`px-2 py-0.5 rounded-full text-[10px] font-semibold shrink-0 ${
+                      className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold shrink-0 ${
                         isActive
-                          ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300"
-                          : "bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300"
+                          ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-950/80 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800"
+                          : "bg-rose-100 text-rose-800 dark:bg-rose-950/80 dark:text-rose-300 border border-rose-200 dark:border-rose-900"
                       }`}
                     >
+                      <span className={`w-1.5 h-1.5 rounded-full ${isActive ? "bg-emerald-500" : "bg-rose-500"}`} />
                       {isActive ? "Hoạt động" : "Đã khóa"}
                     </span>
                   </div>
 
-                  {/* Thông tin liên hệ */}
-                  <div className="p-2.5 rounded-lg bg-zinc-50 dark:bg-zinc-950 border border-zinc-100 dark:border-zinc-800 text-[11px] space-y-1">
-                    <div className="flex items-center justify-between text-zinc-600 dark:text-zinc-400">
-                      <span>Email:</span>
-                      <strong className="text-zinc-900 dark:text-zinc-100">{u.email}</strong>
-                    </div>
-                    {u.phone && (
-                      <div className="flex items-center justify-between text-zinc-600 dark:text-zinc-400">
-                        <span>Điện thoại:</span>
-                        <span className="font-mono text-zinc-900 dark:text-zinc-100">{u.phone}</span>
-                      </div>
-                    )}
-                    <div className="flex items-center justify-between pt-1 border-t border-zinc-200/60 dark:border-zinc-800/60">
-                      <span>Hình thức &amp; Phép:</span>
-                      {u.contractType === "probation" ? (
-                        <span className="inline-flex items-center gap-1 font-semibold text-amber-700 dark:text-amber-400">
-                          <span>⏳ Thử việc</span>
-                          <span className="text-[10px] text-zinc-400">(0 phép)</span>
-                        </span>
-                      ) : (
-                        <span className="inline-flex items-center gap-1 font-semibold text-blue-700 dark:text-blue-400">
-                          <span>🏢 Chính thức</span>
-                          {(() => {
-                            const dateStr = u.officialStartDate || u.createdAt;
-                            if (!dateStr) return <span className="text-emerald-600">(12/12 phép)</span>;
-                            const sDate = new Date(dateStr);
-                            if (isNaN(sDate.getTime())) return <span className="text-emerald-600">(12/12 phép)</span>;
-                            const now = new Date();
-                            const diff = (now.getFullYear() - sDate.getFullYear()) * 12 + (now.getMonth() - sDate.getMonth()) + 1;
-                            const totalLeave = Math.min(12, Math.max(0, diff));
-                            return (
-                              <span className="text-emerald-600 dark:text-emerald-400 font-mono">
-                                ({totalLeave}/12 phép)
-                              </span>
-                            );
-                          })()}
-                        </span>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Footer Mobile: Role & Buttons */}
-                  <div className="pt-1 flex items-center justify-between">
-                    <span className={`px-2 py-0.5 rounded text-[10px] ${roleBadges[u.role] || ""}`}>
+                  {/* Row 2: Badges (Phòng ban, Chức vụ, Hình thức & Phép) */}
+                  <div className="flex flex-wrap items-center gap-1.5 text-[10px]">
+                    <span className="px-2 py-0.5 rounded-md bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 font-medium">
+                      🏢 {u.department || "Chung"}
+                    </span>
+                    <span className={`px-2 py-0.5 rounded-md font-semibold ${roleBadges[u.role] || ""}`}>
                       {roleLabel}
                     </span>
+                    {isProbation ? (
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md font-medium bg-amber-50 text-amber-800 dark:bg-amber-950/50 dark:text-amber-300 border border-amber-200/60 dark:border-amber-800/60">
+                        ⏳ Thử việc (0 phép)
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md font-medium bg-blue-50 text-blue-800 dark:bg-blue-950/50 dark:text-blue-300 border border-blue-200/60 dark:border-blue-800/60">
+                        🏢 Chính thức •{" "}
+                        {(() => {
+                          const dateStr = u.officialStartDate || u.createdAt;
+                          if (!dateStr) return "12 phép";
+                          const sDate = new Date(dateStr);
+                          if (isNaN(sDate.getTime())) return "12 phép";
+                          const now = new Date();
+                          const diff = (now.getFullYear() - sDate.getFullYear()) * 12 + (now.getMonth() - sDate.getMonth()) + 1;
+                          const totalLeave = Math.min(12, Math.max(0, diff));
+                          return `${totalLeave}/12 phép`;
+                        })()}
+                      </span>
+                    )}
+                  </div>
 
-                    <div className="flex items-center gap-1.5">
-                      <button
-                        type="button"
-                        onClick={() => setEditingUser(u)}
-                        className="px-2.5 py-1 rounded-lg border border-zinc-200 dark:border-zinc-700 text-zinc-700 dark:text-zinc-300 text-xs"
-                      >
-                        Sửa
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setResettingUser(u)}
-                        className="px-2.5 py-1 rounded-lg border border-zinc-200 dark:border-zinc-700 text-amber-700 dark:text-amber-400 text-xs"
-                      >
-                        Đổi MK
-                      </button>
-                      <button
-                        type="button"
-                        disabled={isCurrent}
-                        onClick={() => setDeletingUser(u)}
-                        className="px-2.5 py-1 rounded-lg border border-rose-200 dark:border-rose-900 text-rose-600 text-xs disabled:opacity-20"
-                      >
-                        Xóa
-                      </button>
+                  {/* Row 3: Contact info (Email & Phone in one clean row) */}
+                  <div className="flex items-center gap-3 text-[11px] text-zinc-500 dark:text-zinc-400 min-w-0">
+                    <div className="flex items-center gap-1 truncate">
+                      <span className="text-[10px]">✉️</span>
+                      <span className="truncate">{u.email}</span>
                     </div>
+                    {u.phone && (
+                      <div className="flex items-center gap-1 font-mono shrink-0">
+                        <span className="text-[10px]">📞</span>
+                        <span>{u.phone}</span>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Row 4: Action Buttons (4 buttons: Sửa, Đổi MK, Khóa/Mở, Xóa) */}
+                  <div className="pt-1.5 border-t border-zinc-100 dark:border-zinc-800/60 grid grid-cols-4 gap-1.5">
+                    <button
+                      type="button"
+                      onClick={() => setEditingUser(u)}
+                      className="py-1 px-1 rounded-lg border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800/60 text-zinc-700 dark:text-zinc-200 hover:bg-zinc-50 text-[11px] font-medium flex items-center justify-center gap-1 cursor-pointer"
+                    >
+                      <span>✏️</span>
+                      <span>Sửa</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setResettingUser(u)}
+                      className="py-1 px-1 rounded-lg border border-amber-200/70 dark:border-amber-800/50 bg-amber-50/50 dark:bg-amber-950/30 text-amber-700 dark:text-amber-300 hover:bg-amber-100/50 text-[11px] font-medium flex items-center justify-center gap-1 cursor-pointer"
+                    >
+                      <span>🔑</span>
+                      <span>Đổi MK</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleToggleStatus(u)}
+                      className={`py-1 px-1 rounded-lg border text-[11px] font-medium flex items-center justify-center gap-1 cursor-pointer ${
+                        isActive
+                          ? "border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800/60 text-zinc-600 dark:text-zinc-300 hover:bg-zinc-50"
+                          : "border-emerald-200 dark:border-emerald-800 bg-emerald-50/50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-100/50"
+                      }`}
+                    >
+                      <span>{isActive ? "🔒" : "🔓"}</span>
+                      <span>{isActive ? "Khóa" : "Mở"}</span>
+                    </button>
+                    <button
+                      type="button"
+                      disabled={isCurrent}
+                      onClick={() => setDeletingUser(u)}
+                      className="py-1 px-1 rounded-lg border border-rose-200/70 dark:border-rose-900/50 bg-rose-50/50 dark:bg-rose-950/30 text-rose-600 dark:text-rose-400 hover:bg-rose-100/50 text-[11px] font-medium disabled:opacity-25 disabled:cursor-not-allowed flex items-center justify-center gap-1 cursor-pointer"
+                    >
+                      <span>🗑️</span>
+                      <span>Xóa</span>
+                    </button>
                   </div>
                 </div>
               );
@@ -889,9 +1253,40 @@ export default function UsersManagementPage() {
         {/* ========================================================
             6. KHỐI PHÂN TRANG (PAGINATION) - Đúng 10 bản ghi/trang
            ======================================================== */}
-        <div className="p-3.5 sm:p-4 border-t border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-950/20 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs">
+        {/* 6.1 MOBILE PHÂN TRANG (sm:hidden) */}
+        <div className="sm:hidden p-3 border-t border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-950/20 flex items-center justify-between text-xs">
+          <button
+            type="button"
+            disabled={currentPage === 1}
+            onClick={() => handlePageChange(currentPage - 1)}
+            className="px-2.5 py-1.5 rounded-lg border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-zinc-700 dark:text-zinc-300 disabled:opacity-30 disabled:cursor-not-allowed font-medium shadow-2xs cursor-pointer"
+          >
+            ← Trước
+          </button>
+
+          <div className="text-center font-mono text-[11px] text-zinc-500 dark:text-zinc-400">
+            <div>
+              Trang <strong className="text-zinc-900 dark:text-zinc-100">{currentPage}</strong> / {totalPages}
+            </div>
+            <div className="text-[10px] text-zinc-400">
+              {totalRecords} người dùng
+            </div>
+          </div>
+
+          <button
+            type="button"
+            disabled={currentPage === totalPages}
+            onClick={() => handlePageChange(currentPage + 1)}
+            className="px-2.5 py-1.5 rounded-lg border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-zinc-700 dark:text-zinc-300 disabled:opacity-30 disabled:cursor-not-allowed font-medium shadow-2xs cursor-pointer"
+          >
+            Sau →
+          </button>
+        </div>
+
+        {/* 6.2 DESKTOP PHÂN TRANG (hidden sm:flex) - 100% UNTOUCHED */}
+        <div className="hidden sm:flex p-3.5 sm:p-4 border-t border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-950/20 flex-row items-center justify-between gap-3 text-xs">
           {/* Thông tin số lượng hiển thị */}
-          <div className="text-zinc-500 dark:text-zinc-400 font-mono text-center sm:text-left">
+          <div className="text-zinc-500 dark:text-zinc-400 font-mono text-left">
             {totalRecords > 0 ? (
               <>
                 Hiển thị{" "}

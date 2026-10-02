@@ -305,8 +305,8 @@ export function ChatMessageList({
                 )}
               </div>
 
-              {/* Action Toolbar ẩn (hiện khi hover vào tin nhắn) */}
-              <div className="opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1 mb-1 shrink-0">
+              {/* Action Toolbar: Luôn hiển thị vừa phải trên mobile và hover trên desktop */}
+              <div className="opacity-70 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity flex items-center gap-0.5 sm:gap-1 mb-1 shrink-0">
                 {/* Nút thả reaction */}
                 <div className="relative">
                   <button
@@ -315,14 +315,18 @@ export function ChatMessageList({
                       setActiveReactionMsgId(activeReactionMsgId === msg.id ? null : msg.id)
                     }
                     title="Thả cảm xúc"
-                    className="p-1 rounded-lg text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition cursor-pointer text-xs"
+                    className="p-1 rounded-lg text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition cursor-pointer text-xs active:scale-95"
                   >
                     😀
                   </button>
 
                   {/* Popup Emoji Quick Picker */}
                   {activeReactionMsgId === msg.id && (
-                    <div className="absolute bottom-full mb-1 z-30 flex items-center gap-1 p-1 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-xl shadow-lg animate-in fade-in zoom-in-95 duration-100">
+                    <div
+                      className={`absolute bottom-full mb-1 z-30 flex items-center gap-1 p-1 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-xl shadow-lg animate-in fade-in zoom-in-95 duration-100 ${
+                        isMe ? "right-0" : "left-0"
+                      }`}
+                    >
                       {COMMON_REACTIONS.map((em) => (
                         <button
                           key={em}
@@ -331,7 +335,7 @@ export function ChatMessageList({
                             onToggleReaction(msg.id, em);
                             setActiveReactionMsgId(null);
                           }}
-                          className="w-7 h-7 text-sm flex items-center justify-center hover:bg-zinc-100 dark:hover:bg-zinc-700 rounded-lg cursor-pointer transition"
+                          className="w-7 h-7 text-sm flex items-center justify-center hover:bg-zinc-100 dark:hover:bg-zinc-700 rounded-lg cursor-pointer transition active:scale-125"
                         >
                           {em}
                         </button>
@@ -345,7 +349,7 @@ export function ChatMessageList({
                   type="button"
                   onClick={() => onReplyMessage(msg)}
                   title="Trả lời tin nhắn này"
-                  className="p-1 rounded-lg text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition cursor-pointer text-xs"
+                  className="p-1 rounded-lg text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition cursor-pointer text-xs active:scale-95"
                 >
                   ↩️
                 </button>
@@ -363,7 +367,7 @@ export function ChatMessageList({
       {previewMediaUrl && (
         <div
           onClick={() => setPreviewMediaUrl(null)}
-          className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-200"
+          className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 animate-in fade-in duration-200"
         >
           <div className="relative max-w-4xl max-h-[90vh]">
             {previewMediaType === "image" ? (
@@ -383,7 +387,7 @@ export function ChatMessageList({
             <button
               type="button"
               onClick={() => setPreviewMediaUrl(null)}
-              className="absolute -top-3 -right-3 w-8 h-8 rounded-full bg-white dark:bg-zinc-900 text-zinc-900 dark:text-white flex items-center justify-center font-bold text-sm shadow-md cursor-pointer"
+              className="absolute top-2 right-2 sm:-top-3 sm:-right-3 w-8 h-8 rounded-full bg-white dark:bg-zinc-900 text-zinc-900 dark:text-white flex items-center justify-center font-bold text-sm shadow-md cursor-pointer active:scale-95"
             >
               ✕
             </button>

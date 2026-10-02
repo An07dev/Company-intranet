@@ -212,14 +212,6 @@ export function EmployeeAttendanceTable({ employees }: EmployeeAttendanceTablePr
               <span>👥</span>
               <span>Dữ Liệu & Điểm Danh Nhân Viên</span>
             </h2>
-            <span className="px-2 py-0.5 rounded-full text-xs font-mono font-medium bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-700">
-              {totalRecords} / {employees.length} nhân viên
-            </span>
-            {totalPages > 1 && (
-              <span className="text-[11px] font-mono text-zinc-400 dark:text-zinc-500">
-                (Trang {currentPage}/{totalPages})
-              </span>
-            )}
           </div>
           <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-1">
             Danh sách nhân sự, chức vụ, phòng ban và tình trạng chấm công ngày hôm nay (10 bản ghi/trang)
@@ -242,8 +234,9 @@ export function EmployeeAttendanceTable({ employees }: EmployeeAttendanceTablePr
       </div>
 
       {/* 2. Thanh Công Cụ Bộ Lọc Đa Chiều: Tìm kiếm, Phòng ban, Vai trò, Sắp xếp */}
-      <div className="p-3.5 sm:p-4 bg-zinc-50/70 dark:bg-zinc-950/40 border-b border-zinc-200 dark:border-zinc-800 flex flex-col xl:flex-row xl:items-center justify-between gap-3 text-xs">
-        <div className="flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center gap-2.5 w-full xl:w-auto">
+      {/* 2. Thanh Công Cụ Bộ Lọc Đa Chiều: Tìm kiếm, Phòng ban, Vai trò, Sắp xếp */}
+      <div className="p-3 sm:p-4 bg-zinc-50/70 dark:bg-zinc-950/40 border-b border-zinc-200 dark:border-zinc-800 flex flex-col xl:flex-row xl:items-center justify-between gap-2.5 sm:gap-3 text-xs">
+        <div className="flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center gap-2 sm:gap-2.5 w-full xl:w-auto">
           {/* Ô nhập tìm kiếm (Tên, Mã NV, Email, SĐT) */}
           <div className="relative w-full sm:w-64">
             <span className="absolute inset-y-0 left-0 flex items-center pl-2.5 pointer-events-none text-zinc-400">
@@ -271,64 +264,67 @@ export function EmployeeAttendanceTable({ employees }: EmployeeAttendanceTablePr
             )}
           </div>
 
-          {/* Lọc theo Phòng Ban */}
-          <div className="flex items-center gap-1.5 w-full sm:w-auto">
-            <span className="text-zinc-500 dark:text-zinc-400 text-xs shrink-0 font-medium">Phòng ban:</span>
-            <select
-              value={selectedDept}
-              onChange={(e) => setSelectedDept(e.target.value)}
-              aria-label="Lọc theo phòng ban"
-              className="w-full sm:w-auto px-2.5 py-1.5 rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-xs text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-1 focus:ring-zinc-900 dark:focus:ring-zinc-100 cursor-pointer max-w-[200px] truncate"
-            >
-              <option value="all">Tất cả phòng ban ({employees.length})</option>
-              {departments.map((dept) => {
-                const count = employees.filter((e) => e.department === dept).length;
-                return (
-                  <option key={dept} value={dept}>
-                    {dept} ({count})
-                  </option>
-                );
-              })}
-            </select>
-          </div>
+          {/* Nhóm 3 dropdown lọc */}
+          <div className="grid grid-cols-2 sm:flex sm:items-center gap-2 w-full sm:w-auto">
+            {/* Lọc theo Phòng Ban */}
+            <div className="flex items-center gap-1.5 w-full sm:w-auto">
+              <span className="text-zinc-500 dark:text-zinc-400 text-xs shrink-0 font-medium hidden sm:inline">Phòng ban:</span>
+              <select
+                value={selectedDept}
+                onChange={(e) => setSelectedDept(e.target.value)}
+                aria-label="Lọc theo phòng ban"
+                className="w-full sm:w-auto px-2 py-1.5 rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-xs text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-1 focus:ring-zinc-900 dark:focus:ring-zinc-100 cursor-pointer sm:max-w-[180px] truncate"
+              >
+                <option value="all">Tất cả phòng ban ({employees.length})</option>
+                {departments.map((dept) => {
+                  const count = employees.filter((e) => e.department === dept).length;
+                  return (
+                    <option key={dept} value={dept}>
+                      {dept} ({count})
+                    </option>
+                  );
+                })}
+              </select>
+            </div>
 
-          {/* Lọc theo Vai Trò */}
-          <div className="flex items-center gap-1.5 w-full sm:w-auto">
-            <span className="text-zinc-500 dark:text-zinc-400 text-xs shrink-0 font-medium">Chức vụ:</span>
-            <select
-              value={selectedRole}
-              onChange={(e) => setSelectedRole(e.target.value)}
-              aria-label="Lọc theo vai trò"
-              className="w-full sm:w-auto px-2.5 py-1.5 rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-xs text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-1 focus:ring-zinc-900 dark:focus:ring-zinc-100 cursor-pointer"
-            >
-              <option value="all">Tất cả chức vụ</option>
-              {roles.map((r) => {
-                const label = USER_ROLE_LABELS[r as UserRole] || r;
-                const count = employees.filter((e) => e.role === r).length;
-                return (
-                  <option key={r} value={r}>
-                    {label} ({count})
-                  </option>
-                );
-              })}
-            </select>
-          </div>
+            {/* Lọc theo Vai Trò */}
+            <div className="flex items-center gap-1.5 w-full sm:w-auto">
+              <span className="text-zinc-500 dark:text-zinc-400 text-xs shrink-0 font-medium hidden sm:inline">Chức vụ:</span>
+              <select
+                value={selectedRole}
+                onChange={(e) => setSelectedRole(e.target.value)}
+                aria-label="Lọc theo vai trò"
+                className="w-full sm:w-auto px-2 py-1.5 rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-xs text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-1 focus:ring-zinc-900 dark:focus:ring-zinc-100 cursor-pointer"
+              >
+                <option value="all">Tất cả chức vụ</option>
+                {roles.map((r) => {
+                  const label = USER_ROLE_LABELS[r as UserRole] || r;
+                  const count = employees.filter((e) => e.role === r).length;
+                  return (
+                    <option key={r} value={r}>
+                      {label} ({count})
+                    </option>
+                  );
+                })}
+              </select>
+            </div>
 
-          {/* Sắp xếp danh sách */}
-          <div className="flex items-center gap-1.5 w-full sm:w-auto">
-            <span className="text-zinc-500 dark:text-zinc-400 text-xs shrink-0 font-medium">Sắp xếp:</span>
-            <select
-              value={sortBy}
-              onChange={(e) => setSortBy(e.target.value)}
-              aria-label="Sắp xếp danh sách"
-              className="w-full sm:w-auto px-2.5 py-1.5 rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-xs text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-1 focus:ring-zinc-900 dark:focus:ring-zinc-100 cursor-pointer"
-            >
-              <option value="code_asc">Mã nhân viên (A-Z)</option>
-              <option value="name_asc">Họ và tên (A-Z)</option>
-              <option value="name_desc">Họ và tên (Z-A)</option>
-              <option value="time_asc">Giờ check-in sớm nhất</option>
-              <option value="duration_desc">Thời lượng nhiều nhất</option>
-            </select>
+            {/* Sắp xếp danh sách */}
+            <div className="col-span-2 sm:col-span-1 flex items-center gap-1.5 w-full sm:w-auto">
+              <span className="text-zinc-500 dark:text-zinc-400 text-xs shrink-0 font-medium hidden sm:inline">Sắp xếp:</span>
+              <select
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value)}
+                aria-label="Sắp xếp danh sách"
+                className="w-full sm:w-auto px-2 py-1.5 rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-xs text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-1 focus:ring-zinc-900 dark:focus:ring-zinc-100 cursor-pointer"
+              >
+                <option value="code_asc">Mã NV (A-Z)</option>
+                <option value="name_asc">Họ tên (A-Z)</option>
+                <option value="name_desc">Họ tên (Z-A)</option>
+                <option value="time_asc">Check-in sớm nhất</option>
+                <option value="duration_desc">Thời lượng nhiều nhất</option>
+              </select>
+            </div>
           </div>
         </div>
       </div>
@@ -346,19 +342,17 @@ export function EmployeeAttendanceTable({ employees }: EmployeeAttendanceTablePr
             key={tab.key}
             type="button"
             onClick={() => setSelectedStatus(tab.key)}
-            className={`px-3 py-1 rounded-md text-xs font-medium transition-colors whitespace-nowrap cursor-pointer flex items-center gap-1.5 ${
-              selectedStatus === tab.key
-                ? "bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 shadow-2xs font-semibold"
-                : "text-zinc-600 dark:text-zinc-400 hover:bg-zinc-200/80 dark:hover:bg-zinc-800"
-            }`}
+            className={`px-3 py-1 rounded-md text-xs font-medium transition-colors whitespace-nowrap cursor-pointer flex items-center gap-1.5 ${selectedStatus === tab.key
+              ? "bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 shadow-2xs font-semibold"
+              : "text-zinc-600 dark:text-zinc-400 hover:bg-zinc-200/80 dark:hover:bg-zinc-800"
+              }`}
           >
             <span>{tab.label}</span>
             <span
-              className={`px-1.5 py-0.2 rounded-full text-[10px] font-mono ${
-                selectedStatus === tab.key
-                  ? "bg-white/20 text-white dark:bg-zinc-900/20 dark:text-zinc-900 font-bold"
-                  : "bg-zinc-200 dark:bg-zinc-800 text-zinc-500"
-              }`}
+              className={`px-1.5 py-0.2 rounded-full text-[10px] font-mono ${selectedStatus === tab.key
+                ? "bg-white/20 text-white dark:bg-zinc-900/20 dark:text-zinc-900 font-bold"
+                : "bg-zinc-200 dark:bg-zinc-800 text-zinc-500"
+                }`}
             >
               {tab.count}
             </span>
@@ -443,9 +437,8 @@ export function EmployeeAttendanceTable({ employees }: EmployeeAttendanceTablePr
                     {/* Vai trò */}
                     <td className="px-4 py-3 whitespace-nowrap">
                       <span
-                        className={`inline-block px-2 py-0.5 rounded text-[11px] font-medium border ${
-                          roleBadges[emp.role] || "bg-zinc-100 text-zinc-700"
-                        }`}
+                        className={`inline-block px-2 py-0.5 rounded text-[11px] font-medium border ${roleBadges[emp.role] || "bg-zinc-100 text-zinc-700"
+                          }`}
                       >
                         {roleLabel}
                       </span>
@@ -574,13 +567,12 @@ export function EmployeeAttendanceTable({ employees }: EmployeeAttendanceTablePr
 
                   {/* Trạng thái hôm nay */}
                   <span
-                    className={`px-2 py-0.5 rounded-full text-[10px] font-semibold shrink-0 ${
-                      isOnTime
-                        ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300"
-                        : isLate
-                          ? "bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300"
-                          : "bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300"
-                    }`}
+                    className={`px-2 py-0.5 rounded-full text-[10px] font-semibold shrink-0 ${isOnTime
+                      ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300"
+                      : isLate
+                        ? "bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300"
+                        : "bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300"
+                      }`}
                   >
                     {isOnTime ? "Đúng giờ" : isLate ? "Đi muộn" : "Nghỉ"}
                   </span>
@@ -647,91 +639,116 @@ export function EmployeeAttendanceTable({ employees }: EmployeeAttendanceTablePr
 
         {/* Nút điều hướng trang */}
         {totalPages > 1 && (
-          <div className="flex items-center gap-1">
-            {/* Nút Về Trang Đầu */}
-            <button
-              type="button"
-              disabled={currentPage === 1}
-              onClick={() => handlePageChange(1)}
-              className="p-1.5 rounded-md border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-zinc-600 dark:text-zinc-400 disabled:opacity-30 disabled:cursor-not-allowed hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
-              title="Về trang đầu"
-            >
-              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 19l-7-7 7-7m8 14l-7-7 7-7" />
-              </svg>
-            </button>
+          <>
+            {/* Desktop Pagination (hidden sm:flex) */}
+            <div className="hidden sm:flex items-center gap-1">
+              {/* Nút Về Trang Đầu */}
+              <button
+                type="button"
+                disabled={currentPage === 1}
+                onClick={() => handlePageChange(1)}
+                className="p-1.5 rounded-md border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-zinc-600 dark:text-zinc-400 disabled:opacity-30 disabled:cursor-not-allowed hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
+                title="Về trang đầu"
+              >
+                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 19l-7-7 7-7m8 14l-7-7 7-7" />
+                </svg>
+              </button>
 
-            {/* Nút Trang Trước */}
-            <button
-              type="button"
-              disabled={currentPage === 1}
-              onClick={() => handlePageChange(currentPage - 1)}
-              className="p-1.5 rounded-md border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-zinc-600 dark:text-zinc-400 disabled:opacity-30 disabled:cursor-not-allowed hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
-              title="Trang trước"
-            >
-              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-              </svg>
-            </button>
+              {/* Nút Trang Trước */}
+              <button
+                type="button"
+                disabled={currentPage === 1}
+                onClick={() => handlePageChange(currentPage - 1)}
+                className="p-1.5 rounded-md border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-zinc-600 dark:text-zinc-400 disabled:opacity-30 disabled:cursor-not-allowed hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
+                title="Trang trước"
+              >
+                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                </svg>
+              </button>
 
-            {/* Các số trang */}
-            {paginationItems.map((item, idx) => {
-              if (item === "...") {
+              {/* Các số trang */}
+              {paginationItems.map((item, idx) => {
+                if (item === "...") {
+                  return (
+                    <span
+                      key={`dots-${idx}`}
+                      className="px-2 py-1 text-zinc-400 font-mono select-none"
+                    >
+                      …
+                    </span>
+                  );
+                }
+
+                const pageNum = item as number;
+                const isActive = pageNum === currentPage;
+
                 return (
-                  <span
-                    key={`dots-${idx}`}
-                    className="px-2 py-1 text-zinc-400 font-mono select-none"
-                  >
-                    …
-                  </span>
-                );
-              }
-
-              const pageNum = item as number;
-              const isActive = pageNum === currentPage;
-
-              return (
-                <button
-                  key={pageNum}
-                  type="button"
-                  onClick={() => handlePageChange(pageNum)}
-                  className={`min-w-8 h-8 px-2 rounded-md font-mono text-xs font-semibold transition-colors cursor-pointer ${
-                    isActive
+                  <button
+                    key={pageNum}
+                    type="button"
+                    onClick={() => handlePageChange(pageNum)}
+                    className={`min-w-8 h-8 px-2 rounded-md font-mono text-xs font-semibold transition-colors cursor-pointer ${isActive
                       ? "bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 shadow-2xs"
                       : "border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800"
-                  }`}
-                >
-                  {pageNum}
-                </button>
-              );
-            })}
+                      }`}
+                  >
+                    {pageNum}
+                  </button>
+                );
+              })}
 
-            {/* Nút Trang Sau */}
-            <button
-              type="button"
-              disabled={currentPage === totalPages}
-              onClick={() => handlePageChange(currentPage + 1)}
-              className="p-1.5 rounded-md border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-zinc-600 dark:text-zinc-400 disabled:opacity-30 disabled:cursor-not-allowed hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
-              title="Trang kế tiếp"
-            >
-              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-              </svg>
-            </button>
+              {/* Nút Trang Sau */}
+              <button
+                type="button"
+                disabled={currentPage === totalPages}
+                onClick={() => handlePageChange(currentPage + 1)}
+                className="p-1.5 rounded-md border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-zinc-600 dark:text-zinc-400 disabled:opacity-30 disabled:cursor-not-allowed hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
+                title="Trang kế tiếp"
+              >
+                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
+              </button>
 
-            {/* Nút Đến Trang Cuối */}
-            <button
-              type="button"
-              disabled={currentPage === totalPages}
-              onClick={() => handlePageChange(totalPages)}
-              className="p-1.5 rounded-md border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-zinc-600 dark:text-zinc-400 disabled:opacity-30 disabled:cursor-not-allowed hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
-              title="Trang cuối"
-            >
-              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 5l7 7-7 7M5 5l7 7-7 7" />
-              </svg>
-            </button>
-          </div>
+              {/* Nút Đến Trang Cuối */}
+              <button
+                type="button"
+                disabled={currentPage === totalPages}
+                onClick={() => handlePageChange(totalPages)}
+                className="p-1.5 rounded-md border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-zinc-600 dark:text-zinc-400 disabled:opacity-30 disabled:cursor-not-allowed hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
+                title="Trang cuối"
+              >
+                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 5l7 7-7 7M5 5l7 7-7 7" />
+                </svg>
+              </button>
+            </div>
+
+            {/* Mobile Compact Pagination (sm:hidden) */}
+            <div className="sm:hidden flex items-center gap-1.5">
+              <button
+                type="button"
+                disabled={currentPage === 1}
+                onClick={() => handlePageChange(currentPage - 1)}
+                className="px-2.5 py-1 rounded-lg border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-zinc-700 dark:text-zinc-300 disabled:opacity-30 text-xs font-semibold"
+              >
+                ← Trước
+              </button>
+              <span className="text-xs font-mono font-bold px-1.5 text-zinc-700 dark:text-zinc-300">
+                {currentPage}/{totalPages}
+              </span>
+              <button
+                type="button"
+                disabled={currentPage === totalPages}
+                onClick={() => handlePageChange(currentPage + 1)}
+                className="px-2.5 py-1 rounded-lg border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-zinc-700 dark:text-zinc-300 disabled:opacity-30 text-xs font-semibold"
+              >
+                Sau →
+              </button>
+            </div>
+          </>
         )}
       </div>
     </div>

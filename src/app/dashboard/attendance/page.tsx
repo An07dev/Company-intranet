@@ -39,6 +39,10 @@ export default function AttendancePage() {
 
   // Trạng thái đóng / mở bảng lịch sử chấm công
   const [isHistoryOpen, setIsHistoryOpen] = useState<boolean>(false);
+  // Trạng thái hiển thị chi tiết mạng IP trên mobile (mặc định thu gọn để ưu tiên chấm công)
+  const [showMobileNetworkDetails, setShowMobileNetworkDetails] = useState<boolean>(false);
+  // Trạng thái mở rộng bộ lọc nâng cao trên mobile
+  const [showMobileHistoryFilters, setShowMobileHistoryFilters] = useState<boolean>(false);
 
   // Phân trang: hiển thị 10 bản ghi mỗi trang
   const [currentPage, setCurrentPage] = useState<number>(1);
@@ -408,142 +412,75 @@ export default function AttendancePage() {
   }
 
   return (
-    <div className="w-full px-4 sm:px-6 lg:px-8 py-3 sm:py-4 space-y-3 sm:space-y-3.5">
-      {/* 1. Header Trang: Toàn màn hình với thông tin nhân viên & Đồng hồ thời gian thực */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pb-3 border-b border-zinc-200 dark:border-zinc-800">
-        <div>
-          <h1 className="text-lg sm:text-xl lg:text-2xl font-bold tracking-tight text-zinc-900 dark:text-zinc-100">
-            Hệ Thống Chấm Công Trực Tuyến
-          </h1>
-          <div className="flex flex-wrap items-center gap-2 mt-1">
-            {user?.employeeCode && (
-              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-mono font-semibold bg-emerald-100 text-emerald-800 dark:bg-emerald-950/80 dark:text-emerald-300 border border-emerald-300/40 dark:border-emerald-800">
-                Mã NV: {user.employeeCode}
+    <div className="w-full px-3 sm:px-6 lg:px-8 py-2.5 sm:py-4 space-y-2.5 sm:space-y-3.5">
+      {/* 1. Header Trang: Tối ưu Mobile-first gọn gàng, hiển thị đầy đủ trên Desktop */}
+      <div className="pb-2.5 sm:pb-3 border-b border-zinc-200 dark:border-zinc-800">
+        {/* Header trên Mobile (< sm) */}
+        <div className="sm:hidden flex items-center justify-between gap-2">
+          <div>
+            <h1 className="text-base font-bold tracking-tight text-zinc-900 dark:text-zinc-100">
+              Chấm Công Trực Tuyến
+            </h1>
+            <div className="flex items-center gap-1.5 mt-0.5">
+              {user?.employeeCode && (
+                <span className="inline-flex items-center px-1.5 py-0.2 rounded text-[10px] font-mono font-semibold bg-emerald-100 text-emerald-800 dark:bg-emerald-950/80 dark:text-emerald-300 border border-emerald-300/40">
+                  {user.employeeCode}
+                </span>
+              )}
+              <span className="text-[11px] text-zinc-500 capitalize">
+                {currentDate.split(",")[0] || "Hôm nay"}
               </span>
-            )}
-            <span className="text-xs text-zinc-500 dark:text-zinc-400">
-              Vai trò: <strong className="text-zinc-800 dark:text-zinc-200">{user ? USER_ROLE_LABELS[user.role] : "—"}</strong>
+            </div>
+          </div>
+
+          {/* Đồng hồ số mini cho Mobile */}
+          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-2xs">
+            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+            <span className="font-mono text-xs font-bold text-zinc-900 dark:text-zinc-100">
+              {currentTime || "--:--:--"}
             </span>
           </div>
         </div>
 
-        {/* Đồng hồ số thời gian thực */}
-        <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 p-2.5 sm:p-3 rounded-xl shadow-2xs flex items-center justify-between sm:justify-end gap-3">
-          <div className="flex items-center gap-2 sm:hidden">
-            <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
-            <span className="text-[11px] font-medium text-zinc-500">Trực tuyến</span>
+        {/* Header trên Tablet & Desktop (>= sm) */}
+        <div className="hidden sm:flex sm:items-center sm:justify-between gap-3">
+          <div>
+            <h1 className="text-lg sm:text-xl lg:text-2xl font-bold tracking-tight text-zinc-900 dark:text-zinc-100">
+              Hệ Thống Chấm Công Trực Tuyến
+            </h1>
+            <div className="flex flex-wrap items-center gap-2 mt-1">
+              {user?.employeeCode && (
+                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-mono font-semibold bg-emerald-100 text-emerald-800 dark:bg-emerald-950/80 dark:text-emerald-300 border border-emerald-300/40 dark:border-emerald-800">
+                  Mã NV: {user.employeeCode}
+                </span>
+              )}
+              <span className="text-xs text-zinc-500 dark:text-zinc-400">
+                Vai trò: <strong className="text-zinc-800 dark:text-zinc-200">{user ? USER_ROLE_LABELS[user.role] : "—"}</strong>
+              </span>
+            </div>
           </div>
-          <div className="text-right">
-            <div className="text-[10px] font-medium uppercase tracking-wider text-zinc-400">
-              Giờ chuẩn VN (GMT+7)
-            </div>
-            <div className="font-mono text-lg sm:text-xl lg:text-2xl font-bold text-zinc-900 dark:text-zinc-100 tracking-wider">
-              {currentTime || "--:--:--"}
-            </div>
-            <div className="text-[11px] sm:text-xs text-zinc-500 dark:text-zinc-400 capitalize">
-              {currentDate || "Đang tải ngày..."}
+
+          {/* Đồng hồ số thời gian thực chuẩn VN */}
+          <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 p-2.5 sm:p-3 rounded-xl shadow-2xs flex items-center justify-end gap-3">
+            <div className="text-right">
+              <div className="text-[10px] font-medium uppercase tracking-wider text-zinc-400">
+                Giờ chuẩn VN (GMT+7)
+              </div>
+              <div className="font-mono text-lg sm:text-xl lg:text-2xl font-bold text-zinc-900 dark:text-zinc-100 tracking-wider">
+                {currentTime || "--:--:--"}
+              </div>
+              <div className="text-[11px] sm:text-xs text-zinc-500 dark:text-zinc-400 capitalize">
+                {currentDate || "Đang tải ngày..."}
+              </div>
             </div>
           </div>
         </div>
       </div>
 
-      {/* 2. Khối Vận Hành Chấm Công (3 Cột Trải Đều Toàn Chiều Ngang - Cân Bằng Tuyệt Đối) */}
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-12 gap-3 sm:gap-4">
-        {/* Cột 1: Thẻ Kiểm tra Trạng thái Mạng & IP (4 cols) */}
-        <div className="xl:col-span-4 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-3 sm:p-3.5 shadow-xs flex flex-col justify-between">
-          <div>
-            <div className="flex items-center justify-between mb-2 pb-1.5 border-b border-zinc-100 dark:border-zinc-800">
-              <span className="text-xs font-bold uppercase tracking-wider text-zinc-600 dark:text-zinc-400">
-                1. Trạng Thái Mạng & Vị Trí
-              </span>
-              <button
-                type="button"
-                onClick={async () => {
-                  await fetchNetworkStatus();
-                  toast.info("Đã kiểm tra lại kết nối IP", { duration: 2000 });
-                }}
-                title="Kiểm tra lại kết nối IP"
-                className="text-[11px] text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-200 flex items-center gap-1 cursor-pointer"
-              >
-                <svg className={`w-3 h-3 ${loadingNetwork ? "animate-spin text-emerald-600" : ""}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                </svg>
-                <span>Kiểm tra lại</span>
-              </button>
-            </div>
-
-            {loadingNetwork ? (
-              <div className="py-6">
-                <LoadingSection text="Đang nhận diện mạng IP..." size="sm" />
-              </div>
-            ) : (
-              <div className="space-y-2">
-                {/* Banner trạng thái mạng */}
-                <div
-                  className={`p-2 rounded-lg border ${!ipCheckEnabled
-                    ? "bg-blue-50/70 dark:bg-blue-950/20 border-blue-200 dark:border-blue-900 text-blue-900 dark:text-blue-200"
-                    : isIpAllowed
-                      ? "bg-emerald-50/70 dark:bg-emerald-950/20 border-emerald-200 dark:border-emerald-900 text-emerald-900 dark:text-emerald-200"
-                      : "bg-red-50/70 dark:bg-red-950/20 border-red-200 dark:border-red-900 text-red-900 dark:text-red-200"
-                    }`}
-                >
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <div
-                        className={`w-6 h-6 rounded-md flex items-center justify-center font-bold text-xs shrink-0 ${!ipCheckEnabled
-                          ? "bg-blue-100 text-blue-700 dark:bg-blue-900/60 dark:text-blue-300"
-                          : isIpAllowed
-                            ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/60 dark:text-emerald-300"
-                            : "bg-red-100 text-red-700 dark:bg-red-900/60 dark:text-red-300"
-                          }`}
-                      >
-                        {!ipCheckEnabled ? "ℹ️" : isIpAllowed ? "✓" : "✕"}
-                      </div>
-                      <div className="font-bold text-xs">
-                        {!ipCheckEnabled
-                          ? "Tạm tắt kiểm tra IP"
-                          : isIpAllowed
-                            ? "Mạng Wi-Fi Hợp Lệ"
-                            : "IP Ngoài Văn Phòng"}
-                      </div>
-                    </div>
-                    <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-white/80 dark:bg-zinc-900/80 font-bold border border-current/20">
-                      {isIpAllowed ? "Đạt Chuẩn" : "Không Khớp"}
-                    </span>
-                  </div>
-                </div>
-
-                {/* 2 ô thông số: IP & Chính sách */}
-                <div className="grid grid-cols-2 gap-2 text-xs">
-                  <div className="p-2 rounded-lg bg-zinc-50 dark:bg-zinc-950 border border-zinc-100 dark:border-zinc-800">
-                    <span className="text-[10px] text-zinc-400 block">Địa chỉ IP:</span>
-                    <span className="font-mono font-bold text-xs text-zinc-900 dark:text-zinc-100 truncate block mt-0.5">
-                      {clientIp || "::1"}
-                    </span>
-                  </div>
-                  <div className="p-2 rounded-lg bg-zinc-50 dark:bg-zinc-950 border border-zinc-100 dark:border-zinc-800">
-                    <span className="text-[10px] text-zinc-400 block">Chính sách:</span>
-                    <span className="font-semibold text-xs text-zinc-900 dark:text-zinc-100 truncate block mt-0.5">
-                      {ipCheckEnabled ? "Bắt buộc IP" : "Không giới hạn"}
-                    </span>
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
-
-          <div className="mt-2.5 pt-2 border-t border-zinc-100 dark:border-zinc-800 text-[11px] text-zinc-400 flex items-center justify-between">
-            <span className="truncate">
-              {locationInfo?.city ? `Khu vực: ${locationInfo.city}` : "Vị trí: Văn phòng nội bộ"}
-            </span>
-            <span className="font-medium text-emerald-600 dark:text-emerald-400 font-mono text-[10px] shrink-0 ml-1">
-              Bảo mật SSL ✓
-            </span>
-          </div>
-        </div>
-
-        {/* Cột 2: Thao Tác Chấm Công Vào / Ra (4 cols) */}
-        <div className="xl:col-span-4 bg-white dark:bg-zinc-900 border-2 border-zinc-200/90 dark:border-zinc-800 rounded-xl p-3 sm:p-3.5 shadow-xs hover:shadow-md transition-shadow flex flex-col justify-between relative overflow-hidden">
+      {/* 2. Khối Vận Hành Chấm Công: Thứ tự ưu tiên trên Mobile: Nút Thao Tác (1) -> Thẻ Hôm Nay (2) -> Trạng Thái Mạng (3) */}
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-12 gap-2.5 sm:gap-4">
+        {/* THẺ 2 TRÊN DESKTOP -> ƯU TIÊN SỐ 1 TRÊN MOBILE: Thao Tác Chấm Công Vào / Ra (4 cols) */}
+        <div className="order-1 xl:order-none xl:col-span-4 bg-white dark:bg-zinc-900 border-2 border-zinc-200/90 dark:border-zinc-800 rounded-xl p-3 sm:p-3.5 shadow-xs hover:shadow-md transition-shadow flex flex-col justify-between relative overflow-hidden">
           {/* Subtle decorative background gradient accent */}
           <div className="absolute top-0 right-0 w-32 h-32 bg-linear-to-bl from-emerald-500/5 via-indigo-500/5 to-transparent rounded-bl-full pointer-events-none" />
 
@@ -554,42 +491,46 @@ export default function AttendancePage() {
                   ⚡
                 </span>
                 <span className="text-xs font-bold uppercase tracking-wider text-zinc-700 dark:text-zinc-300">
-                  2. Thao Tác Chấm Công
+                  Thao Tác Chấm Công
                 </span>
               </div>
-              <span className="text-[11px] font-mono font-semibold px-2 py-0.5 rounded-md bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-300 border border-zinc-200/60 dark:border-zinc-700/60">
-                {workStartTime} - {workEndTime}
-              </span>
+
+              <div className="flex items-center gap-1.5">
+                {/* Chỉ báo trạng thái mạng nhanh trên Mobile */}
+
+
+                <span className="text-[11px] font-mono font-semibold px-2 py-0.5 rounded-md bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-300 border border-zinc-200/60 dark:border-zinc-700/60">
+                  {workStartTime} - {workEndTime}
+                </span>
+              </div>
             </div>
 
-            {/* Hai nút Chấm Công Thon Gọn & Tinh Tế */}
+            {/* Hai nút Chấm Công Thon Gọn & Tối Ưu Chạm Cảm Ứng (Touch-friendly) */}
             <div className="grid grid-cols-2 gap-2 mb-2">
               {/* NÚT 1: CHẤM VÀO */}
               <button
                 type="button"
                 disabled={!canCheckIn || actionLoading}
                 onClick={handleCheckIn}
-                className={`group relative overflow-hidden rounded-lg py-1.5 px-2.5 text-left transition-all duration-200 select-none ${
-                  hasCheckedIn
-                    ? "bg-linear-to-br from-emerald-50 via-teal-50 to-emerald-100/60 dark:from-emerald-950/50 dark:via-teal-950/40 dark:to-emerald-900/40 border border-emerald-500/80 text-emerald-900 dark:text-emerald-200 shadow-xs cursor-default"
-                    : canCheckIn
-                      ? "bg-linear-to-r from-emerald-600 via-emerald-500 to-teal-600 text-white shadow-xs hover:shadow-md ring-1 ring-emerald-400/60 hover:ring-emerald-300 hover:-translate-y-0.5 active:translate-y-0 cursor-pointer"
-                      : "bg-zinc-100 dark:bg-zinc-800/60 border border-zinc-200 dark:border-zinc-700/60 text-zinc-400 dark:text-zinc-500 cursor-not-allowed opacity-75"
-                }`}
+                className={`group relative overflow-hidden rounded-lg py-1.5 px-2 text-left transition-all duration-200 select-none min-h-[48px] ${hasCheckedIn
+                  ? "bg-linear-to-br from-emerald-50 via-teal-50 to-emerald-100/60 dark:from-emerald-950/50 dark:via-teal-950/40 dark:to-emerald-900/40 border border-emerald-500/80 text-emerald-900 dark:text-emerald-200 shadow-xs cursor-default"
+                  : canCheckIn
+                    ? "bg-linear-to-r from-emerald-600 via-emerald-500 to-teal-600 text-white shadow-xs hover:shadow-md ring-1 ring-emerald-400/60 hover:ring-emerald-300 hover:-translate-y-0.5 active:translate-y-0 cursor-pointer"
+                    : "bg-zinc-100 dark:bg-zinc-800/60 border border-zinc-200 dark:border-zinc-700/60 text-zinc-400 dark:text-zinc-500 cursor-not-allowed opacity-75"
+                  }`}
               >
                 {canCheckIn && !hasCheckedIn && (
                   <span className="absolute inset-0 w-full h-full bg-linear-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-out" />
                 )}
 
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1.5 sm:gap-2">
                   <div
-                    className={`w-7 h-7 rounded-md flex items-center justify-center shrink-0 transition-all ${
-                      hasCheckedIn
-                        ? "bg-emerald-500 text-white"
-                        : canCheckIn
-                          ? "bg-white/20 text-white"
-                          : "bg-zinc-200 dark:bg-zinc-700 text-zinc-400 dark:text-zinc-500"
-                    }`}
+                    className={`w-7 h-7 rounded-md flex items-center justify-center shrink-0 transition-all ${hasCheckedIn
+                      ? "bg-emerald-500 text-white"
+                      : canCheckIn
+                        ? "bg-white/20 text-white"
+                        : "bg-zinc-200 dark:bg-zinc-700 text-zinc-400 dark:text-zinc-500"
+                      }`}
                   >
                     {actionLoading && !hasCheckedIn ? (
                       <svg className="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24">
@@ -615,7 +556,7 @@ export default function AttendancePage() {
                       )}
                     </div>
                     <div className="text-[10px] mt-0.5 truncate opacity-90 font-medium">
-                      {hasCheckedIn ? `✓ ${formatDisplayTime(todayRecord?.checkInTime)}` : "Vào ca sáng (08:00)"}
+                      {hasCheckedIn ? `✓ ${formatDisplayTime(todayRecord?.checkInTime)}` : "Ca sáng (08:00)"}
                     </div>
                   </div>
                 </div>
@@ -626,27 +567,25 @@ export default function AttendancePage() {
                 type="button"
                 disabled={!canCheckOut || actionLoading}
                 onClick={handleCheckOut}
-                className={`group relative overflow-hidden rounded-lg py-1.5 px-2.5 text-left transition-all duration-200 select-none ${
-                  hasCheckedOut
-                    ? "bg-linear-to-br from-indigo-50 via-blue-50 to-indigo-100/60 dark:from-indigo-950/50 dark:via-blue-950/40 dark:to-indigo-900/40 border border-indigo-500/80 text-indigo-900 dark:text-indigo-200 shadow-xs cursor-default"
-                    : canCheckOut
-                      ? "bg-linear-to-r from-blue-600 via-indigo-600 to-violet-600 text-white shadow-xs hover:shadow-md ring-1 ring-indigo-400/60 hover:ring-indigo-300 hover:-translate-y-0.5 active:translate-y-0 cursor-pointer"
-                      : "bg-zinc-100 dark:bg-zinc-800/60 border border-zinc-200 dark:border-zinc-700/60 text-zinc-400 dark:text-zinc-500 cursor-not-allowed opacity-75"
-                }`}
+                className={`group relative overflow-hidden rounded-lg py-1.5 px-2 text-left transition-all duration-200 select-none min-h-[48px] ${hasCheckedOut
+                  ? "bg-linear-to-br from-indigo-50 via-blue-50 to-indigo-100/60 dark:from-indigo-950/50 dark:via-blue-950/40 dark:to-indigo-900/40 border border-indigo-500/80 text-indigo-900 dark:text-indigo-200 shadow-xs cursor-default"
+                  : canCheckOut
+                    ? "bg-linear-to-r from-blue-600 via-indigo-600 to-violet-600 text-white shadow-xs hover:shadow-md ring-1 ring-indigo-400/60 hover:ring-indigo-300 hover:-translate-y-0.5 active:translate-y-0 cursor-pointer"
+                    : "bg-zinc-100 dark:bg-zinc-800/60 border border-zinc-200 dark:border-zinc-700/60 text-zinc-400 dark:text-zinc-500 cursor-not-allowed opacity-75"
+                  }`}
               >
                 {canCheckOut && !hasCheckedOut && (
                   <span className="absolute inset-0 w-full h-full bg-linear-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-out" />
                 )}
 
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1.5 sm:gap-2">
                   <div
-                    className={`w-7 h-7 rounded-md flex items-center justify-center shrink-0 transition-all ${
-                      hasCheckedOut
-                        ? "bg-indigo-600 text-white"
-                        : canCheckOut
-                          ? "bg-white/20 text-white"
-                          : "bg-zinc-200 dark:bg-zinc-700 text-zinc-400 dark:text-zinc-500"
-                    }`}
+                    className={`w-7 h-7 rounded-md flex items-center justify-center shrink-0 transition-all ${hasCheckedOut
+                      ? "bg-indigo-600 text-white"
+                      : canCheckOut
+                        ? "bg-white/20 text-white"
+                        : "bg-zinc-200 dark:bg-zinc-700 text-zinc-400 dark:text-zinc-500"
+                      }`}
                   >
                     {actionLoading && hasCheckedIn ? (
                       <svg className="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24">
@@ -692,7 +631,7 @@ export default function AttendancePage() {
                 type="text"
                 value={note}
                 onChange={(e) => setNote(e.target.value)}
-                placeholder="Ghi chú chấm công (tùy chọn: kẹt xe, làm thêm...)"
+                placeholder="Ghi chú chấm công (tùy chọn)..."
                 className="w-full pl-7 pr-2.5 py-1 rounded-lg border border-zinc-200 dark:border-zinc-700 bg-zinc-50/60 dark:bg-zinc-950 text-xs text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 focus:outline-none focus:ring-1 focus:ring-emerald-500 dark:focus:ring-emerald-400 transition-all"
               />
             </div>
@@ -716,7 +655,7 @@ export default function AttendancePage() {
               <div className="flex items-center justify-between text-zinc-500 dark:text-zinc-400">
                 <span className="flex items-center gap-1.5 truncate">
                   <span className="w-1.5 h-1.5 rounded-full bg-indigo-500 animate-pulse shrink-0" />
-                  <span>Đang trong ca. Bấm <strong>Chấm Về</strong> khi tan ca.</span>
+                  <span>Đang trong ca. Nhấn <strong>Chấm Về</strong> khi tan ca.</span>
                 </span>
                 <span className="font-mono text-[10px] text-zinc-400 shrink-0">{workEndTime}</span>
               </div>
@@ -731,12 +670,12 @@ export default function AttendancePage() {
           </div>
         </div>
 
-        {/* Cột 3: Thẻ Điểm Danh Hôm Nay (4 cols) */}
-        <div className="xl:col-span-4 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-3 sm:p-3.5 shadow-xs flex flex-col justify-between">
+        {/* THẺ 3 TRÊN DESKTOP -> ƯU TIÊN SỐ 2 TRÊN MOBILE: Thẻ Điểm Danh Hôm Nay (4 cols) */}
+        <div className="order-2 xl:order-none xl:col-span-4 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-3 sm:p-3.5 shadow-xs flex flex-col justify-between">
           <div>
             <div className="flex items-center justify-between mb-2 pb-1.5 border-b border-zinc-100 dark:border-zinc-800">
               <span className="text-xs font-semibold uppercase tracking-wider text-zinc-500">
-                3. Thẻ Điểm Danh Hôm Nay
+                Hôm Nay ({todayDateString})
               </span>
               {todayRecord ? (
                 <span
@@ -762,34 +701,34 @@ export default function AttendancePage() {
               )}
             </div>
 
-            {/* 2 ô thông số: Giờ vào & Giờ về */}
+            {/* 2 ô thông số: Giờ vào & Giờ về (Tối giản trên Mobile, ẩn IP rườm rà) */}
             <div className="grid grid-cols-2 gap-2 text-xs">
               <div className="p-2 rounded-lg bg-zinc-50 dark:bg-zinc-950 border border-zinc-100 dark:border-zinc-800/80">
-                <span className="text-[10px] text-zinc-400 block mb-0.5">Giờ vào (Check-in):</span>
-                <span className="font-mono font-bold text-sm text-zinc-900 dark:text-zinc-100">
+                <span className="text-[10px] text-zinc-400 block mb-0.5">Giờ vào:</span>
+                <span className="font-mono font-bold text-sm text-zinc-900 dark:text-zinc-100 block">
                   {formatDisplayTime(todayRecord?.checkInTime)}
                 </span>
-                <span className="text-[10px] text-zinc-400 block mt-0.5 truncate">
+                <span className="hidden sm:block text-[10px] text-zinc-400 mt-0.5 truncate">
                   IP: {todayRecord?.checkInIp || "—"}
                 </span>
               </div>
 
               <div className="p-2 rounded-lg bg-zinc-50 dark:bg-zinc-950 border border-zinc-100 dark:border-zinc-800/80">
-                <span className="text-[10px] text-zinc-400 block mb-0.5">Giờ về (Check-out):</span>
-                <span className="font-mono font-bold text-sm text-zinc-900 dark:text-zinc-100">
+                <span className="text-[10px] text-zinc-400 block mb-0.5">Giờ về:</span>
+                <span className="font-mono font-bold text-sm text-zinc-900 dark:text-zinc-100 block">
                   {formatDisplayTime(todayRecord?.checkOutTime)}
                 </span>
-                <span className="text-[10px] text-zinc-400 block mt-0.5 truncate">
+                <span className="hidden sm:block text-[10px] text-zinc-400 mt-0.5 truncate">
                   IP: {todayRecord?.checkOutIp || "—"}
                 </span>
               </div>
             </div>
 
-            {/* Khối tóm tắt thời gian làm việc (lấp đầy khoảng trống, đồng bộ với Card 1 & 2) */}
+            {/* Khối tóm tắt thời gian làm việc */}
             <div className="mt-2 p-2 rounded-lg bg-zinc-50 dark:bg-zinc-950 border border-zinc-100 dark:border-zinc-800 flex items-center justify-between text-xs">
               <div className="flex items-center gap-1.5 text-zinc-500 dark:text-zinc-400">
                 <span>⏱️</span>
-                <span className="text-[11px]">Thời gian làm việc:</span>
+                <span className="text-[11px]">Thời gian làm:</span>
               </div>
               <span className="font-mono font-bold text-xs text-emerald-600 dark:text-emerald-400">
                 {todayRecord?.workDurationMinutes !== undefined
@@ -805,10 +744,115 @@ export default function AttendancePage() {
             <span>Trạng thái ca:</span>
             <span className="font-medium text-zinc-700 dark:text-zinc-300">
               {hasCheckedIn && hasCheckedOut
-                ? "✓ Đã hoàn tất 2 lượt"
+                ? "✓ Hoàn tất cả ngày"
                 : hasCheckedIn
                   ? "⚡ Đang trong ca làm"
                   : "Chưa bắt đầu ca"}
+            </span>
+          </div>
+        </div>
+
+        {/* THẺ 1 TRÊN DESKTOP -> THẺ PHỤ SỐ 3 TRÊN MOBILE (Thu gọn kỹ thuật để không che mất nút): Trạng Thái Mạng & IP (4 cols) */}
+        <div className="order-3 xl:order-none xl:col-span-4 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-3 sm:p-3.5 shadow-xs flex flex-col justify-between">
+          <div>
+            <div className="flex items-center justify-between mb-2 pb-1.5 border-b border-zinc-100 dark:border-zinc-800">
+              <span className="text-xs font-bold uppercase tracking-wider text-zinc-600 dark:text-zinc-400">
+                Trạng Thái Mạng & IP
+              </span>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={async () => {
+                    await fetchNetworkStatus();
+                    toast.info("Đã kiểm tra lại kết nối IP", { duration: 2000 });
+                  }}
+                  title="Kiểm tra lại kết nối IP"
+                  className="text-[11px] text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-200 flex items-center gap-1 cursor-pointer"
+                >
+                  <svg className={`w-3 h-3 ${loadingNetwork ? "animate-spin text-emerald-600" : ""}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                  </svg>
+                  <span className="hidden sm:inline">Kiểm tra lại</span>
+                </button>
+
+                {/* Nút bật/tắt chi tiết IP trên Mobile để tránh choán chỗ */}
+                <button
+                  type="button"
+                  onClick={() => setShowMobileNetworkDetails((prev) => !prev)}
+                  className="sm:hidden text-[10px] text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200 font-medium px-1.5 py-0.5 rounded bg-zinc-100 dark:bg-zinc-800 cursor-pointer"
+                >
+                  {showMobileNetworkDetails ? "Thu gọn ▲" : "Chi tiết ▼"}
+                </button>
+              </div>
+            </div>
+
+            {loadingNetwork ? (
+              <div className="py-6">
+                <LoadingSection text="Đang nhận diện mạng IP..." size="sm" />
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {/* Banner trạng thái mạng */}
+                <div
+                  className={`p-2 rounded-lg border ${!ipCheckEnabled
+                    ? "bg-blue-50/70 dark:bg-blue-950/20 border-blue-200 dark:border-blue-900 text-blue-900 dark:text-blue-200"
+                    : isIpAllowed
+                      ? "bg-emerald-50/70 dark:bg-emerald-950/20 border-emerald-200 dark:border-emerald-900 text-emerald-900 dark:text-emerald-200"
+                      : "bg-red-50/70 dark:bg-red-950/20 border-red-200 dark:border-red-900 text-red-900 dark:text-red-200"
+                    }`}
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <div
+                        className={`w-6 h-6 rounded-md flex items-center justify-center font-bold text-xs shrink-0 ${!ipCheckEnabled
+                          ? "bg-blue-100 text-blue-700 dark:bg-blue-900/60 dark:text-blue-300"
+                          : isIpAllowed
+                            ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/60 dark:text-emerald-300"
+                            : "bg-red-100 text-red-700 dark:bg-red-900/60 dark:text-red-300"
+                          }`}
+                      >
+                        {!ipCheckEnabled ? "ℹ️" : isIpAllowed ? "✓" : "✕"}
+                      </div>
+                      <div className="font-bold text-xs">
+                        {!ipCheckEnabled
+                          ? "Tạm tắt kiểm tra IP"
+                          : isIpAllowed
+                            ? "Mạng Wi-Fi Hợp Lệ"
+                            : "IP Ngoài Văn Phòng"}
+                      </div>
+                    </div>
+                    <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-white/80 dark:bg-zinc-900/80 font-bold border border-current/20">
+                      {isIpAllowed ? "Đạt Chuẩn" : "Không Khớp"}
+                    </span>
+                  </div>
+                </div>
+
+                {/* 2 ô thông số: IP & Chính sách (Ẩn mặc định trên Mobile, hiển thị khi bấm Chi tiết) */}
+                <div className={`${showMobileNetworkDetails ? "grid" : "hidden sm:grid"} grid-cols-2 gap-2 text-xs`}>
+                  <div className="p-2 rounded-lg bg-zinc-50 dark:bg-zinc-950 border border-zinc-100 dark:border-zinc-800">
+                    <span className="text-[10px] text-zinc-400 block">Địa chỉ IP:</span>
+                    <span className="font-mono font-bold text-xs text-zinc-900 dark:text-zinc-100 truncate block mt-0.5">
+                      {clientIp || "::1"}
+                    </span>
+                  </div>
+                  <div className="p-2 rounded-lg bg-zinc-50 dark:bg-zinc-950 border border-zinc-100 dark:border-zinc-800">
+                    <span className="text-[10px] text-zinc-400 block">Chính sách:</span>
+                    <span className="font-semibold text-xs text-zinc-900 dark:text-zinc-100 truncate block mt-0.5">
+                      {ipCheckEnabled ? "Bắt buộc IP" : "Không giới hạn"}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Dòng vị trí & SSL (Ẩn mặc định trên mobile để tránh dài trang) */}
+          <div className={`${showMobileNetworkDetails ? "flex" : "hidden sm:flex"} mt-2.5 pt-2 border-t border-zinc-100 dark:border-zinc-800 text-[11px] text-zinc-400 items-center justify-between`}>
+            <span className="truncate">
+              {locationInfo?.city ? `Khu vực: ${locationInfo.city}` : "Vị trí: Văn phòng nội bộ"}
+            </span>
+            <span className="font-medium text-emerald-600 dark:text-emerald-400 font-mono text-[10px] shrink-0 ml-1">
+              Bảo mật SSL ✓
             </span>
           </div>
         </div>
@@ -852,37 +896,35 @@ export default function AttendancePage() {
           </div>
         )}
 
-        {/* Header của bảng: hỗ trợ nhấp để đóng/mở */}
+        {/* Header của bảng: hỗ trợ nhấp để đóng/mở - Đảm bảo trên Mobile luôn nằm trên 1 DÒNG DUY NHẤT */}
         <div
           onClick={() => setIsHistoryOpen((prev) => !prev)}
-          className={`p-4 sm:p-5 flex flex-col md:flex-row md:items-center md:justify-between gap-3 cursor-pointer select-none transition-colors hover:bg-zinc-50/60 dark:hover:bg-zinc-800/30 ${
-            isHistoryOpen ? "border-b border-zinc-200 dark:border-zinc-800" : ""
-          }`}
+          className={`p-2.5 sm:p-4 flex items-center justify-between gap-2 cursor-pointer select-none transition-colors hover:bg-zinc-50/60 dark:hover:bg-zinc-800/30 ${isHistoryOpen ? "border-b border-zinc-200 dark:border-zinc-800" : ""
+            }`}
         >
-          <div className="flex items-center gap-2.5 flex-wrap">
-            <h2 className="text-base sm:text-lg font-bold text-zinc-900 dark:text-zinc-100 flex items-center gap-2">
-              <span>👤</span>
-              <span>Lịch Sử Chấm Công Của Bạn</span>
+          <div className="flex items-center gap-1.5 sm:gap-2.5 min-w-0">
+            <span className="text-base sm:text-lg shrink-0">👤</span>
+            <h2 className="text-xs sm:text-base font-bold text-zinc-900 dark:text-zinc-100 truncate">
+              Lịch Sử Chấm Công
             </h2>
-            <span className="px-2 py-0.5 rounded-full text-xs font-mono font-medium bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400">
-              {totalRecords} bản ghi
+            <span className="px-1.5 py-0.5 rounded-full text-[10px] sm:text-xs font-mono font-medium bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 shrink-0">
+              {totalRecords} <span className="hidden sm:inline">bản ghi</span>
             </span>
             {isHistoryOpen && totalPages > 1 && (
-              <span className="text-[11px] font-mono text-zinc-400 dark:text-zinc-500">
-                (Trang {currentPage}/{totalPages})
+              <span className="text-[10px] sm:text-[11px] font-mono text-zinc-400 dark:text-zinc-500 shrink-0">
+                (T{currentPage}/{totalPages})
               </span>
             )}
           </div>
 
-          <div className="flex items-center gap-2 self-end md:self-auto flex-wrap">
-            {/* Nút Đóng / Mở Bảng */}
+          <div className="flex items-center gap-1.5 shrink-0">
             <button
               type="button"
               onClick={(e) => {
                 e.stopPropagation();
                 setIsHistoryOpen((prev) => !prev);
               }}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border border-zinc-200 dark:border-zinc-700 bg-white hover:bg-zinc-100 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-zinc-700 dark:text-zinc-300 transition-all cursor-pointer shadow-2xs"
+              className="inline-flex items-center gap-1 px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-lg text-xs font-medium border border-zinc-200 dark:border-zinc-700 bg-white hover:bg-zinc-100 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-zinc-700 dark:text-zinc-300 transition-all cursor-pointer shadow-2xs"
               title={isHistoryOpen ? "Thu gọn bảng" : "Mở rộng bảng"}
               aria-expanded={isHistoryOpen}
             >
@@ -902,8 +944,211 @@ export default function AttendancePage() {
         {/* Thân bảng: hiển thị khi isHistoryOpen === true */}
         {isHistoryOpen && (
           <div>
-            {/* Thanh công cụ BỘ LỌC ĐẦY ĐỦ: Lọc ngày, trạng thái, tìm kiếm và nút xuất Excel */}
-            <div className="p-3.5 sm:p-4 bg-zinc-50/70 dark:bg-zinc-950/40 border-b border-zinc-200 dark:border-zinc-800 flex flex-col xl:flex-row xl:items-center justify-between gap-3 text-xs">
+            {/* 1. GIAO DIỆN MOBILE (< sm): BỘ LỌC CỰC KỲ TINH GỌN (1 DÒNG CHÍNH + KHỐI LỌC MỞ RỘNG KHI CẦN) */}
+            <div className="sm:hidden border-b border-zinc-200 dark:border-zinc-800 bg-zinc-50/70 dark:bg-zinc-950/40 p-2 text-xs space-y-2">
+              {/* Dòng chính: Chọn ngày nhanh + Nút Lọc + Làm mới + Xuất Excel */}
+              <div className="flex items-center justify-between gap-1.5">
+                {/* 3 nút ngày nhanh: Tất cả / Hôm nay / Hôm qua */}
+                <div className="flex items-center gap-1 overflow-x-auto py-0.5">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSelectedDate("");
+                      setCurrentPage(1);
+                    }}
+                    className={`px-2 py-1 rounded-md text-[11px] font-medium transition-colors shrink-0 cursor-pointer ${!selectedDate
+                        ? "bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 font-semibold shadow-2xs"
+                        : "bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-zinc-600 dark:text-zinc-400"
+                      }`}
+                  >
+                    Tất cả
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSelectedDate(todayDateString);
+                      setCurrentPage(1);
+                    }}
+                    className={`px-2 py-1 rounded-md text-[11px] font-medium transition-colors shrink-0 cursor-pointer ${selectedDate === todayDateString
+                        ? "bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 font-semibold shadow-2xs"
+                        : "bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-zinc-600 dark:text-zinc-400"
+                      }`}
+                  >
+                    Hôm nay
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSelectedDate(yesterdayDateString);
+                      setCurrentPage(1);
+                    }}
+                    className={`px-2 py-1 rounded-md text-[11px] font-medium transition-colors shrink-0 cursor-pointer ${selectedDate === yesterdayDateString
+                        ? "bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 font-semibold shadow-2xs"
+                        : "bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-zinc-600 dark:text-zinc-400"
+                      }`}
+                  >
+                    Hôm qua
+                  </button>
+                </div>
+
+                {/* Các nút hành động bên phải: [ Lọc ] [ ⟳ ] [ 📥 ] */}
+                <div className="flex items-center gap-1 shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => setShowMobileHistoryFilters((p) => !p)}
+                    className={`relative px-2 py-1 rounded-md text-[11px] font-medium border transition-colors flex items-center gap-1 cursor-pointer ${showMobileHistoryFilters || hasActiveFilters
+                        ? "bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 border-zinc-900 dark:border-zinc-100 font-semibold shadow-2xs"
+                        : "bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 text-zinc-600 dark:text-zinc-400"
+                      }`}
+                  >
+                    <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
+                    </svg>
+                    <span>Lọc</span>
+                    {hasActiveFilters && (
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 absolute -top-0.5 -right-0.5 ring-2 ring-white dark:ring-zinc-900" />
+                    )}
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => fetchHistory(currentPage)}
+                    title="Làm mới dữ liệu"
+                    className="p-1 rounded-md border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 cursor-pointer shadow-2xs"
+                  >
+                    <svg className={`w-3.5 h-3.5 ${loadingHistory ? "animate-spin text-emerald-600" : ""}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                    </svg>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={handleExportHistoryExcel}
+                    title="Xuất file Excel"
+                    className="px-2 py-1 rounded-md border border-emerald-300 dark:border-emerald-700 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 font-semibold text-[11px] flex items-center gap-1 cursor-pointer shadow-2xs"
+                  >
+                    <svg className="w-3 h-3 text-emerald-600 dark:text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                    <span>Excel</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Dải Chips hiển thị bộ lọc đang hoạt động khi bộ lọc chi tiết đang đóng */}
+              {hasActiveFilters && !showMobileHistoryFilters && (
+                <div className="flex items-center gap-1.5 flex-wrap pt-0.5 text-[11px]">
+                  <span className="text-zinc-400 font-medium">Đang lọc:</span>
+                  {selectedDate && selectedDate !== todayDateString && selectedDate !== yesterdayDateString && (
+                    <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-zinc-200 dark:bg-zinc-800 text-zinc-800 dark:text-zinc-200 font-mono text-[10px]">
+                      {selectedDate}
+                      <button type="button" onClick={() => setSelectedDate("")} className="hover:text-red-500 font-bold ml-0.5">×</button>
+                    </span>
+                  )}
+                  {selectedStatus !== "all" && (
+                    <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-zinc-200 dark:bg-zinc-800 text-zinc-800 dark:text-zinc-200 text-[10px]">
+                      {selectedStatus === "on_time" ? "Đúng giờ" : selectedStatus === "late" ? "Đi muộn" : selectedStatus === "early_leave" ? "Về sớm" : "Hoàn thành"}
+                      <button type="button" onClick={() => setSelectedStatus("all")} className="hover:text-red-500 font-bold ml-0.5">×</button>
+                    </span>
+                  )}
+                  {searchQuery.trim() && (
+                    <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-zinc-200 dark:bg-zinc-800 text-zinc-800 dark:text-zinc-200 text-[10px]">
+                      &quot;{searchQuery.trim()}&quot;
+                      <button type="button" onClick={() => setSearchQuery("")} className="hover:text-red-500 font-bold ml-0.5">×</button>
+                    </span>
+                  )}
+                  <button
+                    type="button"
+                    onClick={handleResetFilters}
+                    className="text-red-600 dark:text-red-400 text-[10px] underline ml-auto cursor-pointer"
+                  >
+                    Xóa tất cả
+                  </button>
+                </div>
+              )}
+
+              {/* Khối Bộ Lọc Mở Rộng trên Mobile: hiển thị khi bấm nút [ Lọc ] */}
+              {showMobileHistoryFilters && (
+                <div className="p-2.5 rounded-lg bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 space-y-2 shadow-2xs">
+                  {/* Ô tìm kiếm */}
+                  <div className="relative">
+                    <span className="absolute inset-y-0 left-0 flex items-center pl-2 pointer-events-none text-zinc-400">
+                      <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                      </svg>
+                    </span>
+                    <input
+                      type="text"
+                      value={searchQuery}
+                      onChange={(e) => {
+                        setSearchQuery(e.target.value);
+                        setCurrentPage(1);
+                      }}
+                      placeholder="Tìm ghi chú, mã..."
+                      className="w-full pl-7 pr-2.5 py-1.5 rounded-md border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800/60 text-zinc-900 dark:text-zinc-100 text-xs focus:outline-none focus:ring-1 focus:ring-zinc-900"
+                    />
+                  </div>
+
+                  {/* 2 cột: Ngày & Trạng thái */}
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <label className="text-[10px] text-zinc-400 block mb-0.5">Chọn ngày:</label>
+                      <input
+                        type="date"
+                        value={selectedDate}
+                        onChange={(e) => {
+                          setSelectedDate(e.target.value);
+                          setCurrentPage(1);
+                        }}
+                        className="w-full px-2 py-1 rounded-md border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800/60 text-zinc-900 dark:text-zinc-100 text-xs font-mono"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-[10px] text-zinc-400 block mb-0.5">Trạng thái:</label>
+                      <select
+                        value={selectedStatus}
+                        onChange={(e) => {
+                          setSelectedStatus(e.target.value);
+                          setCurrentPage(1);
+                        }}
+                        className="w-full px-2 py-1 rounded-md border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800/60 text-zinc-900 dark:text-zinc-100 text-xs"
+                      >
+                        <option value="all">Tất cả</option>
+                        <option value="on_time">Đúng giờ</option>
+                        <option value="late">Đi muộn</option>
+                        <option value="early_leave">Về sớm</option>
+                        <option value="completed">Hoàn thành</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  {/* Nút Xóa lọc & Đóng bộ lọc */}
+                  <div className="flex items-center justify-between pt-1 border-t border-zinc-100 dark:border-zinc-800 text-[11px]">
+                    {hasActiveFilters ? (
+                      <button
+                        type="button"
+                        onClick={handleResetFilters}
+                        className="text-red-600 dark:text-red-400 font-medium flex items-center gap-1 cursor-pointer"
+                      >
+                        ✕ Xóa bộ lọc
+                      </button>
+                    ) : (
+                      <span className="text-zinc-400">Chưa áp dụng bộ lọc</span>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => setShowMobileHistoryFilters(false)}
+                      className="text-zinc-600 dark:text-zinc-300 font-medium px-2 py-0.5 rounded bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 cursor-pointer"
+                    >
+                      Đóng ▲
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* 2. GIAO DIỆN DESKTOP / TABLET (>= sm): THANH BỘ LỌC ĐẦY ĐỦ RỘNG RÃI */}
+            <div className="hidden sm:flex p-3.5 sm:p-4 bg-zinc-50/70 dark:bg-zinc-950/40 border-b border-zinc-200 dark:border-zinc-800 flex-col xl:flex-row xl:items-center justify-between gap-3 text-xs">
               <div className="flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center gap-2.5 w-full xl:w-auto">
                 {/* 1. Ô tìm kiếm Ghi chú hoặc ngày */}
                 <div className="relative w-full sm:w-60">
@@ -950,11 +1195,10 @@ export default function AttendancePage() {
                         setSelectedDate(todayDateString);
                         setCurrentPage(1);
                       }}
-                      className={`px-2 py-1.5 rounded-md text-xs font-medium cursor-pointer transition-colors ${
-                        selectedDate === todayDateString
-                          ? "bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 font-semibold"
-                          : "bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800"
-                      }`}
+                      className={`px-2 py-1.5 rounded-md text-xs font-medium cursor-pointer transition-colors ${selectedDate === todayDateString
+                        ? "bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 font-semibold"
+                        : "bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800"
+                        }`}
                     >
                       Hôm nay
                     </button>
@@ -964,11 +1208,10 @@ export default function AttendancePage() {
                         setSelectedDate(yesterdayDateString);
                         setCurrentPage(1);
                       }}
-                      className={`px-2 py-1.5 rounded-md text-xs font-medium cursor-pointer transition-colors ${
-                        selectedDate === yesterdayDateString
-                          ? "bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 font-semibold"
-                          : "bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800"
-                      }`}
+                      className={`px-2 py-1.5 rounded-md text-xs font-medium cursor-pointer transition-colors ${selectedDate === yesterdayDateString
+                        ? "bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 font-semibold"
+                        : "bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800"
+                        }`}
                     >
                       Hôm qua
                     </button>
@@ -1108,26 +1351,24 @@ export default function AttendancePage() {
                             </div>
 
                             <span
-                              className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-semibold ${
-                                record.status === "on_time"
-                                  ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-950/70 dark:text-emerald-300"
-                                  : isLate
-                                    ? "bg-amber-100 text-amber-800 dark:bg-amber-950/70 dark:text-amber-300"
-                                    : isEarly
-                                      ? "bg-blue-100 text-blue-800 dark:bg-blue-950/70 dark:text-blue-300"
-                                      : "bg-purple-100 text-purple-800 dark:bg-purple-950/70 dark:text-purple-300"
-                              }`}
+                              className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-semibold ${record.status === "on_time"
+                                ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-950/70 dark:text-emerald-300"
+                                : isLate
+                                  ? "bg-amber-100 text-amber-800 dark:bg-amber-950/70 dark:text-amber-300"
+                                  : isEarly
+                                    ? "bg-blue-100 text-blue-800 dark:bg-blue-950/70 dark:text-blue-300"
+                                    : "bg-purple-100 text-purple-800 dark:bg-purple-950/70 dark:text-purple-300"
+                                }`}
                             >
                               <span
-                                className={`w-1.5 h-1.5 rounded-full ${
-                                  record.status === "on_time"
-                                    ? "bg-emerald-500"
-                                    : isLate
-                                      ? "bg-amber-500"
-                                      : isEarly
-                                        ? "bg-blue-500"
-                                        : "bg-purple-500"
-                                }`}
+                                className={`w-1.5 h-1.5 rounded-full ${record.status === "on_time"
+                                  ? "bg-emerald-500"
+                                  : isLate
+                                    ? "bg-amber-500"
+                                    : isEarly
+                                      ? "bg-blue-500"
+                                      : "bg-purple-500"
+                                  }`}
                               />
                               {record.status === "on_time"
                                 ? "Đúng Giờ"
@@ -1143,20 +1384,14 @@ export default function AttendancePage() {
                           <div className="grid grid-cols-2 gap-2 text-xs font-mono">
                             <div className="p-2 rounded-lg bg-zinc-50 dark:bg-zinc-950/60 border border-zinc-100 dark:border-zinc-800/80">
                               <span className="text-[10px] text-zinc-400 block mb-0.5">Giờ vào:</span>
-                              <span className={`font-bold ${isLate ? "text-amber-600 dark:text-amber-400" : "text-zinc-900 dark:text-zinc-100"}`}>
+                              <span className={`font-bold text-sm ${isLate ? "text-amber-600 dark:text-amber-400" : "text-zinc-900 dark:text-zinc-100"}`}>
                                 {formatDisplayTime(record.checkInTime)}
-                              </span>
-                              <span className="text-[10px] text-zinc-400 block truncate mt-0.5">
-                                IP: {record.checkInIp || "—"}
                               </span>
                             </div>
                             <div className="p-2 rounded-lg bg-zinc-50 dark:bg-zinc-950/60 border border-zinc-100 dark:border-zinc-800/80">
                               <span className="text-[10px] text-zinc-400 block mb-0.5">Giờ về:</span>
-                              <span className="font-bold text-zinc-900 dark:text-zinc-100">
+                              <span className="font-bold text-sm text-zinc-900 dark:text-zinc-100">
                                 {formatDisplayTime(record.checkOutTime)}
-                              </span>
-                              <span className="text-[10px] text-zinc-400 block truncate mt-0.5">
-                                IP: {record.checkOutIp || "—"}
                               </span>
                             </div>
                           </div>

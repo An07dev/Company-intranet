@@ -142,6 +142,7 @@ export function AttendanceTrendChart({ data }: AttendanceTrendChartProps) {
                   className="flex-1 flex flex-col items-center h-full justify-end cursor-pointer group"
                   onMouseEnter={() => setHoveredIndex(idx)}
                   onMouseLeave={() => setHoveredIndex(null)}
+                  onClick={() => setHoveredIndex(hoveredIndex === idx ? null : idx)}
                 >
                   {/* Nhãn tỷ lệ trên đầu cột */}
                   <div
@@ -271,6 +272,7 @@ export function AttendanceTrendChart({ data }: AttendanceTrendChartProps) {
                       className="cursor-pointer"
                       onMouseEnter={() => setHoveredIndex(i)}
                       onMouseLeave={() => setHoveredIndex(null)}
+                      onClick={() => setHoveredIndex(hoveredIndex === i ? null : i)}
                     >
                       {/* Vùng đệm bắt sự kiện rê chuột lớn */}
                       <circle cx={pt.x} cy={pt.y} r={16} fill="transparent" />
@@ -311,6 +313,7 @@ export function AttendanceTrendChart({ data }: AttendanceTrendChartProps) {
                   }`}
                   onMouseEnter={() => setHoveredIndex(idx)}
                   onMouseLeave={() => setHoveredIndex(null)}
+                  onClick={() => setHoveredIndex(hoveredIndex === idx ? null : idx)}
                 >
                   <div>{item.label}</div>
                   <div className="text-[10px] text-zinc-400">{item.weekday.replace("Thứ ", "T")}</div>
@@ -352,7 +355,7 @@ export function AttendanceTrendChart({ data }: AttendanceTrendChartProps) {
             <div className="flex items-center justify-between w-full text-zinc-400 text-[11px]">
               <span className="flex items-center gap-1.5">
                 <span>💡</span>
-                <span>Rê chuột vào các cột hoặc điểm mốc để xem chi tiết chấm công ngày đó</span>
+                <span>Chạm hoặc rê chuột vào các cột để xem chi tiết chấm công ngày đó</span>
               </span>
               <span className="font-mono text-zinc-500 hidden sm:inline">Dữ liệu 7 ngày gần nhất</span>
             </div>

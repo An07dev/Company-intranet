@@ -252,7 +252,7 @@ export default function ChatPage() {
   };
 
   return (
-    <div className="h-[calc(100vh-3.5rem)] sm:h-[calc(100vh-4rem)] w-full flex overflow-hidden bg-zinc-50 dark:bg-zinc-950">
+    <div className="h-[calc(100dvh-3.5rem)] sm:h-[calc(100dvh-4rem)] w-full flex overflow-hidden bg-zinc-50 dark:bg-zinc-950">
       {/* Cột Trái: Sidebar hội thoại (Ẩn trên mobile khi đang xem chat) */}
       <div className={`${mobileView === "chat" ? "hidden md:flex" : "flex"} w-full md:w-auto h-full shrink-0`}>
         <ChatSidebar
@@ -273,62 +273,68 @@ export default function ChatPage() {
           } flex-1 min-w-0 flex flex-col h-full bg-zinc-50/50 dark:bg-zinc-950/40 overflow-hidden relative`}
         >
           {/* Header cuộc trò chuyện */}
-          <div className="p-3 sm:px-5 border-b border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 flex items-center justify-between gap-3 shrink-0 shadow-2xs">
-              <div className="flex items-center gap-3 min-w-0">
-                {/* Nút quay lại trên mobile */}
-                <button
-                  type="button"
-                  onClick={() => setMobileView("list")}
-                  className="p-1.5 rounded-lg text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-800 md:hidden cursor-pointer"
-                >
-                  ←
-                </button>
+          <div className="p-2.5 sm:p-3 sm:px-5 border-b border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 flex items-center justify-between gap-2 sm:gap-3 shrink-0 shadow-2xs">
+            <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
+              {/* Nút quay lại trên mobile */}
+              <button
+                type="button"
+                onClick={() => {
+                  setMobileView("list");
+                  setIsDrawerOpen(false);
+                }}
+                title="Quay lại danh sách hội thoại"
+                className="p-1.5 -ml-1 rounded-xl text-zinc-600 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 md:hidden cursor-pointer active:scale-95 transition shrink-0"
+              >
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.2} d="M15 19l-7-7 7-7" />
+                </svg>
+              </button>
 
-                {/* Avatar */}
-                <div className="w-10 h-10 rounded-2xl bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 flex items-center justify-center text-lg font-bold shrink-0 overflow-hidden">
-                  {activeConv.avatar && activeConv.avatar.length <= 4 ? (
-                    activeConv.avatar
-                  ) : activeConv.avatar ? (
-                    <img src={activeConv.avatar} alt={activeConv.name} className="w-full h-full object-cover" />
-                  ) : (
-                    activeConv.name.charAt(0).toUpperCase()
-                  )}
-                </div>
-
-                <div className="min-w-0">
-                  <h3 className="text-sm font-bold text-zinc-900 dark:text-zinc-100 truncate">
-                    {activeConv.name}
-                  </h3>
-                  <div className="flex items-center gap-2 text-[11px] text-zinc-400 truncate">
-                    <span>
-                      {activeConv.type === "company" && "Kênh toàn công ty"}
-                      {activeConv.type === "department" && `Kênh ${activeConv.departmentName || "phòng ban"}`}
-                      {activeConv.type === "direct" && "Trò chuyện trực tiếp 1-1"}
-                      {activeConv.type === "group" && "Hội nhóm"}
-                    </span>
-                    <span>•</span>
-                    <span>{activeConv.members?.length || activeConv.memberIds.length} thành viên</span>
-                  </div>
-                </div>
+              {/* Avatar */}
+              <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl sm:rounded-2xl bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 flex items-center justify-center text-base sm:text-lg font-bold shrink-0 overflow-hidden shadow-2xs">
+                {activeConv.avatar && activeConv.avatar.length <= 4 ? (
+                  activeConv.avatar
+                ) : activeConv.avatar ? (
+                  <img src={activeConv.avatar} alt={activeConv.name} className="w-full h-full object-cover" />
+                ) : (
+                  activeConv.name.charAt(0).toUpperCase()
+                )}
               </div>
 
-              {/* Toolbar góc phải */}
-              <div className="flex items-center gap-1.5 shrink-0">
-                <button
-                  type="button"
-                  onClick={() => setIsDrawerOpen(!isDrawerOpen)}
-                  title="Xem thông tin hội thoại & phương tiện"
-                  className={`p-2 rounded-xl transition cursor-pointer text-xs font-semibold flex items-center gap-1 ${
-                    isDrawerOpen
-                      ? "bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900"
-                      : "text-zinc-600 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 border border-zinc-200 dark:border-zinc-700"
-                  }`}
-                >
-                  <span>ℹ️</span>
-                  <span className="hidden sm:inline">Chi tiết</span>
-                </button>
+              <div className="min-w-0 flex-1">
+                <h3 className="text-xs sm:text-sm font-bold text-zinc-900 dark:text-zinc-100 truncate leading-snug">
+                  {activeConv.name}
+                </h3>
+                <div className="flex items-center gap-1.5 text-[10px] sm:text-[11px] text-zinc-400 dark:text-zinc-500 truncate mt-0.5">
+                  <span className="truncate">
+                    {activeConv.type === "company" && "Toàn công ty"}
+                    {activeConv.type === "department" && (activeConv.departmentName ? `Phòng ${activeConv.departmentName}` : "Phòng ban")}
+                    {activeConv.type === "direct" && "Trực tiếp 1-1"}
+                    {activeConv.type === "group" && "Nhóm"}
+                  </span>
+                  <span>•</span>
+                  <span className="shrink-0">{activeConv.members?.length || activeConv.memberIds.length} TV</span>
+                </div>
               </div>
             </div>
+
+            {/* Toolbar góc phải */}
+            <div className="flex items-center gap-1.5 shrink-0">
+              <button
+                type="button"
+                onClick={() => setIsDrawerOpen(!isDrawerOpen)}
+                title="Xem thông tin hội thoại & phương tiện"
+                className={`p-2 rounded-xl transition cursor-pointer text-xs font-semibold flex items-center gap-1.5 active:scale-95 ${
+                  isDrawerOpen
+                    ? "bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 shadow-xs"
+                    : "text-zinc-600 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 shadow-2xs"
+                }`}
+              >
+                <span className="text-sm">ℹ️</span>
+                <span className="hidden sm:inline">Chi tiết</span>
+              </button>
+            </div>
+          </div>
 
             {/* Danh sách tin nhắn */}
             <ChatMessageList
