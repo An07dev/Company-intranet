@@ -509,7 +509,7 @@ export default function AttendancePage() {
                 type="button"
                 disabled={!canCheckIn || actionLoading}
                 onClick={handleCheckIn}
-                className={`group relative overflow-hidden rounded-lg py-1.5 px-2 text-left transition-all duration-200 select-none min-h-[48px] ${hasCheckedIn
+                className={`group relative overflow-hidden rounded-lg py-1.5 px-2 text-left transition-all duration-200 select-none min-h-[60px] ${hasCheckedIn
                   ? "bg-linear-to-br from-emerald-50 via-teal-50 to-emerald-100/60 dark:from-emerald-950/50 dark:via-teal-950/40 dark:to-emerald-900/40 border border-emerald-500/80 text-emerald-900 dark:text-emerald-200 shadow-xs cursor-default"
                   : canCheckIn
                     ? "bg-linear-to-r from-emerald-600 via-emerald-500 to-teal-600 text-white shadow-xs hover:shadow-md ring-1 ring-emerald-400/60 hover:ring-emerald-300 hover:-translate-y-0.5 active:translate-y-0 cursor-pointer"
@@ -618,7 +618,6 @@ export default function AttendancePage() {
                 </div>
               </button>
             </div>
-
             {/* Input ghi chú thu gọn (tinh gọn một dòng, có icon) */}
             <div className="relative">
               <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-zinc-400 dark:text-zinc-500 pointer-events-none text-xs">
