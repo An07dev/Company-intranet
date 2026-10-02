@@ -487,9 +487,6 @@ export default function AttendancePage() {
           <div>
             <div className="flex items-center justify-between mb-2 pb-1.5 border-b border-zinc-100 dark:border-zinc-800">
               <div className="flex items-center gap-1.5">
-                <span className="w-5 h-5 rounded-md bg-linear-to-br from-emerald-500 to-indigo-600 text-white flex items-center justify-center text-[10px] shadow-2xs">
-                  ⚡
-                </span>
                 <span className="text-xs font-bold uppercase tracking-wider text-zinc-700 dark:text-zinc-300">
                   Thao Tác Chấm Công
                 </span>
@@ -957,8 +954,8 @@ export default function AttendancePage() {
                       setCurrentPage(1);
                     }}
                     className={`px-2 py-1 rounded-md text-[11px] font-medium transition-colors shrink-0 cursor-pointer ${!selectedDate
-                        ? "bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 font-semibold shadow-2xs"
-                        : "bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-zinc-600 dark:text-zinc-400"
+                      ? "bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 font-semibold shadow-2xs"
+                      : "bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-zinc-600 dark:text-zinc-400"
                       }`}
                   >
                     Tất cả
@@ -970,8 +967,8 @@ export default function AttendancePage() {
                       setCurrentPage(1);
                     }}
                     className={`px-2 py-1 rounded-md text-[11px] font-medium transition-colors shrink-0 cursor-pointer ${selectedDate === todayDateString
-                        ? "bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 font-semibold shadow-2xs"
-                        : "bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-zinc-600 dark:text-zinc-400"
+                      ? "bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 font-semibold shadow-2xs"
+                      : "bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-zinc-600 dark:text-zinc-400"
                       }`}
                   >
                     Hôm nay
@@ -983,8 +980,8 @@ export default function AttendancePage() {
                       setCurrentPage(1);
                     }}
                     className={`px-2 py-1 rounded-md text-[11px] font-medium transition-colors shrink-0 cursor-pointer ${selectedDate === yesterdayDateString
-                        ? "bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 font-semibold shadow-2xs"
-                        : "bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-zinc-600 dark:text-zinc-400"
+                      ? "bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 font-semibold shadow-2xs"
+                      : "bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-zinc-600 dark:text-zinc-400"
                       }`}
                   >
                     Hôm qua
@@ -997,8 +994,8 @@ export default function AttendancePage() {
                     type="button"
                     onClick={() => setShowMobileHistoryFilters((p) => !p)}
                     className={`relative px-2 py-1 rounded-md text-[11px] font-medium border transition-colors flex items-center gap-1 cursor-pointer ${showMobileHistoryFilters || hasActiveFilters
-                        ? "bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 border-zinc-900 dark:border-zinc-100 font-semibold shadow-2xs"
-                        : "bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 text-zinc-600 dark:text-zinc-400"
+                      ? "bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 border-zinc-900 dark:border-zinc-100 font-semibold shadow-2xs"
+                      : "bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 text-zinc-600 dark:text-zinc-400"
                       }`}
                   >
                     <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
