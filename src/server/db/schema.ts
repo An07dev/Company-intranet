@@ -103,7 +103,7 @@ const SettingsSchema = new Schema<ISettingsDocument>(
     enableIpCheck: { type: Boolean, default: true },
     workStartTime: { type: String, default: "08:00" },
     workEndTime: { type: String, default: "17:30" },
-    lateThresholdMinutes: { type: Number, default: 15 },
+    lateThresholdMinutes: { type: Number, default: 0 },
     updatedBy: { type: String, default: "Hệ Thống" },
     updatedAt: { type: String, required: true },
   },

@@ -175,22 +175,15 @@ export async function ensureAttendanceSeeded() {
   if (attendanceSeeded) return;
   await connectToDatabase();
 
-  // Dọn dẹp các bản ghi mẫu cũ bị trùng lặp
-  await MongoAttendanceModel.deleteMany({
-    id: { $regex: /^(att_seed_dir_|att_seed_emp_|att_seed_adm_|att_seed_mgr_)/ },
-  });
-
-  const count = await MongoAttendanceModel.countDocuments();
+  // Kiểm tra siêu tốc: Nếu bộ sưu tập đã có dữ liệu, kết thúc ngay lập tức (O(1) metadata read)
+  const count = await MongoAttendanceModel.estimatedDocumentCount();
   if (count === 0) {
     const seedRecords = buildSeedRecords();
-    await MongoAttendanceModel.insertMany(seedRecords);
-  } else {
-    // Đảm bảo các bản ghi mẫu chuẩn luôn có mặt đầy đủ
-    const seedRecords = buildSeedRecords();
-    for (const seed of seedRecords) {
-      const existing = await MongoAttendanceModel.findOne({ id: seed.id });
-      if (!existing) {
-        await MongoAttendanceModel.create(seed);
+    if (seedRecords.length > 0) {
+      try {
+        await MongoAttendanceModel.insertMany(seedRecords, { ordered: false });
+      } catch (err) {
+        console.warn("[Seed] Khởi tạo dữ liệu điểm danh mẫu:", err);
       }
     }
   }

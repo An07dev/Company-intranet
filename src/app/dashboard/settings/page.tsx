@@ -388,13 +388,14 @@ export default function SettingsPage() {
                 type="number"
                 min="0"
                 max="60"
-                value={settings.lateThresholdMinutes}
-                onChange={(e) =>
+                value={settings.lateThresholdMinutes ?? 0}
+                onChange={(e) => {
+                  const val = e.target.value === "" ? 0 : parseInt(e.target.value, 10);
                   setSettings({
                     ...settings,
-                    lateThresholdMinutes: parseInt(e.target.value, 10) || 0,
-                  })
-                }
+                    lateThresholdMinutes: isNaN(val) ? 0 : Math.max(0, val),
+                  });
+                }}
                 className="w-full px-3 py-2 rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-950 text-xs sm:text-sm font-mono text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-zinc-900 dark:focus:ring-zinc-100"
               />
             </div>

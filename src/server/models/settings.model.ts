@@ -7,7 +7,7 @@ const DEFAULT_SETTINGS: AttendanceSettings = {
   enableIpCheck: true,
   workStartTime: "08:00",
   workEndTime: "17:30",
-  lateThresholdMinutes: 15,
+  lateThresholdMinutes: 0,
   updatedBy: "Hệ Thống",
   updatedAt: new Date().toISOString(),
 };
@@ -64,7 +64,8 @@ export const SettingsModel = {
       updatePayload.workEndTime = data.workEndTime.trim();
     }
     if (data.lateThresholdMinutes !== undefined) {
-      updatePayload.lateThresholdMinutes = Number(data.lateThresholdMinutes) || 15;
+      const val = Number(data.lateThresholdMinutes);
+      updatePayload.lateThresholdMinutes = isNaN(val) || val < 0 ? 0 : val;
     }
 
     const doc = await MongoSettingsModel.findOneAndUpdate(

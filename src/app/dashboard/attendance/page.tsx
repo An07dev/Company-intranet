@@ -26,6 +26,10 @@ export default function AttendancePage() {
   const [workStartTime, setWorkStartTime] = useState<string>("08:00");
   const [workEndTime, setWorkEndTime] = useState<string>("17:30");
 
+  // Trạng thái nhận diện mạng & Vị trí độc lập (siêu tốc, không chờ DB)
+  const [loadingNetwork, setLoadingNetwork] = useState<boolean>(true);
+  const [locationInfo, setLocationInfo] = useState<{ city?: string; country?: string; region?: string } | null>(null);
+
   // Dữ liệu lịch sử cá nhân & Bộ lọc
   const [history, setHistory] = useState<AttendanceRecord[]>([]);
   const [loadingStatus, setLoadingStatus] = useState<boolean>(true);
@@ -73,6 +77,33 @@ export default function AttendancePage() {
     return () => clearInterval(interval);
   }, []);
 
+  // Lấy trạng thái mạng & IP siêu tốc từ micro-endpoint (không qua seed hay DB nặng)
+  const fetchNetworkStatus = useCallback(async () => {
+    setLoadingNetwork(true);
+    try {
+      const res = await fetch("/api/attendance/network-status");
+      const json: ApiResponse<{
+        clientIp: string;
+        isIpAllowed: boolean;
+        ipCheckEnabled: boolean;
+        location?: { city?: string; country?: string; region?: string };
+      }> = await res.json();
+
+      if (json.success && json.data) {
+        setClientIp(json.data.clientIp);
+        setIsIpAllowed(json.data.isIpAllowed);
+        setIpCheckEnabled(json.data.ipCheckEnabled);
+        if (json.data.location) {
+          setLocationInfo(json.data.location);
+        }
+      }
+    } catch {
+      // Ignored
+    } finally {
+      setLoadingNetwork(false);
+    }
+  }, []);
+
   // Lấy trạng thái điểm danh hôm nay
   const fetchTodayStatus = useCallback(async () => {
     setLoadingStatus(true);
@@ -90,9 +121,10 @@ export default function AttendancePage() {
 
       if (json.success && json.data) {
         setTodayRecord(json.data.todayRecord);
-        setClientIp(json.data.clientIp);
-        setIsIpAllowed(json.data.isIpAllowed);
-        setIpCheckEnabled(json.data.ipCheckEnabled);
+        // Đồng bộ thêm nếu chưa có
+        if (json.data.clientIp) setClientIp(json.data.clientIp);
+        if (json.data.isIpAllowed !== undefined) setIsIpAllowed(json.data.isIpAllowed);
+        if (json.data.ipCheckEnabled !== undefined) setIpCheckEnabled(json.data.ipCheckEnabled);
         if (json.data.workStartTime) setWorkStartTime(json.data.workStartTime);
         if (json.data.workEndTime) setWorkEndTime(json.data.workEndTime);
       }
@@ -147,6 +179,10 @@ export default function AttendancePage() {
     },
     [currentPage, searchQuery, selectedDate, selectedStatus, toast]
   );
+
+  useEffect(() => {
+    fetchNetworkStatus();
+  }, [fetchNetworkStatus]);
 
   useEffect(() => {
     if (user) {
@@ -422,18 +458,21 @@ export default function AttendancePage() {
               </span>
               <button
                 type="button"
-                onClick={fetchTodayStatus}
+                onClick={async () => {
+                  await fetchNetworkStatus();
+                  toast.info("Đã kiểm tra lại kết nối IP", { duration: 2000 });
+                }}
                 title="Kiểm tra lại kết nối IP"
                 className="text-xs text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-200 flex items-center gap-1 cursor-pointer"
               >
-                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <svg className={`w-3.5 h-3.5 ${loadingNetwork ? "animate-spin text-emerald-600" : ""}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                 </svg>
                 <span>Kiểm tra lại</span>
               </button>
             </div>
 
-            {loadingStatus ? (
+            {loadingNetwork ? (
               <div className="py-6">
                 <LoadingSection text="Đang nhận diện mạng IP..." size="sm" />
               </div>
@@ -467,6 +506,11 @@ export default function AttendancePage() {
                     </div>
                     <div className="text-[11px] opacity-85 mt-0.5 truncate font-mono">
                       IP của bạn: <strong>{clientIp || "Đang lấy..."}</strong>
+                      {locationInfo && (locationInfo.city || locationInfo.country) && (
+                        <span className="ml-2 font-sans font-normal opacity-90 text-[10px] text-zinc-500 dark:text-zinc-400">
+                          • {locationInfo.city ? `${locationInfo.city}, ` : ""}{locationInfo.country || "Việt Nam"}
+                        </span>
+                      )}
                     </div>
                   </div>
                 </div>
