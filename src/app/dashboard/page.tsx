@@ -8,6 +8,11 @@ import { USER_ROLE_LABELS } from "@/lib/constants";
 import { LoadingSection } from "@/components/ui/Loading";
 import { AttendanceTrendChart } from "@/components/dashboard/AttendanceTrendChart";
 import { AttendanceDonutChart } from "@/components/dashboard/AttendanceDonutChart";
+import { DepartmentStatsChart } from "@/components/dashboard/DepartmentStatsChart";
+import { HourlyArrivalChart } from "@/components/dashboard/HourlyArrivalChart";
+import { TaskProgressChart } from "@/components/dashboard/TaskProgressChart";
+import { OtLeaveAnalyticsChart } from "@/components/dashboard/OtLeaveAnalyticsChart";
+import { PunctualityLeaderboard } from "@/components/dashboard/PunctualityLeaderboard";
 import { EmployeeAttendanceTable } from "@/components/dashboard/EmployeeAttendanceTable";
 import { DashboardStatsResponse } from "@/app/api/dashboard/stats/route";
 
@@ -132,114 +137,6 @@ export default function DashboardPage() {
       {/* =========================================================================
           2. HÀNG 5 THẺ CHỈ SỐ KPI CHÍNH
          ========================================================================= */}
-      <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4">
-        {/* Card 1: Tổng nhân sự */}
-        <div className="p-4 sm:p-5 rounded-xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-xs relative overflow-hidden">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-medium text-zinc-500 dark:text-zinc-400">
-              Tổng nhân sự
-            </span>
-            <div className="w-7 h-7 rounded-lg bg-blue-50 dark:bg-blue-950 text-blue-600 dark:text-blue-300 flex items-center justify-center">
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-              </svg>
-            </div>
-          </div>
-          <div className="text-2xl sm:text-3xl font-extrabold font-mono mt-1 text-zinc-900 dark:text-zinc-100">
-            {summary.totalEmployees}
-          </div>
-          <div className="text-[11px] text-zinc-400 dark:text-zinc-500 mt-1 flex items-center gap-1 truncate">
-            <span>Đang hoạt động trong hệ thống</span>
-          </div>
-        </div>
-
-        {/* Card 2: Đi làm hôm nay */}
-        <div className="p-4 sm:p-5 rounded-xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-xs relative overflow-hidden">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-medium text-emerald-600 dark:text-emerald-400 flex items-center gap-1.5 font-semibold">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-              Đi làm hôm nay
-            </span>
-            <div className="w-7 h-7 rounded-lg bg-emerald-50 dark:bg-emerald-950 text-emerald-600 dark:text-emerald-300 flex items-center justify-center">
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-            </div>
-          </div>
-          <div className="text-2xl sm:text-3xl font-extrabold font-mono mt-1 text-emerald-600 dark:text-emerald-400">
-            {summary.presentToday}
-          </div>
-          <div className="text-[11px] text-zinc-500 dark:text-zinc-400 mt-1 flex items-center justify-between">
-            <span>Đúng giờ: <strong>{summary.onTimeToday}</strong></span>
-            <span className="text-emerald-600 font-mono font-bold">{summary.attendanceRate}%</span>
-          </div>
-        </div>
-
-        {/* Card 3: Đi muộn hôm nay */}
-        <div className="p-4 sm:p-5 rounded-xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-xs relative overflow-hidden">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-medium text-amber-600 dark:text-amber-400 font-semibold">
-              Đi muộn hôm nay
-            </span>
-            <div className="w-7 h-7 rounded-lg bg-amber-50 dark:bg-amber-950 text-amber-600 dark:text-amber-300 flex items-center justify-center">
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-            </div>
-          </div>
-          <div className="text-2xl sm:text-3xl font-extrabold font-mono mt-1 text-amber-600 dark:text-amber-400">
-            {summary.lateToday}
-          </div>
-          <div className="text-[11px] text-zinc-400 dark:text-zinc-500 mt-1 truncate">
-            {summary.lateToday > 0 ? "Sau khung giờ 08:00" : "Không có ai đi muộn"}
-          </div>
-        </div>
-
-        {/* Card 4: Nghỉ / Vắng hôm nay */}
-        <div className="p-4 sm:p-5 rounded-xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-xs relative overflow-hidden">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-medium text-rose-600 dark:text-rose-400 font-semibold">
-              Nghỉ / Chưa đến
-            </span>
-            <div className="w-7 h-7 rounded-lg bg-rose-50 dark:bg-rose-950 text-rose-600 dark:text-rose-300 flex items-center justify-center">
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
-              </svg>
-            </div>
-          </div>
-          <div className="text-2xl sm:text-3xl font-extrabold font-mono mt-1 text-rose-600 dark:text-rose-400">
-            {summary.absentToday}
-          </div>
-          <div className="text-[11px] text-zinc-400 dark:text-zinc-500 mt-1 truncate">
-            {summary.absentToday > 0 ? "Chưa thực hiện check-in" : "Đầy đủ 100% nhân sự"}
-          </div>
-        </div>
-
-        {/* Card 5: Tỷ lệ chuyên cần */}
-        <div className="col-span-2 lg:col-span-1 p-4 sm:p-5 rounded-xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-xs relative overflow-hidden">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-medium text-zinc-500 dark:text-zinc-400">
-              Tỷ lệ chuyên cần
-            </span>
-            <div className="w-7 h-7 rounded-lg bg-purple-50 dark:bg-purple-950 text-purple-600 dark:text-purple-300 flex items-center justify-center">
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
-              </svg>
-            </div>
-          </div>
-          <div className="text-2xl sm:text-3xl font-extrabold font-mono mt-1 text-zinc-900 dark:text-zinc-100">
-            {summary.attendanceRate}%
-          </div>
-          {/* Thanh mini progress */}
-          <div className="w-full bg-zinc-100 dark:bg-zinc-800 h-1.5 rounded-full mt-2 overflow-hidden">
-            <div
-              style={{ width: `${summary.attendanceRate}%` }}
-              className="bg-emerald-500 h-full rounded-full transition-all duration-500"
-            />
-          </div>
-        </div>
-      </div>
-
       {/* =========================================================================
           3. CÁC BIỂU ĐỒ THỐNG KÊ (CHARTS SECTION)
          ========================================================================= */}
@@ -263,7 +160,10 @@ export default function DashboardPage() {
             </div>
           </div>
 
-          {/* Hàng biểu đồ 2: Tỷ lệ theo phòng ban (50%) + Khung giờ check-in (50%) */}
+          {/* Hàng 4: Bảng Vinh Danh Chuyên Cần & Gương Mẫu Tháng */}
+          <div>
+            <PunctualityLeaderboard data={statsData.punctualityLeaderboard} />
+          </div>
 
 
           {/* =========================================================================

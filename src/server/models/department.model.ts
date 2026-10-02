@@ -1,5 +1,5 @@
 import { connectToDatabase } from "@/server/db";
-import { MongoDepartmentModel, MongoUserModel, IDepartmentDocument } from "@/server/db/schema";
+import { MongoDepartmentModel, MongoUserModel, MongoRequestModel, IDepartmentDocument } from "@/server/db/schema";
 import {
   Department,
   CreateDepartmentInput,
@@ -113,6 +113,10 @@ async function promoteToManager(userId: string, departmentName: string, now: str
     user.role = "manager";
   }
   await user.save();
+  await MongoRequestModel.updateMany(
+    { userId },
+    { $set: { department: departmentName, updatedAt: now } }
+  );
 }
 
 /**
@@ -302,6 +306,11 @@ export const DepartmentModel = {
         { department: oldName },
         { $set: { department: normalizedName, updatedAt: new Date().toISOString() } }
       );
+      // Cập nhật tên phòng ban cho tất cả đơn yêu cầu thuộc phòng ban cũ
+      await MongoRequestModel.updateMany(
+        { department: oldName },
+        { $set: { department: normalizedName, updatedAt: new Date().toISOString() } }
+      );
     }
 
     if (input.code && input.code.trim().toUpperCase() !== current.code) {
@@ -365,6 +374,11 @@ export const DepartmentModel = {
       { department: current.name },
       { $set: { department: "Khác", updatedAt: now } }
     );
+    // Chuyển các đơn từ thuộc phòng ban này sang "Khác"
+    await MongoRequestModel.updateMany(
+      { department: current.name },
+      { $set: { department: "Khác", updatedAt: now } }
+    );
 
     const res = await MongoDepartmentModel.deleteOne({ id });
 
@@ -400,6 +414,11 @@ export const DepartmentModel = {
           { id: { $in: input.userIds } },
           { $set: { department: dept.name, updatedAt: now } }
         );
+        // Đồng bộ phòng ban của nhân viên sang các đơn từ của họ
+        await MongoRequestModel.updateMany(
+          { userId: { $in: input.userIds } },
+          { $set: { department: dept.name, updatedAt: now } }
+        );
 
         // ĐỒNG THỜI tự động thêm nhân sự vào nhóm chat phòng ban
         try {
@@ -413,6 +432,11 @@ export const DepartmentModel = {
       if (input.userIds.length > 0) {
         await MongoUserModel.updateMany(
           { id: { $in: input.userIds } },
+          { $set: { department: "Khác", updatedAt: now } }
+        );
+        // Đồng bộ phòng ban về "Khác" cho các đơn từ của nhân sự bị rút
+        await MongoRequestModel.updateMany(
+          { userId: { $in: input.userIds } },
           { $set: { department: "Khác", updatedAt: now } }
         );
 

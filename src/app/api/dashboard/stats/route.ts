@@ -1,8 +1,15 @@
 import { NextResponse } from "next/server";
 import { connectToDatabase } from "@/server/db";
-import { MongoUserModel, MongoAttendanceModel } from "@/server/db/schema";
+import {
+  MongoUserModel,
+  MongoAttendanceModel,
+  MongoTaskModel,
+  MongoRequestModel,
+} from "@/server/db/schema";
 import { ensureUsersSeeded, toSafeUser } from "@/server/models/user.model";
 import { ensureAttendanceSeeded, getTodayDateString } from "@/server/models/attendance.model";
+import { ensureTasksSeeded } from "@/server/models/task.model";
+import { ensureRequestsSeeded } from "@/server/models/request.model";
 import { ApiResponse } from "@/types";
 
 export interface DashboardStatsResponse {
@@ -63,6 +70,49 @@ export interface DashboardStatsResponse {
     checkInIp?: string;
     note?: string;
   }>;
+  taskStats: {
+    total: number;
+    todo: number;
+    inProgress: number;
+    review: number;
+    completed: number;
+    overdue: number;
+    completionRate: number;
+    byDepartment: Array<{
+      department: string;
+      total: number;
+      completed: number;
+      inProgress: number;
+      overdue: number;
+      progressRate: number;
+    }>;
+  };
+  analyticsOtLeave: {
+    totalOtHoursMonth: number;
+    approvedLeaveDaysMonth: number;
+    otByDepartment: Array<{
+      department: string;
+      hours: number;
+    }>;
+    leaveByType: Array<{
+      type: string;
+      label: string;
+      days: number;
+      color: string;
+    }>;
+  };
+  punctualityLeaderboard: Array<{
+    id: string;
+    name: string;
+    employeeCode: string;
+    department: string;
+    avatarUrl?: string;
+    onTimeCount: number;
+    totalCheckins: number;
+    punctualityRate: number;
+    rank: number;
+    badge: string;
+  }>;
 }
 
 const WEEKDAY_NAMES = ["Chủ Nhật", "Thứ 2", "Thứ 3", "Thứ 4", "Thứ 5", "Thứ 6", "Thứ 7"];
@@ -72,6 +122,8 @@ export async function GET() {
     await connectToDatabase();
     await ensureUsersSeeded();
     await ensureAttendanceSeeded();
+    await ensureTasksSeeded();
+    await ensureRequestsSeeded();
 
     const todayStr = getTodayDateString(0);
 
@@ -132,12 +184,17 @@ export async function GET() {
         completedDurationCount++;
       }
 
-      // Phân loại giờ check-in
+      // Phân loại giờ check-in (theo giờ chuẩn Việt Nam GMT+7)
       try {
-        const timeMatch = rec.checkInTime.match(/T(\d{2}):(\d{2})/);
-        if (timeMatch) {
-          const hour = parseInt(timeMatch[1], 10);
-          const minute = parseInt(timeMatch[2], 10);
+        const d = new Date(rec.checkInTime);
+        if (!isNaN(d.getTime())) {
+          const timeParts = d.toLocaleTimeString("en-GB", {
+            timeZone: "Asia/Ho_Chi_Minh",
+            hour: "2-digit",
+            minute: "2-digit",
+            hour12: false,
+          });
+          const [hour, minute] = timeParts.split(":").map(Number);
           const totalMins = hour * 60 + minute;
 
           if (totalMins < 8 * 60) {
@@ -326,6 +383,162 @@ export async function GET() {
       },
     ];
 
+    // 8. Thống kê Tiến độ Công việc & Dự án (Task Completion & Progress Chart)
+    const allTasks = await MongoTaskModel.find({}).lean();
+    const totalTasks = allTasks.length;
+    const todoTasks = allTasks.filter((t) => t.status === "todo").length;
+    const inProgressTasks = allTasks.filter((t) => t.status === "in_progress").length;
+    const reviewTasks = allTasks.filter((t) => t.status === "review").length;
+    const completedTasks = allTasks.filter((t) => t.status === "completed").length;
+    const overdueTasks = allTasks.filter(
+      (t) => t.status !== "completed" && t.status !== "cancelled" && t.dueDate && t.dueDate < todayStr
+    ).length;
+    const taskCompletionRate = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
+
+    const taskDeptMap = new Map<string, { total: number; completed: number; inProgress: number; overdue: number }>();
+    for (const t of allTasks) {
+      const dept = t.department || t.assigneeDepartment || "Khác";
+      const cur = taskDeptMap.get(dept) || { total: 0, completed: 0, inProgress: 0, overdue: 0 };
+      cur.total++;
+      if (t.status === "completed") cur.completed++;
+      if (t.status === "in_progress") cur.inProgress++;
+      if (t.status !== "completed" && t.status !== "cancelled" && t.dueDate && t.dueDate < todayStr) cur.overdue++;
+      taskDeptMap.set(dept, cur);
+    }
+    const taskByDepartment = Array.from(taskDeptMap.entries())
+      .map(([department, s]) => ({
+        department,
+        total: s.total,
+        completed: s.completed,
+        inProgress: s.inProgress,
+        overdue: s.overdue,
+        progressRate: s.total > 0 ? Math.round((s.completed / s.total) * 100) : 0,
+      }))
+      .sort((a, b) => b.total - a.total);
+
+    const taskStats = {
+      total: totalTasks,
+      todo: todoTasks,
+      inProgress: inProgressTasks,
+      review: reviewTasks,
+      completed: completedTasks,
+      overdue: overdueTasks,
+      completionRate: taskCompletionRate,
+      byDepartment: taskByDepartment,
+    };
+
+    // 9. Thống kê Làm thêm giờ (OT) & Nghỉ phép tháng (Overtime & Leave Analytics)
+    const allRequests = await MongoRequestModel.find({}).lean();
+    const currentMonthPrefix = todayStr.slice(0, 7); // "2026-10"
+
+    const approvedOtThisMonth = allRequests.filter(
+      (r) =>
+        r.type === "overtime" &&
+        r.status === "approved" &&
+        (r.otDate?.startsWith(currentMonthPrefix) || r.createdAt?.startsWith(currentMonthPrefix))
+    );
+    const totalOtHoursMonth = approvedOtThisMonth.reduce((sum, r) => sum + (r.durationHours || 0), 0);
+
+    const otDeptMap = new Map<string, number>();
+    for (const r of approvedOtThisMonth) {
+      const dept = r.department || "Khác";
+      otDeptMap.set(dept, (otDeptMap.get(dept) || 0) + (r.durationHours || 0));
+    }
+    const otByDepartment = Array.from(otDeptMap.entries())
+      .map(([department, hours]) => ({
+        department,
+        hours: Math.round(hours * 10) / 10,
+      }))
+      .sort((a, b) => b.hours - a.hours);
+
+    const approvedLeaveThisMonth = allRequests.filter(
+      (r) =>
+        r.type === "leave" &&
+        r.status === "approved" &&
+        (r.startDate?.startsWith(currentMonthPrefix) || r.createdAt?.startsWith(currentMonthPrefix))
+    );
+    const approvedLeaveDaysMonth = approvedLeaveThisMonth.reduce((sum, r) => sum + (r.durationDays || 0), 0);
+
+    const leaveTypeMeta: Record<string, { label: string; color: string }> = {
+      annual: { label: "Nghỉ phép năm", color: "#10b981" },
+      sick: { label: "Nghỉ ốm đau", color: "#3b82f6" },
+      unpaid: { label: "Nghỉ không lương", color: "#94a3b8" },
+      remote_wfh: { label: "Làm việc từ xa (WFH)", color: "#8b5cf6" },
+      bereavement_marriage: { label: "Nghỉ chế độ / Hiếu hỷ", color: "#f59e0b" },
+    };
+
+    const leaveTypeCountMap = new Map<string, number>();
+    for (const r of approvedLeaveThisMonth) {
+      const lt = r.leaveType || "annual";
+      leaveTypeCountMap.set(lt, (leaveTypeCountMap.get(lt) || 0) + (r.durationDays || 0));
+    }
+    const leaveByType = Array.from(leaveTypeCountMap.entries())
+      .map(([type, days]) => ({
+        type,
+        label: leaveTypeMeta[type]?.label || type,
+        days,
+        color: leaveTypeMeta[type]?.color || "#6b7280",
+      }))
+      .sort((a, b) => b.days - a.days);
+
+    const analyticsOtLeave = {
+      totalOtHoursMonth: Math.round(totalOtHoursMonth * 10) / 10,
+      approvedLeaveDaysMonth,
+      otByDepartment,
+      leaveByType,
+    };
+
+    // 10. Bảng xếp hạng chuyên cần & vinh danh (Punctuality Leaderboard)
+    const monthAttendanceDocs = await MongoAttendanceModel.find({
+      date: { $regex: `^${currentMonthPrefix}` },
+    }).lean();
+
+    const userAttendanceAgg = new Map<string, { onTime: number; total: number }>();
+    for (const rec of monthAttendanceDocs) {
+      if (activeUserIds.has(rec.userId)) {
+        const cur = userAttendanceAgg.get(rec.userId) || { onTime: 0, total: 0 };
+        cur.total++;
+        if (rec.status !== "late") {
+          cur.onTime++;
+        }
+        userAttendanceAgg.set(rec.userId, cur);
+      }
+    }
+
+    const leaderboardCandidates = users.map((u) => {
+      const agg = userAttendanceAgg.get(u.id) || { onTime: 0, total: 0 };
+      const punctualityRate = agg.total > 0 ? Math.round((agg.onTime / agg.total) * 100) : 0;
+      return {
+        id: u.id,
+        name: u.name,
+        employeeCode: u.employeeCode,
+        department: u.department || "Khác",
+        avatarUrl: u.avatarUrl,
+        onTimeCount: agg.onTime,
+        totalCheckins: agg.total,
+        punctualityRate,
+      };
+    });
+
+    leaderboardCandidates.sort((a, b) => {
+      if (b.punctualityRate !== a.punctualityRate) return b.punctualityRate - a.punctualityRate;
+      return b.onTimeCount - a.onTimeCount;
+    });
+
+    const punctualityLeaderboard = leaderboardCandidates.slice(0, 5).map((item, index) => {
+      let badge = "Gương Mẫu";
+      if (index === 0) badge = "Quán Quân Chuyên Cần 👑";
+      else if (index === 1) badge = "Ngôi Sao Kỷ Luật ⭐";
+      else if (index === 2) badge = "Chiến Binh Đúng Giờ ⚡";
+      else badge = "Xuất Sắc 🌟";
+
+      return {
+        ...item,
+        rank: index + 1,
+        badge,
+      };
+    });
+
     const data: DashboardStatsResponse = {
       summary: {
         totalEmployees,
@@ -342,6 +555,9 @@ export async function GET() {
       statusBreakdown,
       hourlyDistribution,
       employeeAttendance,
+      taskStats,
+      analyticsOtLeave,
+      punctualityLeaderboard,
     };
 
     const response: ApiResponse<DashboardStatsResponse> = {

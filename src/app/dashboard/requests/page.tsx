@@ -25,6 +25,7 @@ export default function RequestsPage() {
   const pageSize = 10;
 
   const [requestsList, setRequestsList] = useState<LeaveOtRequest[]>([]);
+  const [departmentsList, setDepartmentsList] = useState<{ id: string; name: string; code?: string }[]>([]);
   const [stats, setStats] = useState<RequestStatsSummary | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
 
@@ -59,14 +60,23 @@ export default function RequestsPage() {
     }
   }, [user]);
 
-  // Danh sách các phòng ban duy nhất từ dữ liệu đơn
-  const departments = useMemo(() => {
-    const set = new Set<string>();
+  // Danh sách các phòng ban hiển thị cho bộ lọc:
+  // Lấy danh mục phòng ban chính thức từ Quản Lý Phòng Ban & Nhân Sự (/api/departments),
+  // đồng thời bổ sung các phòng ban khác có trong dữ liệu đơn (ví dụ: "Khác") nếu có.
+  const departmentOptions = useMemo(() => {
+    const officialNames = departmentsList.map((d) => d.name);
+    const extraNames: string[] = [];
     requestsList.forEach((req) => {
-      if (req.department) set.add(req.department);
+      if (
+        req.department &&
+        !officialNames.includes(req.department) &&
+        !extraNames.includes(req.department)
+      ) {
+        extraNames.push(req.department);
+      }
     });
-    return Array.from(set).sort();
-  }, [requestsList]);
+    return [...officialNames, ...extraNames];
+  }, [departmentsList, requestsList]);
 
   // Đếm số lượng theo loại đơn cho các Tab
   const typeCounts = useMemo(() => {
@@ -219,12 +229,32 @@ export default function RequestsPage() {
     }
   }, [scope]);
 
+  // Tải danh sách phòng ban chính thức từ Quản Lý Phòng Ban & Nhân Sự
+  const fetchDepartments = useCallback(async () => {
+    try {
+      const res = await fetch("/api/departments");
+      const json = await res.json();
+      if (json.success && Array.isArray(json.data)) {
+        setDepartmentsList(
+          json.data.map((d: { id: string; name: string; code?: string }) => ({
+            id: d.id,
+            name: d.name,
+            code: d.code,
+          }))
+        );
+      }
+    } catch (err) {
+      console.error("Lỗi khi tải danh sách phòng ban:", err);
+    }
+  }, []);
+
   useEffect(() => {
     if (user) {
       fetchRequests();
       fetchStats();
+      fetchDepartments();
     }
-  }, [user, fetchRequests, fetchStats]);
+  }, [user, fetchRequests, fetchStats, fetchDepartments]);
 
   // Xử lý tự hủy đơn
   const handleCancelRequest = async (requestId: string) => {
@@ -554,18 +584,24 @@ export default function RequestsPage() {
           {/* Đường ngăn cách nhẹ */}
           <div className="hidden xl:block h-5 w-px bg-zinc-200 dark:bg-zinc-800 shrink-0 mx-0.5" />
 
-          {/* 2. Lọc theo phòng ban */}
+          {/* 2. Lọc theo phòng ban - Ăn khớp 100% với Quản Lý Phòng Ban & Nhân Sự */}
           <select
             value={selectedDept}
-            onChange={(e) => setSelectedDept(e.target.value)}
-            className="w-auto shrink-0 px-2.5 py-1.5 rounded-lg border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-950 text-xs text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-1 focus:ring-zinc-900 dark:focus:ring-zinc-100 cursor-pointer"
+            onChange={(e) => {
+              setSelectedDept(e.target.value);
+              setCurrentPage(1);
+            }}
+            className="w-auto shrink-0 px-2.5 py-1.5 rounded-lg border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-950 text-xs text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-1 focus:ring-zinc-900 dark:focus:ring-zinc-100 cursor-pointer font-medium"
           >
-            <option value="all">Tất cả phòng ban ({departments.length})</option>
-            {departments.map((dept) => (
-              <option key={dept} value={dept}>
-                {dept}
-              </option>
-            ))}
+            <option value="all">Tất cả phòng ban</option>
+            {departmentOptions.map((dept) => {
+              const count = requestsList.filter((r) => r.department === dept).length;
+              return (
+                <option key={dept} value={dept}>
+                  {dept} ({count})
+                </option>
+              );
+            })}
           </select>
 
           {/* 3. Lọc theo trạng thái */}
@@ -907,6 +943,9 @@ export default function RequestsPage() {
                           {isLeave
                             ? `🏖️ Nghỉ phép • ${leaveTypeLabels[req.leaveType || ""] || ""}`
                             : `⚡ Làm thêm OT • ${otTypeLabels[req.otType || ""] || ""}`}
+                        </div>
+                        <div className="text-[10px] text-zinc-400 mt-0.5 truncate font-medium">
+                          📁 {req.department}
                         </div>
                       </div>
                     </div>

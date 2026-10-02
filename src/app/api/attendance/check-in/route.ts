@@ -24,7 +24,7 @@ export async function POST(request: NextRequest) {
       note: body.note,
     });
 
-    const time = record.checkInTime ? new Date(record.checkInTime).toLocaleTimeString("vi-VN") : "";
+    const time = record.checkInTime ? new Date(record.checkInTime).toLocaleTimeString("vi-VN", { timeZone: "Asia/Ho_Chi_Minh" }) : "";
     return apiSuccess(record, `Chấm công vào thành công lúc ${time}! (IP: ${clientIp})`);
   } catch (error) {
     const message = error instanceof Error ? error.message : "Chấm công thất bại";

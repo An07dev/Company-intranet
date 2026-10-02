@@ -250,7 +250,14 @@ export const AttendanceModel = {
     const existing = await MongoAttendanceModel.findOne({ userId: params.userId, date: today });
 
     if (existing && existing.checkInTime) {
-      throw new Error(`Bạn đã chấm công vào hôm nay lúc ${existing.checkInTime.slice(11, 19)}.`);
+      const timeDisplay = new Date(existing.checkInTime).toLocaleTimeString("vi-VN", {
+        timeZone: "Asia/Ho_Chi_Minh",
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit",
+        hour12: false,
+      });
+      throw new Error(`Bạn đã chấm công vào hôm nay lúc ${timeDisplay}.`);
     }
 
     // 2. Tính toán trạng thái Đúng giờ hay Đi muộn

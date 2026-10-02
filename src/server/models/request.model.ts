@@ -432,6 +432,23 @@ export async function ensureRequestsSeeded() {
   if (count === 0) {
     await MongoRequestModel.insertMany(INITIAL_REQUEST_SEEDS);
   }
+
+  // Đồng bộ phòng ban của các đơn từ theo phòng ban hiện tại của nhân sự từ bảng users
+  // để đảm bảo luôn khớp 100% với danh mục tại "Quản Lý Phòng Ban & Nhân Sự"
+  try {
+    const users = await MongoUserModel.find({}).select("id department").lean();
+    for (const u of users) {
+      if (u.department) {
+        await MongoRequestModel.updateMany(
+          { userId: u.id, department: { $ne: u.department } },
+          { $set: { department: u.department } }
+        );
+      }
+    }
+  } catch (err) {
+    console.error("Lỗi đồng bộ phòng ban cho đơn từ:", err);
+  }
+
   requestsSeeded = true;
 }
 
@@ -532,7 +549,12 @@ export const RequestModel = {
     }
 
     if (params?.department && params.department !== "all") {
-      query.department = params.department;
+      const deptUsers = await MongoUserModel.find({ department: params.department }).select("id").lean();
+      const userIdsInDept = deptUsers.map((u) => u.id);
+      query.$or = [
+        { department: params.department },
+        { userId: { $in: userIdsInDept } },
+      ];
     }
 
     if (params?.search) {
@@ -565,17 +587,22 @@ export const RequestModel = {
       )
     );
     const users = await MongoUserModel.find({ id: { $in: userIds } })
-      .select("id avatarUrl")
+      .select("id avatarUrl department")
       .lean();
     const avatarMap = new Map<string, string>();
+    const deptMap = new Map<string, string>();
     users.forEach((u) => {
       if (u.avatarUrl) avatarMap.set(u.id, u.avatarUrl);
+      if (u.department) deptMap.set(u.id, u.department);
     });
 
     return {
       items: docs.map((d) =>
         toSafeRequest(
-          d,
+          {
+            ...d,
+            department: deptMap.get(d.userId) || d.department || "Khác",
+          },
           avatarMap.get(d.userId),
           d.approverId ? avatarMap.get(d.approverId) : undefined
         )
