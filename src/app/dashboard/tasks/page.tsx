@@ -275,8 +275,8 @@ export default function TasksPage() {
             {isDirectorOrAdmin
               ? "Giám đốc & Quản trị viên: Phân bổ, giao việc và theo dõi tiến độ toàn bộ nhân viên công ty"
               : isManager
-                ? `Trưởng phòng: Phân công nhiệm vụ và giám sát công việc của các nhân sự thuộc phòng ${user?.department || ""}`
-                : "Theo dõi các công việc được cấp trên giao và quản lý các đầu việc cá nhân cần hoàn thành"}
+                ? `Trưởng phòng: Phân công nhiệm vụ và giám sát công việc trong phòng ${user?.department || ""} hoặc phối hợp liên phòng ban`
+                : "Theo dõi công việc được giao, chủ động tạo việc và giao việc cho đồng nghiệp hoặc cấp trên"}
           </p>
         </div>
 
@@ -438,10 +438,8 @@ export default function TasksPage() {
                 : "text-zinc-600 dark:text-zinc-400 hover:text-zinc-900"
                 }`}
             >
-              <span className="sm:hidden">Tôi tạo</span>
-              <span className="hidden sm:inline">
-                {isDirectorOrAdmin || isManager ? "Việc tôi đã giao" : "Tôi đã tạo"}
-              </span>
+              <span className="sm:hidden">Tôi tạo/giao</span>
+              <span className="hidden sm:inline">Việc tôi giao / tạo</span>
             </button>
             {(isDirectorOrAdmin || isManager) && (
               <button

@@ -39,10 +39,6 @@ export function CreateTaskModal({
   const [submitting, setSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
 
-  const isEmployee = currentUser?.role === "employee";
-  const isManager = currentUser?.role === "manager";
-  const isDirectorOrAdmin = currentUser?.role === "admin" || currentUser?.role === "director";
-
   // Tải danh sách nhân sự để chọn người nhận việc
   useEffect(() => {
     if (!isOpen) return;
@@ -84,35 +80,38 @@ export function CreateTaskModal({
       .catch(() => {})
       .finally(() => setLoadingDepartments(false));
 
-    if (!isEmployee) {
-      setLoadingUsers(true);
-      fetch("/api/users?limit=200")
-        .then((res) => res.json())
-        .then((json) => {
-          if (json.success && json.data?.items) {
-            setAllUsers(json.data.items);
-          }
-        })
-        .catch(() => {})
-        .finally(() => setLoadingUsers(false));
-    }
-  }, [isOpen, currentUser, isEmployee]);
+    // Tải toàn bộ nhân sự để bất kỳ ai cũng có thể giao việc cho đồng nghiệp, liên phòng ban hoặc sếp
+    setLoadingUsers(true);
+    fetch("/api/users?limit=200")
+      .then((res) => res.json())
+      .then((json) => {
+        if (json.success && json.data?.items) {
+          setAllUsers(json.data.items);
+        }
+      })
+      .catch(() => {})
+      .finally(() => setLoadingUsers(false));
+  }, [isOpen, currentUser]);
 
   if (!isOpen || !currentUser) return null;
 
-  // Lọc danh sách nhân viên có thể giao việc theo đúng thẩm quyền:
-  // - Quản lý: chỉ cùng phòng ban hoặc chính mình
-  // - Admin / Director: toàn công ty
-  const eligibleAssignees = allUsers.filter((u) => {
-    if (u.id === currentUser.id) return true;
-    if (isDirectorOrAdmin) return true;
-    if (isManager) {
-      const myDept = (currentUser.department || "").trim().toLowerCase();
-      const uDept = (u.department || "").trim().toLowerCase();
-      return myDept && myDept === uDept;
-    }
-    return false;
-  });
+  // Cho phép giao việc linh hoạt cho mọi nhân sự đang hoạt động trong công ty
+  // Ưu tiên sắp xếp: Ban Giám Đốc -> Quản trị viên -> Trưởng phòng -> Nhân viên, sau đó theo tên
+  const roleRank: Record<string, number> = {
+    director: 1,
+    admin: 2,
+    manager: 3,
+    employee: 4,
+  };
+
+  const eligibleAssignees = [...allUsers]
+    .filter((u) => u.status !== "inactive")
+    .sort((a, b) => {
+      const rankA = roleRank[a.role] || 99;
+      const rankB = roleRank[b.role] || 99;
+      if (rankA !== rankB) return rankA - rankB;
+      return (a.name || "").localeCompare(b.name || "", "vi");
+    });
 
   const handleAddChecklistItem = () => {
     if (!newChecklistText.trim()) return;
@@ -141,7 +140,7 @@ export function CreateTaskModal({
       const payload = {
         title: title.trim(),
         description: description.trim(),
-        assigneeId: isEmployee ? currentUser.id : assigneeId || currentUser.id,
+        assigneeId: assigneeId || currentUser.id,
         department: department.trim() || currentUser.department || "Toàn công ty",
         priority,
         dueDate: dueDate || undefined,
@@ -182,11 +181,7 @@ export function CreateTaskModal({
                 Tạo Công Việc / Nhiệm Vụ Mới
               </h3>
               <p className="text-[11px] sm:text-xs text-zinc-500 dark:text-zinc-400 mt-0.5 truncate">
-                {isEmployee
-                  ? "Tự tạo công việc cá nhân cần hoàn thành"
-                  : isManager
-                  ? `Giao việc cho nhân sự thuộc phòng ${currentUser.department || ""}`
-                  : "Phân bổ và giao việc toàn công ty"}
+                Giao việc linh hoạt cho đồng nghiệp, cấp trên hoặc chính mình
               </p>
             </div>
           </div>
@@ -242,54 +237,53 @@ export function CreateTaskModal({
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {/* Người nhận việc */}
             <div>
-              <label className="block text-xs font-semibold text-zinc-800 dark:text-zinc-200 mb-1.5">
-                Người thực hiện (Assignee)
-              </label>
+              <div className="flex items-center justify-between mb-1.5">
+                <label className="text-xs font-semibold text-zinc-800 dark:text-zinc-200">
+                  Người thực hiện (Assignee) <span className="text-rose-500">*</span>
+                </label>
+                {loadingUsers && (
+                  <span className="text-[10px] text-zinc-400 animate-pulse">Đang tải...</span>
+                )}
+              </div>
 
-              {isEmployee ? (
-                <div className="flex items-center gap-2.5 p-2 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950">
-                  {currentUser.avatarUrl ? (
-                    <img src={currentUser.avatarUrl} alt={currentUser.name} className="w-7 h-7 rounded-full object-cover shrink-0" />
-                  ) : (
-                    <div className="w-7 h-7 rounded-full bg-blue-600 text-white font-bold flex items-center justify-center text-[10px] shrink-0">
-                      {currentUser.name.slice(0, 1).toUpperCase()}
-                    </div>
-                  )}
-                  <div className="min-w-0">
-                    <p className="font-semibold text-zinc-900 dark:text-zinc-100 truncate">{currentUser.name} (Chính bạn)</p>
-                    <p className="text-[10px] text-zinc-400 truncate">{currentUser.email}</p>
-                  </div>
-                </div>
-              ) : (
-                <select
-                  value={assigneeId}
-                  onChange={(e) => {
-                    const selId = e.target.value;
-                    setAssigneeId(selId);
-                    const selected = eligibleAssignees.find((u) => u.id === selId);
-                    if (selected?.department) {
-                      setDepartment(selected.department);
-                    }
-                  }}
-                  disabled={loadingUsers}
-                  className="w-full px-3 py-2 rounded-xl border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-950 text-xs text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-zinc-900 dark:focus:ring-zinc-100"
-                >
-                  <option value={currentUser.id}>Giao cho chính mình ({currentUser.name})</option>
-                  {eligibleAssignees
-                    .filter((u) => u.id !== currentUser.id)
-                    .map((u) => (
+              <select
+                value={assigneeId}
+                onChange={(e) => {
+                  const selId = e.target.value;
+                  setAssigneeId(selId);
+                  const selected = eligibleAssignees.find((u) => u.id === selId);
+                  if (selected?.department) {
+                    setDepartment(selected.department);
+                  }
+                }}
+                disabled={loadingUsers}
+                className="w-full px-3 py-2 rounded-xl border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-950 text-xs text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-zinc-900 dark:focus:ring-zinc-100"
+              >
+                <option value={currentUser.id}>
+                  👤 Giao cho chính mình ({currentUser.name})
+                </option>
+                {eligibleAssignees
+                  .filter((u) => u.id !== currentUser.id)
+                  .map((u) => {
+                    const rolePrefix =
+                      u.role === "director"
+                        ? "👑 [Giám đốc]"
+                        : u.role === "admin"
+                        ? "🛡️ [Quản trị viên]"
+                        : u.role === "manager"
+                        ? "⭐ [Trưởng phòng]"
+                        : "👤 [Nhân viên]";
+                    return (
                       <option key={u.id} value={u.id}>
-                        {u.name} ({u.employeeCode || "NV"} - {u.department || "Chưa phòng ban"})
+                        {rolePrefix} {u.name} ({u.employeeCode || "NV"} - {u.department || "Chưa phòng ban"})
                       </option>
-                    ))}
-                </select>
-              )}
+                    );
+                  })}
+              </select>
 
-              {isManager && (
-                <p className="text-[10px] text-amber-600 dark:text-amber-400 mt-1">
-                  * Trưởng phòng chỉ có quyền phân công cho nhân sự trong phòng ban ({currentUser.department || "N/A"}).
-                </p>
-              )}
+              <p className="text-[10px] text-zinc-500 dark:text-zinc-400 mt-1">
+                💡 Bạn có thể giao việc cho đồng nghiệp (cùng/khác phòng ban) hoặc cấp trên (Trưởng phòng, Giám đốc).
+              </p>
             </div>
 
             {/* Mức độ ưu tiên */}
@@ -334,46 +328,23 @@ export function CreateTaskModal({
                 )}
               </label>
 
-              {isEmployee ? (
-                /* Với nhân viên: Cố định theo phòng ban đã lưu trong DB của tài khoản */
-                <div className="px-3.5 py-2.5 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950 text-xs text-zinc-900 dark:text-zinc-100 flex items-center justify-between">
-                  <span className="font-semibold text-zinc-800 dark:text-zinc-200 truncate">
-                    🏢 {department || currentUser.department || "Chưa phân bổ"}
-                  </span>
-                  <span className="text-[10px] text-zinc-400 shrink-0 font-medium">
-                    Phòng của bạn
-                  </span>
-                </div>
-              ) : isManager ? (
-                /* Với Trưởng phòng: Phòng ban quản lý trong DB */
-                <div className="px-3.5 py-2.5 rounded-xl border border-amber-200 dark:border-amber-900/50 bg-amber-50/40 dark:bg-amber-950/20 text-xs text-zinc-900 dark:text-zinc-100 flex items-center justify-between">
-                  <span className="font-semibold text-amber-800 dark:text-amber-300 truncate">
-                    👑 {currentUser.department || department || "Chưa phân bổ"}
-                  </span>
-                  <span className="text-[10px] text-amber-700 dark:text-amber-400 font-medium shrink-0">
-                    Phòng bạn quản lý
-                  </span>
-                </div>
-              ) : (
-                /* Với Giám đốc & Admin: Chọn đúng từ danh sách phòng ban query từ DB */
-                <select
-                  value={department}
-                  onChange={(e) => setDepartment(e.target.value)}
-                  disabled={loadingDepartments}
-                  required
-                  className="w-full px-3 py-2 rounded-xl border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-950 text-xs text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-zinc-900 dark:focus:ring-zinc-100 cursor-pointer"
-                >
-                  <option value="">-- Chọn phòng ban từ cơ sở dữ liệu --</option>
-                  {departmentsList.map((d) => (
-                    <option key={d.id} value={d.name}>
-                      {d.name} ({d.code})
-                    </option>
-                  ))}
-                  {department && !departmentsList.some((d) => d.name === department) && (
-                    <option value={department}>{department}</option>
-                  )}
-                </select>
-              )}
+              <select
+                value={department}
+                onChange={(e) => setDepartment(e.target.value)}
+                disabled={loadingDepartments}
+                required
+                className="w-full px-3 py-2 rounded-xl border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-950 text-xs text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-zinc-900 dark:focus:ring-zinc-100 cursor-pointer"
+              >
+                <option value="">-- Chọn phòng ban --</option>
+                {departmentsList.map((d) => (
+                  <option key={d.id} value={d.name}>
+                    🏢 {d.name} ({d.code})
+                  </option>
+                ))}
+                {department && !departmentsList.some((d) => d.name === department) && (
+                  <option value={department}>🏢 {department}</option>
+                )}
+              </select>
             </div>
           </div>
 

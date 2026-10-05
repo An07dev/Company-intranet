@@ -1,5 +1,5 @@
 import mongoose, { Schema, Model } from "mongoose";
-import { UserRole, UserStatus, AttendanceStatus, ContractType, TaskStatus, TaskPriority } from "@/types";
+import { UserRole, UserStatus, AttendanceStatus, ContractType, TaskStatus, TaskPriority, AssetStatus, AssetCategory, AssetHandoverHistory } from "@/types";
 
 export interface IUserDocument {
   id: string;
@@ -437,6 +437,99 @@ TaskSchema.index({ creatorId: 1 });
 
 export const MongoTaskModel: Model<ITaskDocument> =
   mongoose.models.Task || mongoose.model<ITaskDocument>("Task", TaskSchema);
+
+export interface IAssetDocument {
+  id: string;
+  code: string;
+  name: string;
+  category: AssetCategory;
+  model?: string;
+  serialNumber?: string;
+  purchasePrice?: number;
+  purchaseDate?: string;
+  warrantyExpiryDate?: string;
+  condition: string;
+  location?: string;
+  imageUrl?: string;
+  description?: string;
+  status: AssetStatus;
+  currentAssigneeId?: string;
+  currentAssigneeName?: string;
+  currentAssigneeEmail?: string;
+  currentAssigneeCode?: string;
+  currentAssigneeDepartment?: string;
+  currentAssigneeAvatar?: string;
+  assignedDate?: string;
+  handoverHistory: AssetHandoverHistory[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+const AssetSchema = new Schema<IAssetDocument>(
+  {
+    id: { type: String, required: true, unique: true, index: true },
+    code: { type: String, required: true, unique: true, index: true },
+    name: { type: String, required: true, index: true },
+    category: {
+      type: String,
+      enum: ["it_equipment", "office_equipment", "furniture", "vehicle", "other"],
+      required: true,
+      index: true,
+    },
+    model: { type: String },
+    serialNumber: { type: String, index: true },
+    purchasePrice: { type: Number },
+    purchaseDate: { type: String },
+    warrantyExpiryDate: { type: String },
+    condition: { type: String, default: "Tốt" },
+    location: { type: String },
+    imageUrl: { type: String },
+    description: { type: String },
+    status: {
+      type: String,
+      enum: ["available", "in_use", "maintenance", "broken", "liquidated"],
+      default: "available",
+      index: true,
+    },
+    currentAssigneeId: { type: String, index: true },
+    currentAssigneeName: { type: String },
+    currentAssigneeEmail: { type: String },
+    currentAssigneeCode: { type: String },
+    currentAssigneeDepartment: { type: String },
+    currentAssigneeAvatar: { type: String },
+    assignedDate: { type: String },
+    handoverHistory: [
+      {
+        id: { type: String, required: true },
+        action: { type: String, enum: ["handover", "recall"], required: true },
+        userId: { type: String, required: true },
+        userName: { type: String, required: true },
+        userEmail: { type: String, required: true },
+        employeeCode: { type: String },
+        userDepartment: { type: String },
+        performedById: { type: String, required: true },
+        performedByName: { type: String, required: true },
+        performedByRole: { type: String, required: true },
+        date: { type: String, required: true },
+        condition: { type: String, required: true },
+        note: { type: String },
+        createdAt: { type: String, required: true },
+      },
+    ],
+    createdAt: { type: String, required: true, index: true },
+    updatedAt: { type: String, required: true },
+  },
+  {
+    timestamps: false,
+    versionKey: false,
+  }
+);
+
+AssetSchema.index({ status: 1, category: 1 });
+AssetSchema.index({ currentAssigneeId: 1, status: 1 });
+
+export const MongoAssetModel: Model<IAssetDocument> =
+  mongoose.models.Asset || mongoose.model<IAssetDocument>("Asset", AssetSchema);
 
 
 

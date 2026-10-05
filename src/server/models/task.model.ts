@@ -360,27 +360,7 @@ export const TaskModel = {
       throw new Error("Không tìm thấy thông tin người thực hiện");
     }
 
-    // KIỂM TRA PHÂN QUYỀN TẠO CÔNG VIỆC:
-    const isAssigningToSelf = targetAssigneeUser.id === currentUser.id;
-
-    if (!isAssigningToSelf) {
-      if (currentUser.role === "employee") {
-        throw new Error("Nhân viên chỉ có quyền tự tạo công việc cho chính mình");
-      }
-
-      if (currentUser.role === "manager") {
-        // Quản lý chỉ được tạo cho nhân viên CÙNG PHÒNG BAN
-        const currentDept = (currentUser.department || "").trim().toLowerCase();
-        const assigneeDept = (targetAssigneeUser.department || "").trim().toLowerCase();
-
-        if (!currentDept || currentDept !== assigneeDept) {
-          throw new Error(
-            `Trưởng phòng chỉ có thể giao việc cho nhân sự thuộc cùng phòng ban "${currentUser.department || "Chưa phân bổ"}". Nhân sự ${targetAssigneeUser.name} thuộc phòng ban "${targetAssigneeUser.department || "Chưa có"}".`
-          );
-        }
-      }
-      // director & admin có thể giao cho bất kỳ ai
-    }
+    // Theo quy định mới: Mọi người đều có thể giao việc cho bất kỳ ai (nhân viên giao cho nhân viên khác phòng ban, nhân viên giao cho sếp)
 
     const taskDepartment =
       input.department?.trim() ||
@@ -481,14 +461,6 @@ export const TaskModel = {
 
       const newAssignee = await MongoUserModel.findOne({ id: input.assigneeId }).lean();
       if (newAssignee) {
-        if (currentUser.role === "manager") {
-          const cDept = (currentUser.department || "").trim().toLowerCase();
-          const aDept = (newAssignee.department || "").trim().toLowerCase();
-          if (cDept !== aDept) {
-            throw new Error(`Trưởng phòng chỉ có thể giao việc cho nhân sự cùng phòng ban (${currentUser.department})`);
-          }
-        }
-
         task.assigneeId = newAssignee.id;
         task.assigneeName = newAssignee.name;
         task.assigneeEmail = newAssignee.email;
