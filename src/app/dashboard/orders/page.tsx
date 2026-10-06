@@ -121,6 +121,24 @@ export default function MultiChannelOrdersPage() {
     counts: { open: 953, cancelled: 2591, closed: 10836, total: 14380 },
   });
 
+  // Dropdown lựa chọn đồng bộ Sapo (200 đơn mới nhất / toàn bộ đơn)
+  const [showSyncMenu, setShowSyncMenu] = useState(false);
+  const syncMenuRef = React.useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (syncMenuRef.current && !syncMenuRef.current.contains(event.target as Node)) {
+        setShowSyncMenu(false);
+      }
+    };
+    if (showSyncMenu) {
+      document.addEventListener("mousedown", handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [showSyncMenu]);
+
   // Debounce search input
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -254,6 +272,30 @@ export default function MultiChannelOrdersPage() {
       toast.error("Lỗi khi kết nối để xóa toàn bộ đơn hàng");
     } finally {
       setDeletingAll(false);
+    }
+  };
+
+  // Đồng bộ 200 đơn mới nhất từ Sapo Omnichannel (~2s)
+  const handleSyncRecent200 = async () => {
+    setSyncingSapo(true);
+    toast.info("Đang đồng bộ 200 đơn hàng mới nhất từ Sapo...");
+    try {
+      const res = await fetch("/api/sapo/sync-all", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ step: "latest_200" }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        toast.success(data.message || "Đã đồng bộ 200 đơn hàng mới nhất thành công!");
+        await fetchOrders(true);
+      } else {
+        toast.error(data.message || "Lỗi khi đồng bộ đơn mới nhất");
+      }
+    } catch {
+      toast.error("Không thể kết nối đến máy chủ đồng bộ");
+    } finally {
+      setSyncingSapo(false);
     }
   };
 
@@ -554,16 +596,86 @@ export default function MultiChannelOrdersPage() {
             <span className="hidden sm:inline">Xuất CSV</span>
           </button>
 
-          <button
-            type="button"
-            onClick={handleSyncFromSapo}
-            disabled={syncingSapo}
-            className="py-2 px-3.5 text-xs font-semibold rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white transition-colors shadow-xs flex items-center gap-1.5 disabled:opacity-60"
-            title="Đồng bộ lại toàn bộ 14.380 đơn hàng trực tiếp từ Sapo Omnichannel"
-          >
-            <span className={syncingSapo ? "animate-spin" : ""}>📥</span>
-            <span>{syncingSapo ? "Đang đồng bộ..." : "Đồng bộ Sapo (14.380 đơn)"}</span>
-          </button>
+          {/* Dropdown nút Đồng bộ Sapo với 2 lựa chọn */}
+          <div className="relative" ref={syncMenuRef}>
+            <button
+              type="button"
+              onClick={() => setShowSyncMenu((prev) => !prev)}
+              disabled={syncingSapo}
+              className="py-2 px-3.5 text-xs font-semibold rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white transition-colors shadow-xs flex items-center gap-1.5 disabled:opacity-60 cursor-pointer"
+              title="Chọn phương thức đồng bộ từ Sapo Omnichannel"
+            >
+              <span className={syncingSapo ? "animate-spin" : ""}>📥</span>
+              <span>{syncingSapo ? "Đang đồng bộ..." : "Đồng bộ từ Sapo"}</span>
+              <span className={`text-[10px] ml-0.5 transition-transform duration-200 ${showSyncMenu ? "rotate-180" : ""}`}>
+                ▼
+              </span>
+            </button>
+
+            {showSyncMenu && (
+              <div className="absolute right-0 mt-2 w-80 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl shadow-xl p-2 z-50 animate-in fade-in zoom-in-95 duration-150">
+                <div className="px-3 py-1.5 border-b border-zinc-100 dark:border-zinc-800 mb-1.5">
+                  <span className="text-[11px] font-semibold text-zinc-400 uppercase tracking-wider">
+                    Chọn chế độ đồng bộ Sapo
+                  </span>
+                </div>
+
+                {/* Mục 1: Đồng bộ 200 đơn mới nhất */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowSyncMenu(false);
+                    handleSyncRecent200();
+                  }}
+                  className="w-full text-left p-2.5 rounded-xl hover:bg-emerald-50 dark:hover:bg-emerald-950/40 transition-colors flex items-start gap-3 group cursor-pointer"
+                >
+                  <div className="w-8 h-8 rounded-lg bg-emerald-100 dark:bg-emerald-900/60 text-emerald-700 dark:text-emerald-300 flex items-center justify-center text-sm shrink-0 group-hover:scale-105 transition-transform">
+                    ⚡
+                  </div>
+                  <div className="flex-1">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-bold text-zinc-900 dark:text-white group-hover:text-emerald-600 dark:group-hover:text-emerald-400">
+                        Đồng bộ 200 đơn mới nhất
+                      </span>
+                      <span className="text-[10px] font-medium bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 px-1.5 py-0.5 rounded-full">
+                        Nhanh ~2s
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-zinc-500 dark:text-zinc-400 mt-0.5">
+                      Kéo 200 đơn hàng phát sinh gần nhất, cập nhật tức thì
+                    </p>
+                  </div>
+                </button>
+
+                {/* Mục 2: Đồng bộ toàn bộ đơn */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowSyncMenu(false);
+                    handleSyncFromSapo();
+                  }}
+                  className="w-full text-left p-2.5 rounded-xl hover:bg-blue-50 dark:hover:bg-blue-950/40 transition-colors flex items-start gap-3 group mt-1 cursor-pointer"
+                >
+                  <div className="w-8 h-8 rounded-lg bg-blue-100 dark:bg-blue-900/60 text-blue-700 dark:text-blue-300 flex items-center justify-center text-sm shrink-0 group-hover:scale-105 transition-transform">
+                    🔄
+                  </div>
+                  <div className="flex-1">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-bold text-zinc-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400">
+                        Đồng bộ toàn bộ đơn
+                      </span>
+                      <span className="text-[10px] font-medium bg-blue-100 dark:bg-blue-950 text-blue-700 dark:text-blue-300 px-1.5 py-0.5 rounded-full">
+                        14.380 đơn
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-zinc-500 dark:text-zinc-400 mt-0.5">
+                      Kéo toàn bộ lịch sử đa kênh với thanh tiến trình trực quan
+                    </p>
+                  </div>
+                </button>
+              </div>
+            )}
+          </div>
 
           <button
             type="button"

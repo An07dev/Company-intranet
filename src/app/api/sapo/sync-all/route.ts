@@ -3,6 +3,8 @@ import { connectToDatabase } from "@/server/db";
 import { MongoShopeeOrderModel, MongoShopeeProductModel } from "@/server/db/schema";
 import { LogModel } from "@/server/models/log.model";
 
+export const maxDuration = 60;
+
 const SAPO_DOMAIN = process.env.SAPO_STORE_DOMAIN || "cua-hang-yen-sen.mysapo.net";
 const SAPO_API_KEY = process.env.SAPO_API_KEY || "9e84e8ba383f4f99a8cf2487932d4afe";
 const SAPO_API_SECRET = process.env.SAPO_API_SECRET || "b4ddea44a45447a1ab29e3680fc76c16";
@@ -120,7 +122,62 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    // 1. STEP PRODUCTS: Dọn dẹp extension cũ + đồng bộ 432 sản phẩm Sapo
+    // 1. STEP LATEST 200: Đồng bộ 200 đơn mới nhất từ Sapo
+    if (step === "latest_200" || step === "recent_200") {
+      const [openRes, closedRes, cancelledRes] = await Promise.all([
+        sapoGet("/admin/orders.json?status=open&limit=150&page=1"),
+        sapoGet("/admin/orders.json?status=closed&limit=50&page=1"),
+        sapoGet("/admin/orders.json?status=cancelled&limit=50&page=1"),
+      ]);
+
+      const combined = [
+        ...(openRes.orders || []),
+        ...(closedRes.orders || []),
+        ...(cancelledRes.orders || []),
+      ];
+
+      // Sắp xếp giảm dần theo thời gian tạo
+      combined.sort((a: any, b: any) => {
+        const timeA = new Date(a.created_on || a.created_at || 0).getTime();
+        const timeB = new Date(b.created_on || b.created_at || 0).getTime();
+        return timeB - timeA;
+      });
+
+      const top200 = combined.slice(0, 200);
+
+      const bulkOps = top200.map((o: any) => {
+        const doc = mapSapoOrder(o, now);
+        return {
+          updateOne: {
+            filter: { order_sn: doc.order_sn },
+            update: { $set: doc },
+            upsert: true,
+          },
+        };
+      });
+
+      if (bulkOps.length > 0) {
+        await MongoShopeeOrderModel.bulkWrite(bulkOps, { ordered: false });
+      }
+
+      await LogModel.createLog({
+        level: "success",
+        type: "order_sync",
+        source: "sapo_recent_200",
+        shop_username: "sapo_omnichannel",
+        message: `[Sapo Sync] Đã đồng bộ ${bulkOps.length} đơn hàng mới nhất từ Sapo`,
+        details: { syncedOrders: bulkOps.length },
+      });
+
+      return NextResponse.json({
+        success: true,
+        step: "latest_200",
+        syncedOrders: bulkOps.length,
+        message: `Đã đồng bộ thành công ${bulkOps.length} đơn hàng mới nhất từ Sapo!`,
+      });
+    }
+
+    // 2. STEP PRODUCTS: Dọn dẹp extension cũ + đồng bộ 432 sản phẩm Sapo
     if (step === "products") {
       const deleteRes = await MongoShopeeOrderModel.deleteMany({
         $or: [
