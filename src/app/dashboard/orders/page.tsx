@@ -5,6 +5,7 @@ import Link from "next/link";
 import { ShopeeOrder } from "@/types";
 import { ShopeeStatusBadge } from "@/components/shopee/ShopeeStatusBadge";
 import { ShopeeOrderDetailModal } from "@/components/shopee/ShopeeOrderDetailModal";
+import { CreateOrderModal } from "@/components/shopee/CreateOrderModal";
 import { useToast } from "@/context/ToastContext";
 
 interface OrderStats {
@@ -96,6 +97,7 @@ export default function MultiChannelOrdersPage() {
 
   // Active Detail Modal & Copy Tracking
   const [selectedOrder, setSelectedOrder] = useState<ShopeeOrder | null>(null);
+  const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [copiedSn, setCopiedSn] = useState<string | null>(null);
   const [copiedTracking, setCopiedTracking] = useState<string | null>(null);
   const [syncingSapo, setSyncingSapo] = useState(false);
@@ -594,6 +596,18 @@ export default function MultiChannelOrdersPage() {
           >
             <span>📊</span>
             <span className="hidden sm:inline">Xuất CSV</span>
+          </button>
+
+          {/* Nút Lập đơn hàng mới */}
+          <button
+            type="button"
+            onClick={() => setIsCreateOpen(true)}
+            className="py-2 px-3.5 text-xs font-semibold rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white transition-colors shadow-xs flex items-center gap-1.5 cursor-pointer shrink-0"
+            title="Tạo đơn hàng mới trực tiếp lên Sapo Omnichannel"
+          >
+            <span>➕</span>
+            <span className="hidden sm:inline">Lập đơn mới</span>
+            <span className="sm:hidden">Tạo đơn</span>
           </button>
 
           {/* Dropdown nút Đồng bộ Sapo với 2 lựa chọn */}
@@ -1231,15 +1245,23 @@ export default function MultiChannelOrdersPage() {
         </div>
       )}
 
-      {/* Modal Chi tiết Đơn hàng */}
+      {/* Modal Chi tiết Đơn hàng & Chỉnh sửa / Hủy / Đóng */}
       {selectedOrder && (
         <ShopeeOrderDetailModal
           order={selectedOrder}
           isOpen={!!selectedOrder}
           onClose={() => setSelectedOrder(null)}
           onDelete={handleDeleteOrder}
+          onOrderUpdated={() => fetchOrders(true)}
         />
       )}
+
+      {/* Modal Lập Đơn Hàng Mới Sapo Omnichannel */}
+      <CreateOrderModal
+        isOpen={isCreateOpen}
+        onClose={() => setIsCreateOpen(false)}
+        onOrderCreated={() => fetchOrders(true)}
+      />
     </div>
   );
 }

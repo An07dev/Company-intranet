@@ -224,4 +224,52 @@ export const SapoService = {
       body: JSON.stringify({ supplier: supplierData }),
     });
   },
+
+  /**
+   * Tạo đơn hàng mới trên Sapo Omnichannel
+   */
+  async createOrder(orderData: any): Promise<any> {
+    return sapoFetch(`/admin/orders.json`, {
+      method: "POST",
+      body: JSON.stringify({ order: orderData }),
+    });
+  },
+
+  /**
+   * Cập nhật thông tin đơn hàng trên Sapo (ghi chú, tags, người nhận)
+   */
+  async updateOrder(id: number | string, orderData: any): Promise<any> {
+    return sapoFetch(`/admin/orders/${id}.json`, {
+      method: "PUT",
+      body: JSON.stringify({ order: { id, ...orderData } }),
+    });
+  },
+
+  /**
+   * Đóng đơn hàng trên Sapo (Hoàn tất)
+   */
+  async closeOrder(id: number | string): Promise<any> {
+    return sapoFetch(`/admin/orders/${id}/close.json`, {
+      method: "POST",
+    });
+  },
+
+  /**
+   * Mở lại đơn hàng trên Sapo
+   */
+  async openOrder(id: number | string): Promise<any> {
+    return sapoFetch(`/admin/orders/${id}/open.json`, {
+      method: "POST",
+    });
+  },
+
+  /**
+   * Hủy đơn hàng trên Sapo
+   */
+  async cancelOrder(id: number | string, reason = "customer"): Promise<any> {
+    return sapoFetch(`/admin/orders/${id}/cancel.json`, {
+      method: "POST",
+      body: JSON.stringify({ order_cancel: { reason, email: false } }),
+    });
+  },
 };
