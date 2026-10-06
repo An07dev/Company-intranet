@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import Link from "next/link";
 import { useToast } from "@/context/ToastContext";
 
@@ -30,7 +30,13 @@ export default function SuppliersPage() {
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  // Search, Filter & Pagination State
   const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState<"all" | "active" | "inactive" | "with_phone">("all");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
 
   // Modal Detail & Edit
   const [selectedSupplier, setSelectedSupplier] = useState<Supplier | null>(null);
@@ -164,19 +170,71 @@ export default function SuppliersPage() {
     }
   };
 
-  const filteredSuppliers = suppliers.filter((s) => {
-    if (!search.trim()) return true;
-    const q = search.toLowerCase();
-    return (
-      s.name.toLowerCase().includes(q) ||
-      (s.code && s.code.toLowerCase().includes(q)) ||
-      (s.phone && s.phone.includes(q)) ||
-      (s.email && s.email.toLowerCase().includes(q)) ||
-      (s.address1 && s.address1.toLowerCase().includes(q))
-    );
-  });
+  // Debounce search
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(search.trim());
+      setCurrentPage(1);
+    }, 250);
+    return () => clearTimeout(timer);
+  }, [search]);
+
+  // Filtered suppliers based on search & status filter
+  const filteredSuppliers = useMemo(() => {
+    return suppliers.filter((s) => {
+      if (statusFilter === "active" && s.status !== "active") return false;
+      if (statusFilter === "inactive" && s.status === "active") return false;
+      if (statusFilter === "with_phone" && !s.phone) return false;
+
+      if (!debouncedSearch) return true;
+      const q = debouncedSearch.toLowerCase();
+      return (
+        (s.name && s.name.toLowerCase().includes(q)) ||
+        (s.code && s.code.toLowerCase().includes(q)) ||
+        (s.phone && s.phone.includes(q)) ||
+        (s.email && s.email.toLowerCase().includes(q)) ||
+        (s.address1 && s.address1.toLowerCase().includes(q)) ||
+        (s.province && s.province.toLowerCase().includes(q)) ||
+        (s.tax_number && s.tax_number.includes(q))
+      );
+    });
+  }, [suppliers, statusFilter, debouncedSearch]);
+
+  const totalRecords = filteredSuppliers.length;
+  const totalPages = Math.max(1, Math.ceil(totalRecords / pageSize));
+
+  // Clamp current page if total pages shrank
+  useEffect(() => {
+    if (currentPage > totalPages) {
+      setCurrentPage(totalPages);
+    }
+  }, [currentPage, totalPages]);
+
+  // Sliced items for current page
+  const paginatedSuppliers = useMemo(() => {
+    const start = (currentPage - 1) * pageSize;
+    return filteredSuppliers.slice(start, start + pageSize);
+  }, [filteredSuppliers, currentPage, pageSize]);
+
+  // Pagination page buttons with ellipsis
+  const paginationItems = useMemo(() => {
+    const items: (number | string)[] = [];
+    if (totalPages <= 7) {
+      for (let i = 1; i <= totalPages; i++) items.push(i);
+    } else {
+      if (currentPage <= 4) {
+        items.push(1, 2, 3, 4, 5, "...", totalPages);
+      } else if (currentPage >= totalPages - 3) {
+        items.push(1, "...", totalPages - 4, totalPages - 3, totalPages - 2, totalPages - 1, totalPages);
+      } else {
+        items.push(1, "...", currentPage - 1, currentPage, currentPage + 1, "...", totalPages);
+      }
+    }
+    return items;
+  }, [totalPages, currentPage]);
 
   const activeCount = suppliers.filter((s) => s.status === "active").length;
+  const inactiveCount = suppliers.length - activeCount;
   const withPhoneCount = suppliers.filter((s) => Boolean(s.phone)).length;
 
   return (
@@ -275,17 +333,108 @@ export default function SuppliersPage() {
         </div>
       </div>
 
-      {/* Search */}
-      <div className="p-4 rounded-xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-xs">
-        <div className="relative">
+      {/* Search & Filter Controls */}
+      <div className="p-4 rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-xs flex flex-col md:flex-row items-center justify-between gap-3">
+        {/* Search */}
+        <div className="relative flex-1 w-full">
           <input
             type="text"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Tìm theo mã SUP, tên nhà cung cấp, SĐT, địa chỉ..."
-            className="w-full pl-9 pr-4 py-2 text-xs rounded-lg border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 focus:outline-hidden focus:ring-2 focus:ring-emerald-500"
+            placeholder="Tìm theo mã SUP, tên nhà cung cấp, SĐT, MST, địa chỉ..."
+            className="w-full pl-9 pr-8 py-2 text-xs rounded-xl border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 focus:outline-hidden focus:ring-2 focus:ring-emerald-500 transition-all"
           />
           <span className="absolute left-3 top-2.5 text-zinc-400 text-xs">🔍</span>
+          {search && (
+            <button
+              type="button"
+              onClick={() => setSearch("")}
+              className="absolute right-2.5 top-2.5 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 text-xs"
+            >
+              ✕
+            </button>
+          )}
+        </div>
+
+        {/* Filter Pills & Page Size Dropdown */}
+        <div className="flex items-center gap-1.5 w-full md:w-auto overflow-x-auto pb-1 md:pb-0 scrollbar-none">
+          <button
+            type="button"
+            onClick={() => {
+              setStatusFilter("all");
+              setCurrentPage(1);
+            }}
+            className={`px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition cursor-pointer ${
+              statusFilter === "all"
+                ? "bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 shadow-xs"
+                : "border border-zinc-200 dark:border-zinc-700 text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800"
+            }`}
+          >
+            Tất cả ({suppliers.length})
+          </button>
+
+          <button
+            type="button"
+            onClick={() => {
+              setStatusFilter("active");
+              setCurrentPage(1);
+            }}
+            className={`px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition cursor-pointer ${
+              statusFilter === "active"
+                ? "bg-emerald-600 text-white shadow-xs"
+                : "border border-zinc-200 dark:border-zinc-700 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/40"
+            }`}
+          >
+            Đang hợp tác ({activeCount})
+          </button>
+
+          <button
+            type="button"
+            onClick={() => {
+              setStatusFilter("inactive");
+              setCurrentPage(1);
+            }}
+            className={`px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition cursor-pointer ${
+              statusFilter === "inactive"
+                ? "bg-zinc-700 text-white shadow-xs"
+                : "border border-zinc-200 dark:border-zinc-700 text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800"
+            }`}
+          >
+            Tạm ngưng ({inactiveCount})
+          </button>
+
+          <button
+            type="button"
+            onClick={() => {
+              setStatusFilter("with_phone");
+              setCurrentPage(1);
+            }}
+            className={`px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition cursor-pointer ${
+              statusFilter === "with_phone"
+                ? "bg-blue-600 text-white shadow-xs"
+                : "border border-zinc-200 dark:border-zinc-700 text-blue-700 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/40"
+            }`}
+          >
+            Có Hotline ({withPhoneCount})
+          </button>
+
+          {/* Page size selector */}
+          <div className="pl-2 border-l border-zinc-200 dark:border-zinc-800 flex items-center gap-1">
+            <span className="text-[11px] text-zinc-400 whitespace-nowrap hidden sm:inline">Số dòng:</span>
+            <select
+              value={pageSize}
+              onChange={(e) => {
+                setPageSize(Number(e.target.value));
+                setCurrentPage(1);
+              }}
+              className="py-1 px-2 text-xs font-semibold rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-zinc-700 dark:text-zinc-200 focus:outline-hidden cursor-pointer"
+            >
+              <option value={10}>10 / trang</option>
+              <option value={20}>20 / trang</option>
+              <option value={50}>50 / trang</option>
+              <option value={100}>100 / trang</option>
+            </select>
+          </div>
         </div>
       </div>
 
@@ -297,7 +446,7 @@ export default function SuppliersPage() {
       )}
 
       {/* Table */}
-      <div className="rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-xs overflow-hidden">
+      <div className="rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-xs overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs">
             <thead className="bg-zinc-50 dark:bg-zinc-800/60 border-b border-zinc-200 dark:border-zinc-800 text-zinc-600 dark:text-zinc-300 font-semibold uppercase tracking-wider text-[11px]">
@@ -324,11 +473,19 @@ export default function SuppliersPage() {
               ) : filteredSuppliers.length === 0 ? (
                 <tr>
                   <td colSpan={7} className="py-12 text-center text-zinc-500">
-                    Không tìm thấy nhà cung cấp nào
+                    <div className="max-w-xs mx-auto space-y-1">
+                      <div className="text-2xl">🏭</div>
+                      <div className="font-semibold text-zinc-800 dark:text-zinc-200">
+                        Không tìm thấy nhà cung cấp nào
+                      </div>
+                      <div className="text-[11px] text-zinc-400">
+                        Thử điều chỉnh từ khóa tìm kiếm hoặc bỏ chọn bộ lọc trạng thái
+                      </div>
+                    </div>
                   </td>
                 </tr>
               ) : (
-                filteredSuppliers.map((s) => (
+                paginatedSuppliers.map((s) => (
                   <tr
                     key={s.id}
                     className="hover:bg-zinc-50/70 dark:hover:bg-zinc-800/40 transition"
@@ -410,6 +567,104 @@ export default function SuppliersPage() {
             </tbody>
           </table>
         </div>
+
+        {/* Pagination Bar */}
+        {!loading && totalRecords > 0 && (
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 px-5 py-4 border-t border-zinc-200 dark:border-zinc-800 bg-zinc-50/60 dark:bg-zinc-900/60">
+            <div className="text-xs text-zinc-500 dark:text-zinc-400 text-center sm:text-left">
+              Hiển thị{" "}
+              <strong className="text-zinc-800 dark:text-zinc-200">
+                {Math.min((currentPage - 1) * pageSize + 1, totalRecords).toLocaleString("vi-VN")} -{" "}
+                {Math.min(currentPage * pageSize, totalRecords).toLocaleString("vi-VN")}
+              </strong>{" "}
+              trong tổng số{" "}
+              <strong className="text-zinc-800 dark:text-zinc-200">
+                {totalRecords.toLocaleString("vi-VN")}
+              </strong>{" "}
+              nhà cung cấp (Trang{" "}
+              <span className="font-semibold text-zinc-800 dark:text-zinc-200">
+                {currentPage} / {totalPages}
+              </span>
+              )
+            </div>
+
+            <div className="flex items-center gap-1.5 flex-wrap justify-center">
+              {/* Trang đầu */}
+              <button
+                type="button"
+                onClick={() => setCurrentPage(1)}
+                disabled={currentPage === 1}
+                className="px-2.5 py-1.5 text-xs font-semibold rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-zinc-700 dark:text-zinc-200 hover:bg-zinc-50 dark:hover:bg-zinc-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer"
+                title="Về trang đầu tiên"
+              >
+                ««
+              </button>
+
+              {/* Trang trước */}
+              <button
+                type="button"
+                onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                disabled={currentPage === 1}
+                className="px-3 py-1.5 text-xs font-semibold rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-zinc-700 dark:text-zinc-200 hover:bg-zinc-50 dark:hover:bg-zinc-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer"
+              >
+                Trước
+              </button>
+
+              {/* Danh sách trang số */}
+              {paginationItems.map((item, idx) => {
+                if (item === "...") {
+                  return (
+                    <span
+                      key={`dots-${idx}`}
+                      className="w-8 h-8 flex items-center justify-center text-xs text-zinc-400 font-bold"
+                    >
+                      ...
+                    </span>
+                  );
+                }
+
+                const pageNum = Number(item);
+                const isActive = currentPage === pageNum;
+
+                return (
+                  <button
+                    key={`page-${pageNum}`}
+                    type="button"
+                    onClick={() => setCurrentPage(pageNum)}
+                    className={`w-8 h-8 text-xs font-semibold rounded-xl transition-all cursor-pointer ${
+                      isActive
+                        ? "bg-emerald-600 text-white shadow-sm font-bold scale-105"
+                        : "border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-700"
+                    }`}
+                  >
+                    {pageNum}
+                  </button>
+                );
+              })}
+
+              {/* Trang sau */}
+              <button
+                type="button"
+                onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                disabled={currentPage === totalPages}
+                className="px-3 py-1.5 text-xs font-semibold rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-zinc-700 dark:text-zinc-200 hover:bg-zinc-50 dark:hover:bg-zinc-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer"
+              >
+                Sau
+              </button>
+
+              {/* Trang cuối */}
+              <button
+                type="button"
+                onClick={() => setCurrentPage(totalPages)}
+                disabled={currentPage === totalPages}
+                className="px-2.5 py-1.5 text-xs font-semibold rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-zinc-700 dark:text-zinc-200 hover:bg-zinc-50 dark:hover:bg-zinc-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer"
+                title="Đến trang cuối cùng"
+              >
+                »»
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Modal Chi tiết & Chỉnh sửa Nhà Cung Cấp */}
