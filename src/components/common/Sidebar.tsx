@@ -100,12 +100,12 @@ export function Sidebar() {
       ],
     },
     {
-      id: "shopee",
-      title: "Kênh Bán Hàng Shopee",
+      id: "sales",
+      title: "Nghiệp vụ bán hàng",
       items: [
         {
-          label: "Đơn hàng Shopee",
-          href: "/dashboard/shopee-orders",
+          label: "Quản lý đơn hàng",
+          href: "/dashboard/orders",
           icon: (active) => (
             <svg
               className={`w-5 h-5 shrink-0 ${active ? "text-zinc-900 dark:text-zinc-100" : "text-zinc-500"}`}
@@ -123,7 +123,45 @@ export function Sidebar() {
           ),
         },
         {
-          label: "Sản phẩm Shopee",
+          label: "Cấu hình Webhook",
+          href: "/dashboard/webhooks",
+          icon: (active) => (
+            <svg
+              className={`w-5 h-5 shrink-0 ${active ? "text-zinc-900 dark:text-zinc-100" : "text-zinc-500"}`}
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={1.8}
+                d="M13 10V3L4 14h7v7l9-11h-7z"
+              />
+            </svg>
+          ),
+        },
+        {
+          label: "Nhật ký đồng bộ",
+          href: "/dashboard/shopee-logs",
+          icon: (active) => (
+            <svg
+              className={`w-5 h-5 shrink-0 ${active ? "text-zinc-900 dark:text-zinc-100" : "text-zinc-500"}`}
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={1.8}
+                d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"
+              />
+            </svg>
+          ),
+        },
+        {
+          label: "Sản phẩm & Tồn kho",
           href: "/dashboard/shopee-products",
           icon: (active) => (
             <svg
@@ -136,27 +174,7 @@ export function Sidebar() {
                 strokeLinecap="round"
                 strokeLinejoin="round"
                 strokeWidth={1.8}
-                d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"
-              />
-            </svg>
-          ),
-        },
-        {
-          label: "Nhật ký Đồng bộ",
-          href: "/dashboard/shopee-logs",
-          roles: ["admin", "director"],
-          icon: (active) => (
-            <svg
-              className={`w-5 h-5 shrink-0 ${active ? "text-zinc-900 dark:text-zinc-100" : "text-zinc-500"}`}
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={1.8}
-                d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"
               />
             </svg>
           ),

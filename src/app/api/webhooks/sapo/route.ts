@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { OrderModel } from "@/server/models/order.model";
+import { LogModel } from "@/server/models/log.model";
 import { ShopeeOrder } from "@/types";
 
 const corsHeaders = {
@@ -114,8 +115,37 @@ export async function POST(request: NextRequest) {
     try {
       const syncResult = await OrderModel.upsertOrders([mappedOrder], mappedOrder.shop_username);
       console.log(`[Sapo Webhook] Đã lưu thành công đơn #${orderSn} vào Database (Thêm mới: ${syncResult.inserted}, Cập nhật: ${syncResult.updated})`);
+
+      // Ghi lại nhật ký đồng bộ để hiển thị trên trang Nhật ký Webhook
+      await LogModel.createLog({
+        level: "success",
+        type: "order_sync",
+        source: "sapo_webhook",
+        shop_username: mappedOrder.shop_username,
+        message: `[Sapo Webhook] Nhận đơn hàng mới #${orderSn} từ sàn ${shopSource.toUpperCase()}`,
+        details: {
+          order_id: orderData.id,
+          order_number: orderSn,
+          source_name: shopSource,
+          total_price: mappedOrder.total_amount,
+          buyer: buyerName,
+          items_count: items.length,
+          fulfillment_status: orderData.fulfillment_status,
+          financial_status: orderData.financial_status,
+        },
+      });
     } catch (dbError: any) {
       console.error("[Sapo Webhook] Lỗi khi lưu đơn hàng vào Database:", dbError?.message || dbError);
+      try {
+        await LogModel.createLog({
+          level: "error",
+          type: "order_sync",
+          source: "sapo_webhook",
+          shop_username: mappedOrder.shop_username,
+          message: `[Sapo Webhook] Lỗi lưu đơn hàng #${orderSn}: ${dbError?.message || dbError}`,
+          details: { error: String(dbError), raw: orderData },
+        });
+      } catch {}
     }
 
     // Luôn trả về 200 OK để Sapo biết webhook đã được tiếp nhận thành công
