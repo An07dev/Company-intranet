@@ -286,7 +286,7 @@ export default function InventoryPage() {
             Quản lý Kho & Tồn kho chi nhánh
           </h1>
           <p className="text-xs sm:text-sm text-zinc-500 dark:text-zinc-400 mt-0.5">
-            Theo dõi mức tồn thực tế theo từng SKU, in mã vạch / QR và quét mã tra cứu nhanh số lượng tồn kho
+            Theo dõi mức tồn thực tế theo từng SKU, in mã QR và quét mã tra cứu nhanh số lượng tồn kho
           </p>
         </div>
 
@@ -296,10 +296,10 @@ export default function InventoryPage() {
             type="button"
             onClick={() => setIsScannerOpen(true)}
             className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-bold rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white transition shadow-sm cursor-pointer"
-            title="Mở camera hoặc máy quét cầm tay để tra cứu tồn kho tức thì"
+            title="Mở camera hoặc máy quét để tra cứu tồn kho bằng mã QR tức thì"
           >
             <span className="text-sm">📷</span>
-            <span>Quét Mã Tồn Kho</span>
+            <span>Quét Mã QR Tồn Kho</span>
           </button>
 
           <button
@@ -671,12 +671,12 @@ export default function InventoryPage() {
                       {/* Action */}
                       <td className="py-3 px-4 text-center" onClick={(e) => e.stopPropagation()}>
                         <div className="flex items-center justify-center gap-1">
-                          {/* Nút In tem nhãn mã vạch/QR */}
+                          {/* Nút In tem nhãn mã QR */}
                           <button
                             type="button"
                             onClick={() => setPrintProduct(p)}
                             className="p-1.5 rounded-lg text-zinc-500 hover:text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-950/40 transition-colors"
-                            title="In mã Barcode & QR Code dán tem sản phẩm"
+                            title="In tem mã QR sản phẩm"
                           >
                             <span className="text-sm">🖨️</span>
                           </button>

@@ -79,8 +79,8 @@ export function BarcodeScannerModal({
         // Khởi tạo instance
         const qrScanner = new Html5Qrcode(scannerElementId, {
           formatsToSupport: [
-            Html5QrcodeSupportedFormats.CODE_128,
             Html5QrcodeSupportedFormats.QR_CODE,
+            Html5QrcodeSupportedFormats.CODE_128,
             Html5QrcodeSupportedFormats.CODE_39,
             Html5QrcodeSupportedFormats.EAN_13,
             Html5QrcodeSupportedFormats.EAN_8,
@@ -92,8 +92,8 @@ export function BarcodeScannerModal({
 
         const config = {
           fps: 15,
-          qrbox: { width: 260, height: 160 },
-          aspectRatio: 1.333,
+          qrbox: { width: 220, height: 220 },
+          aspectRatio: 1.0,
         };
 
         await qrScanner.start(
@@ -288,18 +288,18 @@ export function BarcodeScannerModal({
                   {/* Scanning Laser Line Overlay */}
                   {isScanning && (
                     <div className="absolute inset-0 pointer-events-none flex flex-col items-center justify-center p-6">
-                      <div className="relative w-64 h-40 border-2 border-emerald-400/80 rounded-xl shadow-lg">
+                      <div className="relative w-52 h-52 border-2 border-emerald-400/80 rounded-2xl shadow-lg">
                         {/* 4 Góc ngắm */}
-                        <div className="absolute -top-1 -left-1 w-4 h-4 border-t-2 border-l-2 border-emerald-400" />
-                        <div className="absolute -top-1 -right-1 w-4 h-4 border-t-2 border-r-2 border-emerald-400" />
-                        <div className="absolute -bottom-1 -left-1 w-4 h-4 border-b-2 border-l-2 border-emerald-400" />
-                        <div className="absolute -bottom-1 -right-1 w-4 h-4 border-b-2 border-r-2 border-emerald-400" />
+                        <div className="absolute -top-1 -left-1 w-5 h-5 border-t-3 border-l-3 border-emerald-400 rounded-tl-lg" />
+                        <div className="absolute -top-1 -right-1 w-5 h-5 border-t-3 border-r-3 border-emerald-400 rounded-tr-lg" />
+                        <div className="absolute -bottom-1 -left-1 w-5 h-5 border-b-3 border-l-3 border-emerald-400 rounded-bl-lg" />
+                        <div className="absolute -bottom-1 -right-1 w-5 h-5 border-b-3 border-r-3 border-emerald-400 rounded-br-lg" />
 
-                        {/* Tia Laser đỏ quét lên xuống */}
+                        {/* Tia Laser quét */}
                         <div className="w-full h-0.5 bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.8)] animate-pulse absolute top-1/2 -translate-y-1/2" />
                       </div>
-                      <span className="text-[11px] text-white/80 bg-black/50 px-2.5 py-1 rounded-full mt-3 font-medium backdrop-blur-xs">
-                        Đưa mã vạch Barcode hoặc QR Code vào khung ngắm
+                      <span className="text-[11px] text-white/90 bg-black/60 px-3 py-1 rounded-full mt-3 font-medium backdrop-blur-xs">
+                        Đưa mã QR Code vào khung ngắm để nhận diện
                       </span>
                     </div>
                   )}

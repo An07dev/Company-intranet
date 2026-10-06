@@ -16,7 +16,7 @@ export function BarcodePrintModal({ product, isOpen, onClose }: BarcodePrintModa
   const { toast } = useToast();
 
   const [labelSize, setLabelSize] = useState<"50x30" | "40x30" | "75x50">("50x30");
-  const [codeType, setCodeType] = useState<"both" | "barcode" | "qr">("both");
+  const [codeType, setCodeType] = useState<"both" | "barcode" | "qr">("qr");
   const [copyCount, setCopyCount] = useState<number>(1);
   const [showPrice, setShowPrice] = useState(true);
   const [showBranch, setShowBranch] = useState(true);
@@ -84,10 +84,10 @@ export function BarcodePrintModal({ product, isOpen, onClose }: BarcodePrintModa
             </div>
             <div>
               <h2 className="font-bold text-zinc-900 dark:text-white text-base">
-                In Mã Định Danh Sản Phẩm (Barcode / QR)
+                In Mã Định Danh QR Code Sản Phẩm
               </h2>
               <p className="text-[11px] text-zinc-500">
-                In tem dán nhãn bao bì, thùng hàng phục vụ quét mã kiểm kho và xuất nhập
+                In tem nhãn mã QR dán bao bì, thùng hàng phục vụ quét mã kiểm kho và xuất nhập tức thì
               </p>
             </div>
           </div>
@@ -130,9 +130,9 @@ export function BarcodePrintModal({ product, isOpen, onClose }: BarcodePrintModa
                 onChange={(e: any) => setCodeType(e.target.value)}
                 className="w-full px-2.5 py-1.5 bg-white dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 rounded-xl font-medium focus:ring-2 focus:ring-amber-500 focus:outline-hidden"
               >
-                <option value="both">Mã vạch 1D + QR 2D</option>
+                <option value="qr">Mã QR Code 2D (Mặc định)</option>
+                <option value="both">Cả hai (Mã QR + Barcode 1D)</option>
                 <option value="barcode">Chỉ Mã vạch (Code 128)</option>
-                <option value="qr">Chỉ Mã QR (2D)</option>
               </select>
             </div>
 
