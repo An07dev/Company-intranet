@@ -1,10 +1,8 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from "react";
-import JsBarcode from "jsbarcode";
+import React, { useState, useEffect } from "react";
 import QRCode from "qrcode";
 import { ShopeeProduct } from "@/types";
-import { useToast } from "@/context/ToastContext";
 
 interface BarcodePrintModalProps {
   product: ShopeeProduct | null;
@@ -13,16 +11,11 @@ interface BarcodePrintModalProps {
 }
 
 export function BarcodePrintModal({ product, isOpen, onClose }: BarcodePrintModalProps) {
-  const { toast } = useToast();
-
   const [labelSize, setLabelSize] = useState<"50x30" | "40x30" | "75x50">("50x30");
-  const [codeType, setCodeType] = useState<"both" | "barcode" | "qr">("qr");
   const [copyCount, setCopyCount] = useState<number>(1);
   const [showPrice, setShowPrice] = useState(true);
   const [showBranch, setShowBranch] = useState(true);
   const [qrDataUrl, setQrDataUrl] = useState<string>("");
-
-  const barcodeSvgRef = useRef<SVGSVGElement | null>(null);
 
   const skuCode = product?.parent_sku || (product?.item_id ? `SKU-${product.item_id}` : "UNKNOWN");
   const priceDisplay =
@@ -32,37 +25,19 @@ export function BarcodePrintModal({ product, isOpen, onClose }: BarcodePrintModa
       ? `₫${product.price_min.toLocaleString("vi-VN")}`
       : "--";
 
-  // Generate QR Code and Barcode
+  // Generate QR Code
   useEffect(() => {
     if (!isOpen || !product) return;
 
-    // 1. Generate QR Code
     QRCode.toDataURL(skuCode, {
       margin: 1,
-      width: 120,
+      width: 160,
       color: { dark: "#000000", light: "#ffffff" },
+      errorCorrectionLevel: "M",
     })
       .then((url) => setQrDataUrl(url))
       .catch((err) => console.error("Lỗi tạo mã QR:", err));
-
-    // 2. Generate Barcode (Code 128)
-    if (barcodeSvgRef.current) {
-      try {
-        JsBarcode(barcodeSvgRef.current, skuCode, {
-          format: "CODE128",
-          width: labelSize === "40x30" ? 1.3 : 1.6,
-          height: labelSize === "40x30" ? 34 : 44,
-          displayValue: true,
-          fontSize: 10,
-          font: "monospace",
-          margin: 4,
-          textMargin: 2,
-        });
-      } catch (err) {
-        console.error("Lỗi tạo Barcode:", err);
-      }
-    }
-  }, [isOpen, product, skuCode, labelSize]);
+  }, [isOpen, product, skuCode]);
 
   if (!isOpen || !product) return null;
 
@@ -73,7 +48,7 @@ export function BarcodePrintModal({ product, isOpen, onClose }: BarcodePrintModa
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-200">
       <div
-        className="w-full max-w-2xl bg-white dark:bg-zinc-900 rounded-3xl border border-zinc-200 dark:border-zinc-800 shadow-2xl overflow-hidden flex flex-col max-h-[92vh]"
+        className="w-full max-w-xl bg-white dark:bg-zinc-900 rounded-3xl border border-zinc-200 dark:border-zinc-800 shadow-2xl overflow-hidden flex flex-col max-h-[92vh]"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
@@ -84,10 +59,10 @@ export function BarcodePrintModal({ product, isOpen, onClose }: BarcodePrintModa
             </div>
             <div>
               <h2 className="font-bold text-zinc-900 dark:text-white text-base">
-                In Mã Định Danh QR Code Sản Phẩm
+                In Tem Mã QR Định Danh Sản Phẩm
               </h2>
               <p className="text-[11px] text-zinc-500">
-                In tem nhãn mã QR dán bao bì, thùng hàng phục vụ quét mã kiểm kho và xuất nhập tức thì
+                In tem dán nhãn mã QR lên bao bì, thùng hàng phục vụ quét mã tra cứu tồn kho
               </p>
             </div>
           </div>
@@ -103,7 +78,7 @@ export function BarcodePrintModal({ product, isOpen, onClose }: BarcodePrintModa
         </div>
 
         {/* Body */}
-        <div className="overflow-y-auto p-4 sm:p-5 space-y-5 text-xs">
+        <div className="overflow-y-auto p-4 sm:p-5 space-y-4 text-xs">
           {/* Cấu hình nhãn in */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 p-3.5 rounded-2xl bg-zinc-50 dark:bg-zinc-800/40 border border-zinc-200/60 dark:border-zinc-800">
             <div>
@@ -115,7 +90,7 @@ export function BarcodePrintModal({ product, isOpen, onClose }: BarcodePrintModa
                 onChange={(e: any) => setLabelSize(e.target.value)}
                 className="w-full px-2.5 py-1.5 bg-white dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 rounded-xl font-medium focus:ring-2 focus:ring-amber-500 focus:outline-hidden"
               >
-                <option value="50x30">50 x 30 mm (Chuẩn nhiệt)</option>
+                <option value="50x30">50 x 30 mm (Khổ chuẩn)</option>
                 <option value="40x30">40 x 30 mm (Nhỏ gọn)</option>
                 <option value="75x50">75 x 50 mm (Thùng carton)</option>
               </select>
@@ -125,15 +100,10 @@ export function BarcodePrintModal({ product, isOpen, onClose }: BarcodePrintModa
               <label className="block text-[11px] font-semibold text-zinc-600 dark:text-zinc-400 mb-1">
                 Định dạng mã
               </label>
-              <select
-                value={codeType}
-                onChange={(e: any) => setCodeType(e.target.value)}
-                className="w-full px-2.5 py-1.5 bg-white dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 rounded-xl font-medium focus:ring-2 focus:ring-amber-500 focus:outline-hidden"
-              >
-                <option value="qr">Mã QR Code 2D (Mặc định)</option>
-                <option value="both">Cả hai (Mã QR + Barcode 1D)</option>
-                <option value="barcode">Chỉ Mã vạch (Code 128)</option>
-              </select>
+              <div className="px-3 py-1.5 bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-900/60 text-amber-800 dark:text-amber-300 rounded-xl font-semibold flex items-center gap-1.5">
+                <span>📱</span>
+                <span>Mã QR Code (Duy nhất)</span>
+              </div>
             </div>
 
             <div>
@@ -153,7 +123,7 @@ export function BarcodePrintModal({ product, isOpen, onClose }: BarcodePrintModa
                   type="button"
                   onClick={() => setCopyCount(Math.max(1, product.stock || 1))}
                   className="px-2 py-1.5 text-[10px] font-medium rounded-xl bg-zinc-200/70 dark:bg-zinc-700 hover:bg-zinc-300 dark:hover:bg-zinc-600 text-zinc-700 dark:text-zinc-200 transition"
-                  title="In bằng đúng số lượng tồn hiện có"
+                  title="In bằng đúng số lượng tồn kho hiện có"
                 >
                   Theo tồn ({product.stock})
                 </button>
@@ -192,21 +162,21 @@ export function BarcodePrintModal({ product, isOpen, onClose }: BarcodePrintModa
             <div className="flex justify-center p-6 bg-zinc-100 dark:bg-zinc-950/60 rounded-2xl border border-zinc-200 dark:border-zinc-800">
               <div
                 id="barcode-print-sample"
-                className={`bg-white text-black p-3.5 rounded-xl border border-zinc-300 shadow-md flex flex-col justify-between items-center transition-all ${
+                className={`bg-white text-black p-3 rounded-xl border border-zinc-300 shadow-md flex flex-col justify-between items-center transition-all ${
                   labelSize === "40x30"
-                    ? "w-[240px] min-h-[170px]"
+                    ? "w-[230px] min-h-[170px]"
                     : labelSize === "75x50"
-                    ? "w-[340px] min-h-[220px]"
-                    : "w-[290px] min-h-[190px]"
+                    ? "w-[320px] min-h-[220px]"
+                    : "w-[270px] min-h-[190px]"
                 }`}
               >
                 {/* Header tem */}
-                <div className="w-full flex items-center justify-between border-b border-black/10 pb-1 mb-1">
-                  <span className="font-extrabold text-[10px] tracking-wider uppercase">
+                <div className="w-full flex items-center justify-between border-b border-black/15 pb-1 mb-1">
+                  <span className="font-extrabold text-[10px] tracking-wider uppercase text-zinc-900">
                     BAO BÌ YẾN SEN
                   </span>
                   {showBranch && (
-                    <span className="text-[9px] font-medium text-zinc-600">
+                    <span className="text-[9px] font-semibold text-zinc-600">
                       Kho Tổng
                     </span>
                   )}
@@ -217,31 +187,31 @@ export function BarcodePrintModal({ product, isOpen, onClose }: BarcodePrintModa
                   {product.name}
                 </div>
 
-                {/* Barcode & QR Code */}
-                <div className="w-full flex items-center justify-center gap-2 py-1">
-                  {(codeType === "both" || codeType === "barcode") && (
-                    <div className="flex flex-col items-center">
-                      <svg ref={barcodeSvgRef} className="max-w-full" />
-                    </div>
+                {/* Mã QR Code Trung Tâm */}
+                <div className="flex flex-col items-center justify-center my-0.5">
+                  {qrDataUrl ? (
+                    <img
+                      src={qrDataUrl}
+                      alt="QR Code"
+                      className={
+                        labelSize === "40x30"
+                          ? "w-20 h-20"
+                          : labelSize === "75x50"
+                          ? "w-28 h-28"
+                          : "w-24 h-24"
+                      }
+                    />
+                  ) : (
+                    <div className="w-20 h-20 bg-zinc-100 animate-pulse rounded" />
                   )}
-
-                  {(codeType === "both" || codeType === "qr") && qrDataUrl && (
-                    <div className="flex flex-col items-center">
-                      <img
-                        src={qrDataUrl}
-                        alt="QR Code"
-                        className={codeType === "qr" ? "w-24 h-24" : "w-14 h-14"}
-                      />
-                      {codeType === "qr" && (
-                        <span className="font-mono text-[9px] font-bold mt-0.5">{skuCode}</span>
-                      )}
-                    </div>
-                  )}
+                  <span className="font-mono text-[10px] font-bold tracking-wider text-zinc-900 mt-0.5">
+                    {skuCode}
+                  </span>
                 </div>
 
                 {/* Footer tem */}
-                <div className="w-full flex items-center justify-between border-t border-black/10 pt-1 mt-1 text-[10px]">
-                  <span className="font-mono font-semibold text-zinc-700">
+                <div className="w-full flex items-center justify-between border-t border-black/15 pt-1 mt-1 text-[10px]">
+                  <span className="font-mono font-semibold text-zinc-600">
                     ID: #{product.item_id}
                   </span>
                   {showPrice && (
@@ -258,7 +228,7 @@ export function BarcodePrintModal({ product, isOpen, onClose }: BarcodePrintModa
         {/* Modal Actions */}
         <div className="flex items-center justify-between p-4 border-t border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-800/40">
           <div className="text-[11px] text-zinc-500">
-            Sẽ in: <strong>{copyCount}</strong> con tem
+            Sẽ in: <strong>{copyCount}</strong> tem mã QR
           </div>
           <div className="flex items-center gap-2">
             <button
@@ -274,7 +244,7 @@ export function BarcodePrintModal({ product, isOpen, onClose }: BarcodePrintModa
               className="py-2 px-5 text-xs font-bold rounded-xl bg-amber-600 hover:bg-amber-700 text-white transition-all shadow-md flex items-center gap-1.5 cursor-pointer"
             >
               <span>🖨️</span>
-              <span>In {copyCount} Tem Ngay</span>
+              <span>In {copyCount} Tem QR Ngay</span>
             </button>
           </div>
         </div>
@@ -298,7 +268,7 @@ export function BarcodePrintModal({ product, isOpen, onClose }: BarcodePrintModa
                 width: 100% !important;
                 display: flex !important;
                 flex-wrap: wrap !important;
-                gap: 4mm !important;
+                gap: 3mm !important;
               }
               .print-label-item {
                 page-break-inside: avoid !important;
@@ -312,7 +282,7 @@ export function BarcodePrintModal({ product, isOpen, onClose }: BarcodePrintModa
         {Array.from({ length: copyCount }).map((_, idx) => (
           <div
             key={idx}
-            className={`print-label-item bg-white text-black p-2 border border-black/20 flex flex-col justify-between items-center ${
+            className={`print-label-item bg-white text-black p-2 border border-black/30 flex flex-col justify-between items-center ${
               labelSize === "40x30"
                 ? "w-[40mm] h-[30mm]"
                 : labelSize === "75x50"
@@ -325,44 +295,25 @@ export function BarcodePrintModal({ product, isOpen, onClose }: BarcodePrintModa
               {showBranch && <span>Kho Tổng</span>}
             </div>
 
-            <div className="w-full font-bold text-center text-[7pt] leading-tight line-clamp-2">
+            <div className="w-full font-bold text-center text-[7pt] leading-tight line-clamp-2 px-0.5">
               {product.name}
             </div>
 
-            <div className="w-full flex items-center justify-center gap-1 my-0.5">
-              {(codeType === "both" || codeType === "barcode") && (
-                <div className="flex flex-col items-center">
-                  <svg
-                    ref={(el) => {
-                      if (el) {
-                        try {
-                          JsBarcode(el, skuCode, {
-                            format: "CODE128",
-                            width: labelSize === "40x30" ? 1.0 : 1.3,
-                            height: labelSize === "40x30" ? 24 : 32,
-                            displayValue: true,
-                            fontSize: 8,
-                            margin: 1,
-                          });
-                        } catch {}
-                      }
-                    }}
-                  />
-                </div>
+            <div className="w-full flex flex-col items-center justify-center my-0.5">
+              {qrDataUrl && (
+                <img
+                  src={qrDataUrl}
+                  alt=""
+                  className={
+                    labelSize === "40x30"
+                      ? "w-[17mm] h-[17mm]"
+                      : labelSize === "75x50"
+                      ? "w-[28mm] h-[28mm]"
+                      : "w-[20mm] h-[20mm]"
+                  }
+                />
               )}
-
-              {(codeType === "both" || codeType === "qr") && qrDataUrl && (
-                <div className="flex flex-col items-center">
-                  <img
-                    src={qrDataUrl}
-                    alt=""
-                    className={codeType === "qr" ? "w-16 h-16" : "w-10 h-10"}
-                  />
-                  {codeType === "qr" && (
-                    <span className="font-mono text-[6pt] font-bold">{skuCode}</span>
-                  )}
-                </div>
-              )}
+              <span className="font-mono text-[6pt] font-bold mt-0.5">{skuCode}</span>
             </div>
 
             <div className="w-full flex items-center justify-between border-t border-black pt-0.5 text-[6pt]">

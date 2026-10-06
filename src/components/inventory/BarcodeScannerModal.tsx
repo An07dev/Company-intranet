@@ -195,10 +195,10 @@ export function BarcodeScannerModal({
             </div>
             <div>
               <h2 className="font-bold text-zinc-900 dark:text-white text-base">
-                Quét Mã Barcode / QR Tồn Kho
+                Quét Mã QR Tồn Kho
               </h2>
               <p className="text-[11px] text-zinc-500">
-                Nhận diện ngay mã sản phẩm và tra cứu số lượng tồn kho khả dụng tức thì
+                Nhận diện ngay mã QR sản phẩm và tra cứu số lượng tồn kho khả dụng tức thì
               </p>
             </div>
           </div>
@@ -254,7 +254,7 @@ export function BarcodeScannerModal({
             }`}
           >
             <span>🖼️</span>
-            <span>Tải Ảnh Mã</span>
+            <span>Tải Ảnh Mã QR</span>
           </button>
         </div>
 
@@ -393,10 +393,10 @@ export function BarcodeScannerModal({
               >
                 <div className="text-3xl">🖼️</div>
                 <div className="font-bold text-zinc-800 dark:text-zinc-200 text-sm">
-                  Chọn ảnh chụp tem mã vạch hoặc mã QR
+                  Chọn ảnh chụp mã QR sản phẩm
                 </div>
                 <div className="text-[11px] text-zinc-500">
-                  Hỗ trợ định dạng JPG, PNG, WEBP từ thiết bị hoặc ảnh chụp màn hình
+                  Hỗ trợ định dạng JPG, PNG, WEBP từ thiết bị hoặc ảnh chụp màn hình chứa mã QR
                 </div>
               </div>
 
