@@ -228,15 +228,6 @@ export default function SuppliersPage() {
         </div>
       </div>
 
-      {/* Thông báo giải thích dữ liệu gốc Sapo */}
-      <div className="p-4 rounded-2xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200/80 dark:border-amber-900/40 flex items-start gap-3 text-xs text-amber-800 dark:text-amber-200">
-        <span className="text-base shrink-0">💡</span>
-        <div className="leading-relaxed">
-          <span className="font-bold">Lưu ý về dữ liệu gốc từ Sapo: </span>
-          Hệ thống hiện ghi nhận <strong>{suppliers.length} đối tác cung cấp</strong> từ Sapo. Trước đây khi khởi tạo trên Sapo Admin, nhân viên chỉ nhập Tên/Mã mà chưa điền Số điện thoại, Email, Địa chỉ nên dữ liệu hiển thị &quot;Chưa cập nhật&quot;. Bạn có thể bấm nút <strong>&quot;Chi tiết / Sửa&quot;</strong> trên bất kỳ dòng nào để nhập bổ sung thông tin và <strong>lưu trực tiếp lên Sapo</strong> ngay trên giao diện này!
-        </div>
-      </div>
-
       {/* KPI Stats */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="p-4 rounded-xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-xs">
@@ -390,11 +381,10 @@ export default function SuppliersPage() {
 
                     {/* Status */}
                     <td className="py-3 px-4 text-center">
-                      <span className={`inline-block px-2 py-0.5 rounded-full text-[11px] font-semibold ${
-                        s.status === "active"
-                          ? "bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300"
-                          : "bg-zinc-100 dark:bg-zinc-800 text-zinc-500"
-                      }`}>
+                      <span className={`inline-block px-2 py-0.5 rounded-full text-[11px] font-semibold ${s.status === "active"
+                        ? "bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300"
+                        : "bg-zinc-100 dark:bg-zinc-800 text-zinc-500"
+                        }`}>
                         {s.status === "active" ? "Đang hợp tác" : "Tạm ngưng"}
                       </span>
                     </td>
@@ -437,11 +427,10 @@ export default function SuppliersPage() {
                     <span className="px-2 py-0.5 rounded text-[11px] font-mono font-bold bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300">
                       {selectedSupplier.code || `ID-${selectedSupplier.id}`}
                     </span>
-                    <span className={`text-[11px] px-2 py-0.5 rounded-full font-medium ${
-                      selectedSupplier.status === "active"
-                        ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-400"
-                        : "bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400"
-                    }`}>
+                    <span className={`text-[11px] px-2 py-0.5 rounded-full font-medium ${selectedSupplier.status === "active"
+                      ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-400"
+                      : "bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400"
+                      }`}>
                       {selectedSupplier.status === "active" ? "Đang hợp tác" : "Tạm ngưng"}
                     </span>
                   </div>
