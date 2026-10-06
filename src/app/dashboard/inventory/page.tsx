@@ -7,6 +7,8 @@ import { ShopeeProductDetailModal } from "@/components/shopee/ShopeeProductDetai
 import { BarcodePrintModal } from "@/components/inventory/BarcodePrintModal";
 import { BarcodeScannerModal } from "@/components/inventory/BarcodeScannerModal";
 import { ScannedProductModal } from "@/components/inventory/ScannedProductModal";
+import { StockAdjustModal } from "@/components/inventory/StockAdjustModal";
+import { CreateProductModal } from "@/components/inventory/CreateProductModal";
 import { useToast } from "@/context/ToastContext";
 
 interface ProductStats {
@@ -50,6 +52,11 @@ export default function InventoryPage() {
   const [scannedProduct, setScannedProduct] = useState<ShopeeProduct | null>(null);
   const [scannedCode, setScannedCode] = useState("");
   const [isScannedResultOpen, setIsScannedResultOpen] = useState(false);
+
+  // 2-Way Sapo Action Modals State
+  const [adjustProduct, setAdjustProduct] = useState<ShopeeProduct | null>(null);
+  const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [deletingItemId, setDeletingItemId] = useState<string | null>(null);
 
   // Debounce search input
   useEffect(() => {
@@ -190,6 +197,33 @@ export default function InventoryPage() {
     setTimeout(() => setCopiedSku(null), 2000);
   };
 
+  // Handle Delete Product 2-way Sapo
+  const handleDeleteProduct = async (product: ShopeeProduct, e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
+    const sku = product.parent_sku || `SKU-${product.item_id}`;
+    const confirmed = window.confirm(
+      `Bạn có chắc chắn muốn xóa mã hàng "${sku} - ${product.name}" khỏi kho và hệ thống Sapo không?\nHành động này sẽ xóa dữ liệu trên Sapo.`
+    );
+    if (!confirmed) return;
+
+    setDeletingItemId(String(product.item_id));
+    try {
+      const res = await fetch(`/api/sapo/inventory?item_id=${encodeURIComponent(product.item_id)}`, {
+        method: "DELETE",
+      });
+      const json = await res.json();
+      if (!res.ok || !json.success) {
+        throw new Error(json.message || "Không thể xóa sản phẩm khỏi Sapo");
+      }
+      toast.success(`Đã xóa SKU ${sku} khỏi hệ thống thành công!`);
+      fetchInventory(true);
+    } catch (err: any) {
+      toast.error(err.message || "Lỗi khi xóa hàng hóa");
+    } finally {
+      setDeletingItemId(null);
+    }
+  };
+
   // Export CSV
   const handleExportCSV = () => {
     if (products.length === 0) {
@@ -291,6 +325,17 @@ export default function InventoryPage() {
         </div>
 
         <div className="flex items-center gap-2 flex-wrap">
+          {/* Nút Nhập Hàng / Thêm SKU Mới */}
+          <button
+            type="button"
+            onClick={() => setIsCreateOpen(true)}
+            className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-bold rounded-xl bg-amber-600 hover:bg-amber-700 text-white transition shadow-sm cursor-pointer"
+            title="Nhập hàng hoặc thêm mới mã SKU vào kho và đồng bộ trực tiếp lên Sapo"
+          >
+            <span className="text-sm">➕</span>
+            <span>Nhập hàng / Thêm SKU</span>
+          </button>
+
           {/* Nút Quét Mã Tồn Kho Nổi Bật */}
           <button
             type="button"
@@ -671,6 +716,16 @@ export default function InventoryPage() {
                       {/* Action */}
                       <td className="py-3 px-4 text-center" onClick={(e) => e.stopPropagation()}>
                         <div className="flex items-center justify-center gap-1">
+                          {/* Nút Điều chỉnh tồn kho thực tế */}
+                          <button
+                            type="button"
+                            onClick={() => setAdjustProduct(p)}
+                            className="p-1.5 rounded-lg text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-950/40 transition-colors"
+                            title="Kiểm kê & Điều chỉnh tồn kho thực tế lên Sapo"
+                          >
+                            <span className="text-sm">⚡</span>
+                          </button>
+
                           {/* Nút In tem nhãn mã QR */}
                           <button
                             type="button"
@@ -692,6 +747,28 @@ export default function InventoryPage() {
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                             </svg>
+                          </button>
+
+                          {/* Nút Xóa SKU */}
+                          <button
+                            type="button"
+                            onClick={(e) => handleDeleteProduct(p, e)}
+                            disabled={deletingItemId === String(p.item_id)}
+                            className="p-1.5 rounded-lg text-zinc-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors disabled:opacity-50"
+                            title="Xóa mã hàng này khỏi kho và hệ thống Sapo"
+                          >
+                            {deletingItemId === String(p.item_id) ? (
+                              <span className="text-xs animate-spin">⏳</span>
+                            ) : (
+                              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  strokeWidth={2}
+                                  d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                                />
+                              </svg>
+                            )}
                           </button>
                         </div>
                       </td>
@@ -838,6 +915,24 @@ export default function InventoryPage() {
         onPrintLabel={(prod) => {
           setPrintProduct(prod);
         }}
+        onAdjustStock={(prod) => {
+          setAdjustProduct(prod);
+        }}
+      />
+
+      {/* 10. Stock Adjustment Modal (2-Way Sapo) */}
+      <StockAdjustModal
+        product={adjustProduct}
+        isOpen={!!adjustProduct}
+        onClose={() => setAdjustProduct(null)}
+        onSuccess={() => fetchInventory(true)}
+      />
+
+      {/* 11. Create New Product / SKU Modal (2-Way Sapo) */}
+      <CreateProductModal
+        isOpen={isCreateOpen}
+        onClose={() => setIsCreateOpen(false)}
+        onSuccess={() => fetchInventory(true)}
       />
     </div>
   );

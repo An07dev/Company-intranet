@@ -272,4 +272,59 @@ export const SapoService = {
       body: JSON.stringify({ order_cancel: { reason, email: false } }),
     });
   },
+
+  /**
+   * Cập nhật số lượng tồn kho của một biến thể trên Sapo (Kiểm kho / Điều chỉnh tồn)
+   */
+  async updateVariantInventory(variantId: number | string, quantity: number): Promise<any> {
+    return sapoFetch(`/admin/variants/${variantId}.json`, {
+      method: "PUT",
+      body: JSON.stringify({
+        variant: {
+          id: variantId,
+          inventory_management: "bizweb",
+          inventory_quantity: Number(quantity),
+        },
+      }),
+    });
+  },
+
+  /**
+   * Cập nhật thông tin biến thể (giá, SKU, barcode) trên Sapo
+   */
+  async updateVariant(variantId: number | string, variantData: any): Promise<any> {
+    return sapoFetch(`/admin/variants/${variantId}.json`, {
+      method: "PUT",
+      body: JSON.stringify({ variant: { id: variantId, ...variantData } }),
+    });
+  },
+
+  /**
+   * Cập nhật thông tin sản phẩm trên Sapo
+   */
+  async updateProduct(productId: number | string, productData: any): Promise<any> {
+    return sapoFetch(`/admin/products/${productId}.json`, {
+      method: "PUT",
+      body: JSON.stringify({ product: { id: productId, ...productData } }),
+    });
+  },
+
+  /**
+   * Tạo mới sản phẩm trên Sapo
+   */
+  async createProduct(productData: any): Promise<any> {
+    return sapoFetch(`/admin/products.json`, {
+      method: "POST",
+      body: JSON.stringify({ product: productData }),
+    });
+  },
+
+  /**
+   * Xóa sản phẩm khỏi Sapo
+   */
+  async deleteProduct(productId: number | string): Promise<any> {
+    return sapoFetch(`/admin/products/${productId}.json`, {
+      method: "DELETE",
+    });
+  },
 };

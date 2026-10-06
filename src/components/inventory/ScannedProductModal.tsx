@@ -10,6 +10,7 @@ interface ScannedProductModalProps {
   onClose: () => void;
   onScanAnother: () => void;
   onPrintLabel?: (product: ShopeeProduct) => void;
+  onAdjustStock?: (product: ShopeeProduct) => void;
 }
 
 export function ScannedProductModal({
@@ -19,6 +20,7 @@ export function ScannedProductModal({
   onClose,
   onScanAnother,
   onPrintLabel,
+  onAdjustStock,
 }: ScannedProductModalProps) {
   if (!isOpen) return null;
 
@@ -236,6 +238,21 @@ export function ScannedProductModal({
           </button>
 
           <div className="flex items-center gap-2">
+            {product && onAdjustStock && (
+              <button
+                type="button"
+                onClick={() => {
+                  onClose();
+                  onAdjustStock(product);
+                }}
+                className="py-2 px-3.5 text-xs font-semibold rounded-xl bg-amber-600 hover:bg-amber-700 text-white transition flex items-center gap-1.5 shadow-xs cursor-pointer"
+                title="Điều chỉnh tồn kho thực tế lên Sapo"
+              >
+                <span>⚡</span>
+                <span>Điều chỉnh tồn</span>
+              </button>
+            )}
+
             {product && onPrintLabel && (
               <button
                 type="button"
