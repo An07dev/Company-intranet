@@ -84,6 +84,7 @@ export default function MultiChannelOrdersPage() {
   const [selectedOrder, setSelectedOrder] = useState<ShopeeOrder | null>(null);
   const [copiedSn, setCopiedSn] = useState<string | null>(null);
   const [copiedTracking, setCopiedTracking] = useState<string | null>(null);
+  const [syncingSapo, setSyncingSapo] = useState(false);
 
   // Debounce search input
   useEffect(() => {
@@ -221,6 +222,29 @@ export default function MultiChannelOrdersPage() {
     }
   };
 
+  // Đồng bộ lại toàn bộ đơn hàng từ Sapo Omnichannel
+  const handleSyncFromSapo = async () => {
+    setSyncingSapo(true);
+    try {
+      const res = await fetch("/api/sapo/sync-orders", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ limit: 100 }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        toast.success(data.message || "Đồng bộ đơn hàng từ Sapo thành công!");
+        await fetchOrders(true);
+      } else {
+        toast.error(data.message || "Lỗi đồng bộ từ Sapo");
+      }
+    } catch {
+      toast.error("Không thể kết nối API đồng bộ Sapo");
+    } finally {
+      setSyncingSapo(false);
+    }
+  };
+
   // Format VND
   const formatVND = (amount: number) => {
     return new Intl.NumberFormat("vi-VN", {
@@ -306,6 +330,17 @@ export default function MultiChannelOrdersPage() {
             <span>⚡</span>
             <span>Cấu hình Webhook</span>
           </Link>
+
+          <button
+            type="button"
+            onClick={handleSyncFromSapo}
+            disabled={syncingSapo}
+            className="py-2 px-3.5 text-xs font-semibold rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white transition-colors shadow-xs flex items-center gap-1.5 disabled:opacity-60"
+            title="Đồng bộ lại đơn hàng trực tiếp từ Sapo Omnichannel"
+          >
+            <span className={syncingSapo ? "animate-spin" : ""}>📥</span>
+            <span>{syncingSapo ? "Đang đồng bộ..." : "Đồng bộ từ Sapo"}</span>
+          </button>
 
           <button
             type="button"
