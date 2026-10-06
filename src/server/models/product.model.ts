@@ -323,6 +323,8 @@ export class ProductModel {
       query.stock = { $gt: 0 };
     } else if (params.stock_status === "out_of_stock") {
       query.stock = { $lte: 0 };
+    } else if (params.stock_status === "low_stock") {
+      query.stock = { $gt: 0, $lte: 10 };
     }
 
     if (params.search) {
@@ -368,10 +370,11 @@ export class ProductModel {
       filter.shop_username = { $regex: shopUsername, $options: "i" };
     }
 
-    const [totalProducts, inStockCount, outOfStockCount, allProducts, uniqueShops] = await Promise.all([
+    const [totalProducts, inStockCount, outOfStockCount, lowStockCount, allProducts, uniqueShops] = await Promise.all([
       MongoShopeeProductModel.countDocuments(filter),
       MongoShopeeProductModel.countDocuments({ ...filter, stock: { $gt: 0 } }),
       MongoShopeeProductModel.countDocuments({ ...filter, stock: { $lte: 0 } }),
+      MongoShopeeProductModel.countDocuments({ ...filter, stock: { $gt: 0, $lte: 10 } }),
       MongoShopeeProductModel.find(filter).select("stock sales_30d variations").lean(),
       MongoShopeeProductModel.distinct("shop_username"),
     ]);
@@ -390,6 +393,7 @@ export class ProductModel {
       totalProducts,
       inStockCount,
       outOfStockCount,
+      lowStockCount,
       totalStock,
       totalSales30d,
       totalVariations,
