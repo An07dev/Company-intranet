@@ -179,25 +179,7 @@ export function Sidebar() {
             </svg>
           ),
         },
-        {
-          label: "Sản phẩm & Tồn kho",
-          href: "/dashboard/shopee-products",
-          icon: (active) => (
-            <svg
-              className={`w-5 h-5 shrink-0 ${active ? "text-zinc-900 dark:text-zinc-100" : "text-zinc-500"}`}
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={1.8}
-                d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"
-              />
-            </svg>
-          ),
-        },
+
         {
           label: "Cấu hình Webhook",
           href: "/dashboard/webhooks",
@@ -458,10 +440,10 @@ export function Sidebar() {
         className={`fixed md:sticky top-0 md:top-14 sm:md:top-16 inset-y-0 left-0 z-50 md:z-30 h-full md:h-[calc(100vh-3.5rem)] sm:md:h-[calc(100vh-4rem)] border-r border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 flex flex-col justify-between transition-all duration-300 ease-in-out ${
           /* Responsive widths */
           isCollapsed ? "md:w-16" : "md:w-60"
-        } ${
+          } ${
           /* Mobile drawer state */
           isOpen ? "translate-x-0 w-64 shadow-2xl" : "-translate-x-full md:translate-x-0"
-        }`}
+          }`}
       >
         <div className="flex flex-col flex-1 overflow-y-auto">
           {/* Header trong Mobile Drawer (chỉ hiện trên Mobile) */}
@@ -521,9 +503,8 @@ export function Sidebar() {
                           </span>
                         )}
                         <svg
-                          className={`w-3.5 h-3.5 text-zinc-400 dark:text-zinc-500 group-hover:text-zinc-600 dark:group-hover:text-zinc-300 transition-transform duration-200 ${
-                            isSectionCollapsed ? "-rotate-90" : "rotate-0"
-                          }`}
+                          className={`w-3.5 h-3.5 text-zinc-400 dark:text-zinc-500 group-hover:text-zinc-600 dark:group-hover:text-zinc-300 transition-transform duration-200 ${isSectionCollapsed ? "-rotate-90" : "rotate-0"
+                            }`}
                           fill="none"
                           viewBox="0 0 24 24"
                           stroke="currentColor"
@@ -551,15 +532,13 @@ export function Sidebar() {
                             href={item.href}
                             onClick={closeSidebar}
                             title={isCollapsed ? `${section.title}: ${item.label}` : undefined}
-                            className={`flex items-center rounded-lg transition-colors group cursor-pointer ${
-                              isCollapsed
+                            className={`flex items-center rounded-lg transition-colors group cursor-pointer ${isCollapsed
                                 ? "md:justify-center p-2.5"
                                 : "gap-3 px-3 py-2 text-xs sm:text-sm font-medium"
-                            } ${
-                              active
+                              } ${active
                                 ? "bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 font-semibold shadow-xs"
                                 : "text-zinc-600 dark:text-zinc-400 hover:bg-zinc-50 dark:hover:bg-zinc-800/60 hover:text-zinc-900 dark:hover:text-zinc-100"
-                            }`}
+                              }`}
                           >
                             {item.icon(active)}
 
@@ -583,15 +562,13 @@ export function Sidebar() {
           <button
             type="button"
             onClick={toggleCollapse}
-            className={`w-full flex items-center rounded-lg text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors p-2 text-xs font-medium cursor-pointer ${
-              isCollapsed ? "justify-center" : "gap-2.5 justify-start"
-            }`}
+            className={`w-full flex items-center rounded-lg text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors p-2 text-xs font-medium cursor-pointer ${isCollapsed ? "justify-center" : "gap-2.5 justify-start"
+              }`}
             title={isCollapsed ? "Mở rộng menu" : "Thu gọn menu"}
           >
             <svg
-              className={`w-4 h-4 transition-transform duration-200 ${
-                isCollapsed ? "rotate-180" : ""
-              }`}
+              className={`w-4 h-4 transition-transform duration-200 ${isCollapsed ? "rotate-180" : ""
+                }`}
               fill="none"
               viewBox="0 0 24 24"
               stroke="currentColor"
