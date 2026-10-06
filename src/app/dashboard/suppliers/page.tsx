@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useToast } from "@/context/ToastContext";
 
 interface Supplier {
   id: number;
@@ -25,11 +26,33 @@ interface Supplier {
 }
 
 export default function SuppliersPage() {
+  const { toast } = useToast();
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState("");
+
+  // Modal Detail & Edit
   const [selectedSupplier, setSelectedSupplier] = useState<Supplier | null>(null);
+  const [isEditing, setIsEditing] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [editForm, setEditForm] = useState<Partial<Supplier>>({});
+
+  // Modal Create
+  const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [creating, setCreating] = useState(false);
+  const [createForm, setCreateForm] = useState({
+    name: "",
+    code: "",
+    phone: "",
+    email: "",
+    tax_number: "",
+    address1: "",
+    province: "",
+    website: "",
+    description: "",
+    status: "active",
+  });
 
   const fetchSuppliers = async () => {
     setLoading(true);
@@ -52,6 +75,95 @@ export default function SuppliersPage() {
     fetchSuppliers();
   }, []);
 
+  const handleOpenDetail = (s: Supplier) => {
+    setSelectedSupplier(s);
+    setIsEditing(false);
+    setEditForm({
+      name: s.name || "",
+      code: s.code || "",
+      phone: s.phone || "",
+      email: s.email || "",
+      tax_number: s.tax_number || "",
+      address1: s.address1 || "",
+      province: s.province || "",
+      district: s.district || "",
+      website: s.website || "",
+      description: s.description || "",
+      status: s.status || "active",
+    });
+  };
+
+  const handleSaveEdit = async () => {
+    if (!selectedSupplier) return;
+    setSaving(true);
+    try {
+      const res = await fetch("/api/sapo/suppliers", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          id: selectedSupplier.id,
+          ...editForm,
+        }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        toast.success(data.message || "Đã cập nhật nhà cung cấp lên Sapo!");
+        // Update local state
+        setSuppliers((prev) =>
+          prev.map((item) => (item.id === selectedSupplier.id ? { ...item, ...editForm } : item))
+        );
+        setSelectedSupplier((prev) => (prev ? { ...prev, ...editForm } : null));
+        setIsEditing(false);
+      } else {
+        toast.error(data.message || "Lỗi cập nhật nhà cung cấp");
+      }
+    } catch {
+      toast.error("Không thể kết nối đến máy chủ Sapo");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleCreateSupplier = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!createForm.name.trim()) {
+      toast.error("Vui lòng nhập tên nhà cung cấp");
+      return;
+    }
+    setCreating(true);
+    try {
+      const res = await fetch("/api/sapo/suppliers", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(createForm),
+      });
+      const data = await res.json();
+      if (data.success) {
+        toast.success("Đã tạo nhà cung cấp mới trên Sapo thành công!");
+        setIsCreateOpen(false);
+        setCreateForm({
+          name: "",
+          code: "",
+          phone: "",
+          email: "",
+          tax_number: "",
+          address1: "",
+          province: "",
+          website: "",
+          description: "",
+          status: "active",
+        });
+        await fetchSuppliers();
+      } else {
+        toast.error(data.message || "Lỗi tạo nhà cung cấp");
+      }
+    } catch {
+      toast.error("Không thể kết nối đến máy chủ");
+    } finally {
+      setCreating(false);
+    }
+  };
+
   const filteredSuppliers = suppliers.filter((s) => {
     if (!search.trim()) return true;
     const q = search.toLowerCase();
@@ -59,7 +171,8 @@ export default function SuppliersPage() {
       s.name.toLowerCase().includes(q) ||
       (s.code && s.code.toLowerCase().includes(q)) ||
       (s.phone && s.phone.includes(q)) ||
-      (s.email && s.email.toLowerCase().includes(q))
+      (s.email && s.email.toLowerCase().includes(q)) ||
+      (s.address1 && s.address1.toLowerCase().includes(q))
     );
   });
 
@@ -83,26 +196,44 @@ export default function SuppliersPage() {
             Quản lý Nhà cung cấp & Đối tác
           </h1>
           <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-0.5">
-            Danh bạ các nhà cung ứng hàng hóa, bao bì, nguyên vật liệu kết nối trực tiếp từ Sapo
+            Danh bạ các nhà cung ứng hàng hóa, bao bì, nguyên vật liệu kết nối 2 chiều trực tiếp từ Sapo
           </p>
         </div>
 
         <div className="flex items-center gap-2">
           <button
+            onClick={() => setIsCreateOpen(true)}
+            className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white transition shadow-xs cursor-pointer"
+          >
+            <span>➕</span>
+            <span>Thêm NCC mới</span>
+          </button>
+
+          <button
             onClick={fetchSuppliers}
             disabled={loading}
-            className="inline-flex items-center gap-2 px-3.5 py-2 text-xs font-medium rounded-lg border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-zinc-700 dark:text-zinc-200 hover:bg-zinc-50 dark:hover:bg-zinc-700 transition"
+            className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-medium rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-zinc-700 dark:text-zinc-200 hover:bg-zinc-50 dark:hover:bg-zinc-700 transition cursor-pointer"
           >
             <span className={loading ? "animate-spin" : ""}>🔄</span>
-            Đồng bộ từ Sapo
+            Làm mới
           </button>
+
           <Link
             href="/dashboard/shopee-products"
-            className="inline-flex items-center gap-2 px-3.5 py-2 text-xs font-medium rounded-lg bg-emerald-600 text-white hover:bg-emerald-700 transition shadow-xs"
+            className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-medium rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-zinc-700 dark:text-zinc-200 hover:bg-zinc-50 dark:hover:bg-zinc-700 transition"
           >
             <span>📦</span>
             Xem sản phẩm
           </Link>
+        </div>
+      </div>
+
+      {/* Thông báo giải thích dữ liệu gốc Sapo */}
+      <div className="p-4 rounded-2xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200/80 dark:border-amber-900/40 flex items-start gap-3 text-xs text-amber-800 dark:text-amber-200">
+        <span className="text-base shrink-0">💡</span>
+        <div className="leading-relaxed">
+          <span className="font-bold">Lưu ý về dữ liệu gốc từ Sapo: </span>
+          Hệ thống hiện ghi nhận <strong>{suppliers.length} đối tác cung cấp</strong> từ Sapo. Trước đây khi khởi tạo trên Sapo Admin, nhân viên chỉ nhập Tên/Mã mà chưa điền Số điện thoại, Email, Địa chỉ nên dữ liệu hiển thị &quot;Chưa cập nhật&quot;. Bạn có thể bấm nút <strong>&quot;Chi tiết / Sửa&quot;</strong> trên bất kỳ dòng nào để nhập bổ sung thông tin và <strong>lưu trực tiếp lên Sapo</strong> ngay trên giao diện này!
         </div>
       </div>
 
@@ -136,20 +267,20 @@ export default function SuppliersPage() {
             <span className="text-lg">📞</span>
           </div>
           <div className="text-2xl sm:text-3xl font-extrabold font-mono mt-1 text-blue-600 dark:text-blue-400">
-            {withPhoneCount}
+            {withPhoneCount} / {suppliers.length}
           </div>
           <div className="text-[11px] text-zinc-500 mt-1">Có số điện thoại liên lạc</div>
         </div>
 
         <div className="p-4 rounded-xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-xs">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-medium text-zinc-500 dark:text-zinc-400">Phân quyền Sapo</span>
+            <span className="text-xs font-medium text-zinc-500 dark:text-zinc-400">Đồng bộ 2 Chiều</span>
             <span className="text-lg">🔐</span>
           </div>
           <div className="text-lg sm:text-xl font-bold font-mono mt-1 text-emerald-600 dark:text-emerald-400">
-            Đọc & Ghi
+            Đọc & Ghi (REST API)
           </div>
-          <div className="text-[11px] text-zinc-500 mt-1">Admin REST API kết nối thông suốt</div>
+          <div className="text-[11px] text-zinc-500 mt-1">Cập nhật trực tiếp lên Sapo</div>
         </div>
       </div>
 
@@ -160,7 +291,7 @@ export default function SuppliersPage() {
             type="text"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Tìm theo mã SUP, tên nhà cung cấp, SĐT..."
+            placeholder="Tìm theo mã SUP, tên nhà cung cấp, SĐT, địa chỉ..."
             className="w-full pl-9 pr-4 py-2 text-xs rounded-lg border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 focus:outline-hidden focus:ring-2 focus:ring-emerald-500"
           />
           <span className="absolute left-3 top-2.5 text-zinc-400 text-xs">🔍</span>
@@ -186,7 +317,7 @@ export default function SuppliersPage() {
                 <th className="py-3 px-4">Địa chỉ / Khu vực</th>
                 <th className="py-3 px-4 text-center">Trạng thái</th>
                 <th className="py-3 px-4">Cập nhật</th>
-                <th className="py-3 px-4 text-center">Chi tiết</th>
+                <th className="py-3 px-4 text-center">Hành động</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-zinc-200 dark:divide-zinc-800">
@@ -195,7 +326,7 @@ export default function SuppliersPage() {
                   <td colSpan={7} className="py-12 text-center text-zinc-500">
                     <div className="inline-flex items-center gap-2">
                       <span className="animate-spin text-base">⏳</span>
-                      <span>Đang kết nối tải 23 nhà cung cấp từ Sapo...</span>
+                      <span>Đang kết nối tải danh sách nhà cung cấp từ Sapo...</span>
                     </div>
                   </td>
                 </tr>
@@ -235,7 +366,7 @@ export default function SuppliersPage() {
                       {s.phone ? (
                         <a
                           href={`tel:${s.phone}`}
-                          className="font-mono text-emerald-600 dark:text-emerald-400 hover:underline flex items-center gap-1"
+                          className="font-mono text-emerald-600 dark:text-emerald-400 hover:underline flex items-center gap-1 font-medium"
                         >
                           <span>📞</span>
                           <span>{s.phone}</span>
@@ -251,8 +382,8 @@ export default function SuppliersPage() {
                     </td>
 
                     {/* Address */}
-                    <td className="py-3 px-4 text-zinc-600 dark:text-zinc-400 max-w-[200px] truncate">
-                      {[s.address1, s.district, s.province || s.country].filter(Boolean).join(", ") || (
+                    <td className="py-3 px-4 text-zinc-600 dark:text-zinc-400 max-w-[220px] truncate">
+                      {[s.address1, s.district, s.province].filter(Boolean).join(", ") || (
                         <span className="text-zinc-400 italic">Chưa nhập địa chỉ</span>
                       )}
                     </td>
@@ -277,10 +408,10 @@ export default function SuppliersPage() {
                     <td className="py-3 px-4 text-center">
                       <button
                         type="button"
-                        onClick={() => setSelectedSupplier(s)}
-                        className="px-2.5 py-1 text-xs font-medium rounded-md border border-zinc-200 dark:border-zinc-700 hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-700 dark:text-zinc-300 transition"
+                        onClick={() => handleOpenDetail(s)}
+                        className="px-2.5 py-1 text-xs font-semibold rounded-lg border border-zinc-200 dark:border-zinc-700 hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-700 dark:text-zinc-200 transition cursor-pointer"
                       >
-                        Chi tiết
+                        Chi tiết / Sửa
                       </button>
                     </td>
                   </tr>
@@ -291,80 +422,411 @@ export default function SuppliersPage() {
         </div>
       </div>
 
-      {/* Supplier Detail Modal */}
+      {/* Modal Chi tiết & Chỉnh sửa Nhà Cung Cấp */}
       {selectedSupplier && (
         <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl max-w-lg w-full p-6 space-y-5 shadow-2xl">
+          <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-3xl max-w-xl w-full p-6 space-y-5 shadow-2xl animate-in fade-in zoom-in-95 duration-150">
             {/* Modal Header */}
             <div className="flex items-center justify-between border-b border-zinc-200 dark:border-zinc-800 pb-4">
-              <div>
-                <span className="px-2 py-0.5 rounded text-[11px] font-mono font-bold bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300">
-                  {selectedSupplier.code || `ID-${selectedSupplier.id}`}
-                </span>
-                <h3 className="text-lg font-bold text-zinc-900 dark:text-zinc-100 mt-1">
-                  {selectedSupplier.name}
-                </h3>
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-2xl bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 flex items-center justify-center text-lg">
+                  🏭
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="px-2 py-0.5 rounded text-[11px] font-mono font-bold bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300">
+                      {selectedSupplier.code || `ID-${selectedSupplier.id}`}
+                    </span>
+                    <span className={`text-[11px] px-2 py-0.5 rounded-full font-medium ${
+                      selectedSupplier.status === "active"
+                        ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-400"
+                        : "bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400"
+                    }`}>
+                      {selectedSupplier.status === "active" ? "Đang hợp tác" : "Tạm ngưng"}
+                    </span>
+                  </div>
+                  <h3 className="text-base font-bold text-zinc-900 dark:text-zinc-100 mt-1">
+                    {selectedSupplier.name}
+                  </h3>
+                </div>
               </div>
               <button
                 onClick={() => setSelectedSupplier(null)}
-                className="w-8 h-8 rounded-lg flex items-center justify-center text-zinc-400 hover:text-zinc-600 hover:bg-zinc-100 dark:hover:bg-zinc-800 text-sm"
+                className="w-8 h-8 rounded-full flex items-center justify-center text-zinc-400 hover:text-zinc-600 hover:bg-zinc-100 dark:hover:bg-zinc-800 text-sm"
               >
                 ✕
               </button>
             </div>
 
-            {/* Details */}
-            <div className="space-y-3 text-xs">
-              <div className="p-3 rounded-xl bg-zinc-50 dark:bg-zinc-800/50 space-y-2">
-                <div className="flex items-center justify-between">
-                  <span className="text-zinc-500">Mã số thuế:</span>
-                  <span className="font-mono font-medium text-zinc-900 dark:text-zinc-100">
-                    {selectedSupplier.tax_number || "Chưa có"}
-                  </span>
+            {/* View Mode */}
+            {!isEditing ? (
+              <div className="space-y-4 text-xs">
+                <div className="p-4 rounded-2xl bg-zinc-50 dark:bg-zinc-800/50 space-y-3">
+                  <div className="flex items-center justify-between border-b border-zinc-200/60 dark:border-zinc-700/60 pb-2">
+                    <span className="text-zinc-500">Mã nhà cung cấp:</span>
+                    <span className="font-mono font-bold text-zinc-900 dark:text-zinc-100">
+                      {selectedSupplier.code || "Chưa có"}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between border-b border-zinc-200/60 dark:border-zinc-700/60 pb-2">
+                    <span className="text-zinc-500">Số điện thoại liên hệ:</span>
+                    <span className="font-mono text-emerald-600 dark:text-emerald-400 font-bold">
+                      {selectedSupplier.phone || "Chưa cập nhật"}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between border-b border-zinc-200/60 dark:border-zinc-700/60 pb-2">
+                    <span className="text-zinc-500">Hòm thư Email:</span>
+                    <span className="text-zinc-800 dark:text-zinc-200 font-medium">
+                      {selectedSupplier.email || "Chưa có"}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between border-b border-zinc-200/60 dark:border-zinc-700/60 pb-2">
+                    <span className="text-zinc-500">Mã số thuế:</span>
+                    <span className="font-mono font-medium text-zinc-900 dark:text-zinc-100">
+                      {selectedSupplier.tax_number || "Chưa có"}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between border-b border-zinc-200/60 dark:border-zinc-700/60 pb-2">
+                    <span className="text-zinc-500">Website:</span>
+                    <span className="text-zinc-800 dark:text-zinc-200">
+                      {selectedSupplier.website || "Chưa có"}
+                    </span>
+                  </div>
+                  <div className="flex items-start justify-between">
+                    <span className="text-zinc-500">Địa chỉ kho / trụ sở:</span>
+                    <span className="text-right text-zinc-800 dark:text-zinc-200 max-w-[280px]">
+                      {[selectedSupplier.address1, selectedSupplier.district, selectedSupplier.province].filter(Boolean).join(", ") || "Chưa cập nhật"}
+                    </span>
+                  </div>
                 </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-zinc-500">Số điện thoại:</span>
-                  <span className="font-mono text-emerald-600 dark:text-emerald-400 font-medium">
-                    {selectedSupplier.phone || "Chưa cập nhật"}
+
+                {selectedSupplier.description && (
+                  <div className="p-3.5 rounded-2xl bg-zinc-50 dark:bg-zinc-800/40">
+                    <div className="font-medium text-zinc-500 mb-1">Mô tả / Ghi chú đối tác:</div>
+                    <p className="text-zinc-700 dark:text-zinc-300 leading-relaxed">{selectedSupplier.description}</p>
+                  </div>
+                )}
+
+                <div className="pt-2 flex justify-between items-center">
+                  <span className="text-[11px] text-zinc-400">
+                    Cập nhật lần cuối: {selectedSupplier.updated_on ? new Date(selectedSupplier.updated_on).toLocaleString("vi-VN") : "—"}
                   </span>
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setIsEditing(true)}
+                      className="px-4 py-2 text-xs font-semibold rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white transition flex items-center gap-1.5 cursor-pointer shadow-xs"
+                    >
+                      <span>✏️</span>
+                      <span>Chỉnh sửa thông tin</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setSelectedSupplier(null)}
+                      className="px-4 py-2 text-xs font-semibold rounded-xl border border-zinc-200 dark:border-zinc-700 hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-700 dark:text-zinc-200 transition cursor-pointer"
+                    >
+                      Đóng
+                    </button>
+                  </div>
                 </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-zinc-500">Email:</span>
-                  <span className="text-zinc-800 dark:text-zinc-200">
-                    {selectedSupplier.email || "Chưa có"}
-                  </span>
+              </div>
+            ) : (
+              /* Edit Form Mode */
+              <div className="space-y-3.5 text-xs">
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-zinc-500 font-medium mb-1">Tên nhà cung cấp *</label>
+                    <input
+                      type="text"
+                      value={editForm.name || ""}
+                      onChange={(e) => setEditForm((prev) => ({ ...prev, name: e.target.value }))}
+                      className="w-full px-3 py-2 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 focus:outline-hidden focus:ring-2 focus:ring-emerald-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-zinc-500 font-medium mb-1">Mã NCC</label>
+                    <input
+                      type="text"
+                      value={editForm.code || ""}
+                      onChange={(e) => setEditForm((prev) => ({ ...prev, code: e.target.value }))}
+                      className="w-full px-3 py-2 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 font-mono"
+                    />
+                  </div>
                 </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-zinc-500">Website:</span>
-                  <span className="text-zinc-800 dark:text-zinc-200">
-                    {selectedSupplier.website || "Chưa có"}
-                  </span>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-zinc-500 font-medium mb-1">Số điện thoại liên hệ</label>
+                    <input
+                      type="text"
+                      value={editForm.phone || ""}
+                      onChange={(e) => setEditForm((prev) => ({ ...prev, phone: e.target.value }))}
+                      placeholder="VD: 0987654321 / 18008000"
+                      className="w-full px-3 py-2 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 font-mono"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-zinc-500 font-medium mb-1">Hòm thư Email</label>
+                    <input
+                      type="email"
+                      value={editForm.email || ""}
+                      onChange={(e) => setEditForm((prev) => ({ ...prev, email: e.target.value }))}
+                      placeholder="contact@doitac.com"
+                      className="w-full px-3 py-2 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100"
+                    />
+                  </div>
                 </div>
-                <div className="flex items-start justify-between">
-                  <span className="text-zinc-500">Địa chỉ:</span>
-                  <span className="text-right text-zinc-800 dark:text-zinc-200 max-w-[260px]">
-                    {[selectedSupplier.address1, selectedSupplier.ward, selectedSupplier.district, selectedSupplier.province].filter(Boolean).join(", ") || "Chưa cập nhật"}
-                  </span>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-zinc-500 font-medium mb-1">Mã số thuế (MST)</label>
+                    <input
+                      type="text"
+                      value={editForm.tax_number || ""}
+                      onChange={(e) => setEditForm((prev) => ({ ...prev, tax_number: e.target.value }))}
+                      placeholder="VD: 0100109106"
+                      className="w-full px-3 py-2 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 font-mono"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-zinc-500 font-medium mb-1">Trạng thái</label>
+                    <select
+                      value={editForm.status || "active"}
+                      onChange={(e) => setEditForm((prev) => ({ ...prev, status: e.target.value }))}
+                      className="w-full px-3 py-2 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100"
+                    >
+                      <option value="active">Đang hợp tác (Active)</option>
+                      <option value="inactive">Tạm ngưng (Inactive)</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-zinc-500 font-medium mb-1">Địa chỉ chi tiết</label>
+                  <input
+                    type="text"
+                    value={editForm.address1 || ""}
+                    onChange={(e) => setEditForm((prev) => ({ ...prev, address1: e.target.value }))}
+                    placeholder="VD: Số 1 Giang Văn Minh, Ba Đình"
+                    className="w-full px-3 py-2 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100"
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-zinc-500 font-medium mb-1">Tỉnh / Thành phố</label>
+                    <input
+                      type="text"
+                      value={editForm.province || ""}
+                      onChange={(e) => setEditForm((prev) => ({ ...prev, province: e.target.value }))}
+                      placeholder="Hà Nội / TP.HCM"
+                      className="w-full px-3 py-2 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-zinc-500 font-medium mb-1">Website</label>
+                    <input
+                      type="text"
+                      value={editForm.website || ""}
+                      onChange={(e) => setEditForm((prev) => ({ ...prev, website: e.target.value }))}
+                      placeholder="https://..."
+                      className="w-full px-3 py-2 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-zinc-500 font-medium mb-1">Ghi chú / Mô tả</label>
+                  <textarea
+                    rows={2}
+                    value={editForm.description || ""}
+                    onChange={(e) => setEditForm((prev) => ({ ...prev, description: e.target.value }))}
+                    placeholder="Nhập ghi chú thêm về nhà cung cấp này..."
+                    className="w-full px-3 py-2 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100"
+                  />
+                </div>
+
+                <div className="pt-3 flex justify-end gap-2 border-t border-zinc-200 dark:border-zinc-800">
+                  <button
+                    type="button"
+                    onClick={() => setIsEditing(false)}
+                    disabled={saving}
+                    className="px-4 py-2 text-xs font-semibold rounded-xl border border-zinc-200 dark:border-zinc-700 hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-700 dark:text-zinc-300 transition"
+                  >
+                    Hủy bỏ
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleSaveEdit}
+                    disabled={saving}
+                    className="px-4 py-2 text-xs font-semibold rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white transition flex items-center gap-1.5 shadow-xs disabled:opacity-60 cursor-pointer"
+                  >
+                    {saving ? (
+                      <>
+                        <span className="inline-block animate-spin">⏳</span>
+                        <span>Đang lưu lên Sapo...</span>
+                      </>
+                    ) : (
+                      <>
+                        <span>💾</span>
+                        <span>Lưu thay đổi lên Sapo</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Modal Thêm Nhà Cung Cấp Mới */}
+      {isCreateOpen && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-3xl max-w-xl w-full p-6 space-y-5 shadow-2xl animate-in fade-in zoom-in-95 duration-150">
+            <div className="flex items-center justify-between border-b border-zinc-200 dark:border-zinc-800 pb-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-2xl bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 flex items-center justify-center text-lg">
+                  ➕
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-zinc-900 dark:text-zinc-100">
+                    Thêm Nhà Cung Cấp Mới
+                  </h3>
+                  <p className="text-xs text-zinc-500">
+                    Tạo mới và tự động đồng bộ trực tiếp lên hệ thống Sapo
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setIsCreateOpen(false)}
+                className="w-8 h-8 rounded-full flex items-center justify-center text-zinc-400 hover:text-zinc-600 hover:bg-zinc-100 dark:hover:bg-zinc-800 text-sm"
+              >
+                ✕
+              </button>
+            </div>
+
+            <form onSubmit={handleCreateSupplier} className="space-y-3.5 text-xs">
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-zinc-500 font-medium mb-1">Tên nhà cung cấp *</label>
+                  <input
+                    type="text"
+                    required
+                    value={createForm.name}
+                    onChange={(e) => setCreateForm((prev) => ({ ...prev, name: e.target.value }))}
+                    placeholder="VD: Bao bì An Phát"
+                    className="w-full px-3 py-2 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 focus:outline-hidden focus:ring-2 focus:ring-emerald-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-zinc-500 font-medium mb-1">Mã NCC (để trống tự tạo)</label>
+                  <input
+                    type="text"
+                    value={createForm.code}
+                    onChange={(e) => setCreateForm((prev) => ({ ...prev, code: e.target.value }))}
+                    placeholder="VD: SUP00020"
+                    className="w-full px-3 py-2 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 font-mono"
+                  />
                 </div>
               </div>
 
-              {selectedSupplier.description && (
-                <div className="p-3 rounded-xl bg-zinc-50 dark:bg-zinc-800/40">
-                  <div className="font-medium text-zinc-500 mb-1">Ghi chú:</div>
-                  <p className="text-zinc-700 dark:text-zinc-300">{selectedSupplier.description}</p>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-zinc-500 font-medium mb-1">Số điện thoại liên hệ</label>
+                  <input
+                    type="text"
+                    value={createForm.phone}
+                    onChange={(e) => setCreateForm((prev) => ({ ...prev, phone: e.target.value }))}
+                    placeholder="VD: 0912345678"
+                    className="w-full px-3 py-2 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 font-mono"
+                  />
                 </div>
-              )}
-            </div>
+                <div>
+                  <label className="block text-zinc-500 font-medium mb-1">Hòm thư Email</label>
+                  <input
+                    type="email"
+                    value={createForm.email}
+                    onChange={(e) => setCreateForm((prev) => ({ ...prev, email: e.target.value }))}
+                    placeholder="contact@supplier.vn"
+                    className="w-full px-3 py-2 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100"
+                  />
+                </div>
+              </div>
 
-            <div className="pt-2 flex justify-end">
-              <button
-                type="button"
-                onClick={() => setSelectedSupplier(null)}
-                className="px-4 py-2 text-xs font-semibold rounded-lg bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 hover:opacity-90 transition"
-              >
-                Đóng
-              </button>
-            </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-zinc-500 font-medium mb-1">Mã số thuế</label>
+                  <input
+                    type="text"
+                    value={createForm.tax_number}
+                    onChange={(e) => setCreateForm((prev) => ({ ...prev, tax_number: e.target.value }))}
+                    placeholder="VD: 0312345678"
+                    className="w-full px-3 py-2 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 font-mono"
+                  />
+                </div>
+                <div>
+                  <label className="block text-zinc-500 font-medium mb-1">Tỉnh / Thành phố</label>
+                  <input
+                    type="text"
+                    value={createForm.province}
+                    onChange={(e) => setCreateForm((prev) => ({ ...prev, province: e.target.value }))}
+                    placeholder="Hà Nội / TP.HCM"
+                    className="w-full px-3 py-2 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-zinc-500 font-medium mb-1">Địa chỉ chi tiết</label>
+                <input
+                  type="text"
+                  value={createForm.address1}
+                  onChange={(e) => setCreateForm((prev) => ({ ...prev, address1: e.target.value }))}
+                  placeholder="Số nhà, tên đường, phường xã..."
+                  className="w-full px-3 py-2 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100"
+                />
+              </div>
+
+              <div>
+                <label className="block text-zinc-500 font-medium mb-1">Mô tả / Ghi chú</label>
+                <textarea
+                  rows={2}
+                  value={createForm.description}
+                  onChange={(e) => setCreateForm((prev) => ({ ...prev, description: e.target.value }))}
+                  placeholder="Chuyên cung ứng bao bì carton, tem nhãn..."
+                  className="w-full px-3 py-2 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100"
+                />
+              </div>
+
+              <div className="pt-3 flex justify-end gap-2 border-t border-zinc-200 dark:border-zinc-800">
+                <button
+                  type="button"
+                  onClick={() => setIsCreateOpen(false)}
+                  disabled={creating}
+                  className="px-4 py-2 text-xs font-semibold rounded-xl border border-zinc-200 dark:border-zinc-700 hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-700 dark:text-zinc-300 transition"
+                >
+                  Hủy
+                </button>
+                <button
+                  type="submit"
+                  disabled={creating}
+                  className="px-4 py-2 text-xs font-semibold rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white transition flex items-center gap-1.5 shadow-xs disabled:opacity-60 cursor-pointer"
+                >
+                  {creating ? (
+                    <>
+                      <span className="inline-block animate-spin">⏳</span>
+                      <span>Đang tạo trên Sapo...</span>
+                    </>
+                  ) : (
+                    <>
+                      <span>➕</span>
+                      <span>Tạo nhà cung cấp</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

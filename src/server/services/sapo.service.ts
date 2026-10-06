@@ -204,4 +204,24 @@ export const SapoService = {
       return 0;
     }
   },
+
+  /**
+   * Cập nhật thông tin nhà cung cấp trên Sapo
+   */
+  async updateSupplier(id: number, supplierData: Partial<SapoSupplier>): Promise<any> {
+    return sapoFetch(`/admin/suppliers/${id}.json`, {
+      method: "PUT",
+      body: JSON.stringify({ supplier: { id, ...supplierData } }),
+    });
+  },
+
+  /**
+   * Tạo nhà cung cấp mới trên Sapo
+   */
+  async createSupplier(supplierData: Partial<SapoSupplier>): Promise<any> {
+    return sapoFetch(`/admin/suppliers.json`, {
+      method: "POST",
+      body: JSON.stringify({ supplier: supplierData }),
+    });
+  },
 };
