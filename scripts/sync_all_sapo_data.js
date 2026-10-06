@@ -117,15 +117,30 @@ async function syncAll() {
   }
   console.log(`=> Đã lưu sản phẩm vào DB: Thêm mới ${prodInserted}, Cập nhật ${prodUpdated}.`);
 
-  // BƯỚC 3: ĐỒNG BỘ ĐƠN HÀNG ĐA KÊNH TỪ SAPO
-  console.log("[4/5] Đang kéo đơn hàng Sapo (tất cả các kênh)...");
-  const [openRes, closedRes] = await Promise.all([
-    sapoGet("/admin/orders.json?status=open&limit=250"),
-    sapoGet("/admin/orders.json?status=closed&limit=250"),
+  // BƯỚC 3: ĐỒNG BỘ ĐƠN HÀNG ĐA KÊNH TỪ SAPO (~2.000 ĐƠN HÀNG)
+  console.log("[4/5] Đang kéo ~2.000 đơn hàng Sapo (tất cả các kênh)...");
+  const [openP1, openP2, openP3, openP4, closedP1, closedP2, closedP3, closedP4] = await Promise.all([
+    sapoGet("/admin/orders.json?status=open&limit=250&page=1"),
+    sapoGet("/admin/orders.json?status=open&limit=250&page=2"),
+    sapoGet("/admin/orders.json?status=open&limit=250&page=3"),
+    sapoGet("/admin/orders.json?status=open&limit=250&page=4"),
+    sapoGet("/admin/orders.json?status=closed&limit=250&page=1"),
+    sapoGet("/admin/orders.json?status=closed&limit=250&page=2"),
+    sapoGet("/admin/orders.json?status=closed&limit=250&page=3"),
+    sapoGet("/admin/orders.json?status=closed&limit=250&page=4"),
   ]);
 
-  const rawOrders = [...(openRes.orders || []), ...(closedRes.orders || [])];
-  console.log(`=> Lấy được ${rawOrders.length} đơn hàng Sapo mới nhất.`);
+  const rawOrders = [
+    ...(openP1.orders || []),
+    ...(openP2.orders || []),
+    ...(openP3.orders || []),
+    ...(openP4.orders || []),
+    ...(closedP1.orders || []),
+    ...(closedP2.orders || []),
+    ...(closedP3.orders || []),
+    ...(closedP4.orders || []),
+  ];
+  console.log(`=> Lấy được tổng cộng ${rawOrders.length} đơn hàng Sapo.`);
 
   let orderInserted = 0;
   let orderUpdated = 0;

@@ -17,9 +17,23 @@ interface OrderStats {
 // Hàm nhận diện và hiển thị Badge kênh / sàn TMĐT
 function getChannelBadge(shopUsername?: string) {
   const s = (shopUsername || "").toLowerCase();
+  if (s.includes("zalo")) {
+    return {
+      label: "Zalo Chat",
+      badgeClass: "bg-blue-50 text-blue-700 dark:bg-blue-950/60 dark:text-blue-300 border-blue-200 dark:border-blue-800",
+      icon: "💬",
+    };
+  }
+  if (s.includes("facebook") || s.includes("fb")) {
+    return {
+      label: "Facebook",
+      badgeClass: "bg-indigo-50 text-indigo-700 dark:bg-indigo-950/60 dark:text-indigo-300 border-indigo-200 dark:border-indigo-800",
+      icon: "📘",
+    };
+  }
   if (s.includes("shopee")) {
     return {
-      label: s.includes("sapo") ? "Shopee (Sapo)" : "Shopee",
+      label: "Shopee (Sapo)",
       badgeClass: "bg-orange-50 text-orange-700 dark:bg-orange-950/60 dark:text-orange-300 border-orange-200 dark:border-orange-800",
       icon: "🟠",
     };
@@ -28,28 +42,28 @@ function getChannelBadge(shopUsername?: string) {
     return {
       label: "TikTok Shop",
       badgeClass: "bg-pink-50 text-pink-700 dark:bg-pink-950/60 dark:text-pink-300 border-pink-200 dark:border-pink-800",
-      icon: "🖤",
+      icon: "🎵",
     };
   }
   if (s.includes("lazada")) {
     return {
       label: "Lazada",
-      badgeClass: "bg-blue-50 text-blue-700 dark:bg-blue-950/60 dark:text-blue-300 border-blue-200 dark:border-blue-800",
+      badgeClass: "bg-sky-50 text-sky-700 dark:bg-sky-950/60 dark:text-sky-300 border-sky-200 dark:border-sky-800",
       icon: "🔵",
     };
   }
-  if (s.includes("pos")) {
+  if (s.includes("pos") || s.includes("admin")) {
     return {
       label: "Tại quầy (POS)",
       badgeClass: "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800",
       icon: "🟢",
     };
   }
-  if (s.includes("web")) {
+  if (s.includes("web") || s.includes("other")) {
     return {
-      label: "Website",
+      label: "Website / Khác",
       badgeClass: "bg-purple-50 text-purple-700 dark:bg-purple-950/60 dark:text-purple-300 border-purple-200 dark:border-purple-800",
-      icon: "🟣",
+      icon: "🌐",
     };
   }
   return {
@@ -243,6 +257,35 @@ export default function MultiChannelOrdersPage() {
     }
   };
 
+  // Xuất file CSV danh sách đơn hàng
+  const handleExportCSV = () => {
+    if (!orders || orders.length === 0) {
+      toast.error("Không có đơn hàng nào để xuất");
+      return;
+    }
+    const headers = ["Mã đơn", "Kênh bán", "Khách hàng", "Tổng tiền (VNĐ)", "Trạng thái", "Vận chuyển", "Mã vận đơn", "Thời gian"];
+    const rows = orders.map((o) => [
+      `"${o.order_sn}"`,
+      `"${getChannelBadge(o.shop_username).label}"`,
+      `"${(o.buyer_username || "").replace(/"/g, '""')}"`,
+      o.total_amount,
+      `"${o.order_status}"`,
+      `"${(o.shipping_carrier || "").replace(/"/g, '""')}"`,
+      `"${(o.tracking_number || "").replace(/"/g, '""')}"`,
+      `"${o.createdAt ? new Date(o.createdAt).toLocaleString("vi-VN") : ""}"`,
+    ]);
+    const csvContent = "\uFEFF" + [headers.join(","), ...rows.map((r) => r.join(","))].join("\n");
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.setAttribute("download", `don_hang_sapo_${new Date().toISOString().slice(0, 10)}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    toast.success(`Đã xuất ${orders.length} đơn hàng ra file CSV`);
+  };
+
   // Format VND
   const formatVND = (amount: number) => {
     return new Intl.NumberFormat("vi-VN", {
@@ -296,7 +339,7 @@ export default function MultiChannelOrdersPage() {
   ];
 
   return (
-    <div className="w-full px-4 sm:px-6 lg:px-8 py-5 space-y-5 max-w-7xl mx-auto">
+    <div className="w-full px-4 sm:px-6 lg:px-8 py-5 space-y-5 max-w-[1850px] mx-auto">
       {/* 1. Header Card */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white dark:bg-zinc-900 p-4 sm:p-5 rounded-2xl border border-zinc-200 dark:border-zinc-800 shadow-sm">
         <div>
@@ -328,6 +371,16 @@ export default function MultiChannelOrdersPage() {
             <span>⚡</span>
             <span>Cấu hình Webhook</span>
           </Link>
+
+          <button
+            type="button"
+            onClick={handleExportCSV}
+            className="py-2 px-3 text-xs font-semibold rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-zinc-700 dark:text-zinc-200 hover:bg-zinc-50 dark:hover:bg-zinc-700/60 transition-colors shadow-xs flex items-center gap-1.5"
+            title="Xuất danh sách đơn hàng ra file Excel / CSV"
+          >
+            <span>📊</span>
+            <span className="hidden sm:inline">Xuất CSV</span>
+          </button>
 
           <button
             type="button"
@@ -492,12 +545,15 @@ export default function MultiChannelOrdersPage() {
                 className="px-2.5 py-2 text-xs rounded-xl border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800 text-zinc-900 dark:text-white focus:ring-2 focus:ring-orange-500 focus:outline-none shrink-0"
                 title="Lọc theo kênh / sàn"
               >
-                <option value="all">🏪 Tất cả Kênh</option>
-                {stats.uniqueShops.map((shopName) => (
-                  <option key={shopName} value={shopName}>
-                    {shopName}
-                  </option>
-                ))}
+                <option value="all">🏪 Tất cả Kênh ({stats.totalOrders})</option>
+                {stats.uniqueShops.map((shopName) => {
+                  const b = getChannelBadge(shopName);
+                  return (
+                    <option key={shopName} value={shopName}>
+                      {b.icon} {b.label}
+                    </option>
+                  );
+                })}
               </select>
             )}
 

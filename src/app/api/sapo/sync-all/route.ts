@@ -112,13 +112,28 @@ export async function POST(request: NextRequest) {
       prodCount++;
     }
 
-    // 3. KÉO ĐƠN HÀNG TỪ SAPO (OPEN & CLOSED)
-    const [openRes, closedRes] = await Promise.all([
-      sapoGet("/admin/orders.json?status=open&limit=250"),
-      sapoGet("/admin/orders.json?status=closed&limit=250"),
+    // 3. KÉO TOÀN BỘ ĐƠN HÀNG TỪ SAPO (MỞ RỘNG: 4 TRANG OPEN + 4 TRANG CLOSED = ~2.000 ĐƠN)
+    const [openP1, openP2, openP3, openP4, closedP1, closedP2, closedP3, closedP4] = await Promise.all([
+      sapoGet("/admin/orders.json?status=open&limit=250&page=1"),
+      sapoGet("/admin/orders.json?status=open&limit=250&page=2"),
+      sapoGet("/admin/orders.json?status=open&limit=250&page=3"),
+      sapoGet("/admin/orders.json?status=open&limit=250&page=4"),
+      sapoGet("/admin/orders.json?status=closed&limit=250&page=1"),
+      sapoGet("/admin/orders.json?status=closed&limit=250&page=2"),
+      sapoGet("/admin/orders.json?status=closed&limit=250&page=3"),
+      sapoGet("/admin/orders.json?status=closed&limit=250&page=4"),
     ]);
 
-    const rawOrders = [...(openRes.orders || []), ...(closedRes.orders || [])];
+    const rawOrders = [
+      ...(openP1.orders || []),
+      ...(openP2.orders || []),
+      ...(openP3.orders || []),
+      ...(openP4.orders || []),
+      ...(closedP1.orders || []),
+      ...(closedP2.orders || []),
+      ...(closedP3.orders || []),
+      ...(closedP4.orders || []),
+    ];
     let orderCount = 0;
 
     for (const o of rawOrders) {
