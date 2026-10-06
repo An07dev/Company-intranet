@@ -81,6 +81,7 @@ async function syncAll() {
     }));
 
     const prodDoc = {
+      id: itemId,
       item_id: itemId,
       name: p.name,
       parent_sku: variants[0]?.sku || "",
@@ -162,6 +163,7 @@ async function syncAll() {
       : [];
 
     const orderDoc = {
+      id: orderSn,
       order_sn: orderSn,
       shop_username: shopSource,
       buyer_username: buyerName,

@@ -77,6 +77,7 @@ export async function POST(request: NextRequest) {
       }));
 
       const prodDoc = {
+        id: itemId,
         item_id: itemId,
         name: p.name,
         parent_sku: variants[0]?.sku || "",
@@ -152,6 +153,7 @@ export async function POST(request: NextRequest) {
         : [];
 
       const orderDoc = {
+        id: orderSn,
         order_sn: orderSn,
         shop_username: shopSource,
         buyer_username: buyerName,
