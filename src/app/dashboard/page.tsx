@@ -12,16 +12,20 @@ import { AttendanceDonutChart } from "@/components/dashboard/AttendanceDonutChar
 import { TaskProgressChart } from "@/components/dashboard/TaskProgressChart";
 import { PunctualityLeaderboard } from "@/components/dashboard/PunctualityLeaderboard";
 import { EmployeeAttendanceTable } from "@/components/dashboard/EmployeeAttendanceTable";
+import { ShopeeOrderCharts } from "@/components/dashboard/ShopeeOrderCharts";
+import { ShopeeProductCharts } from "@/components/dashboard/ShopeeProductCharts";
 import { DashboardStatsResponse } from "@/app/api/dashboard/stats/route";
+import { ShopeeDashboardStats } from "@/app/api/dashboard/shopee-stats/route";
 
 export default function DashboardPage() {
   const { user, isLoading } = useAuth();
   const router = useRouter();
 
   const [statsData, setStatsData] = useState<DashboardStatsResponse | null>(null);
+  const [shopeeStats, setShopeeStats] = useState<ShopeeDashboardStats | null>(null);
   const [loadingStats, setLoadingStats] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [mobileTab, setMobileTab] = useState<"all" | "attendance" | "tasks" | "leaderboard" | "employees">("all");
+  const [mobileTab, setMobileTab] = useState<"all" | "shopee" | "attendance" | "tasks" | "leaderboard" | "employees">("all");
 
   // Điều hướng nếu chưa đăng nhập
   useEffect(() => {
@@ -30,14 +34,27 @@ export default function DashboardPage() {
     }
   }, [isLoading, user, router]);
 
-  // Tải dữ liệu thống kê Dashboard
+  // Tải dữ liệu thống kê Dashboard & Shopee
   const fetchDashboardStats = useCallback(async () => {
     try {
       setRefreshing(true);
-      const res = await fetch("/api/dashboard/stats");
-      const json = await res.json();
-      if (json.success && json.data) {
-        setStatsData(json.data);
+      const [resStats, resShopee] = await Promise.allSettled([
+        fetch("/api/dashboard/stats"),
+        fetch("/api/dashboard/shopee-stats"),
+      ]);
+
+      if (resStats.status === "fulfilled") {
+        const json = await resStats.value.json();
+        if (json.success && json.data) {
+          setStatsData(json.data);
+        }
+      }
+
+      if (resShopee.status === "fulfilled") {
+        const jsonShopee = await resShopee.value.json();
+        if (jsonShopee.success && jsonShopee.data) {
+          setShopeeStats(jsonShopee.data);
+        }
       }
     } catch (err) {
       console.error("Lỗi khi tải thống kê dashboard:", err);
@@ -171,113 +188,7 @@ export default function DashboardPage() {
           2. HÀNG 5 THẺ CHỈ SỐ KPI CHÍNH
          ========================================================================= */}
       {/* Desktop View: Giữ nguyên vẹn 100% bố cục 5 cột ban đầu (hidden sm:grid) */}
-      <div className="hidden sm:grid sm:grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4">
-        {/* Card 1: Tổng nhân sự */}
-        <div className="p-4 sm:p-5 rounded-xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-xs relative overflow-hidden">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-medium text-zinc-500 dark:text-zinc-400">
-              Tổng nhân sự
-            </span>
-            <div className="w-7 h-7 rounded-lg bg-blue-50 dark:bg-blue-950 text-blue-600 dark:text-blue-300 flex items-center justify-center">
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-              </svg>
-            </div>
-          </div>
-          <div className="text-2xl sm:text-3xl font-extrabold font-mono mt-1 text-zinc-900 dark:text-zinc-100">
-            {summary.totalEmployees}
-          </div>
-          <div className="text-[11px] text-zinc-400 dark:text-zinc-500 mt-1 flex items-center gap-1 truncate">
-            <span>Đang hoạt động trong hệ thống</span>
-          </div>
-        </div>
 
-        {/* Card 2: Đi làm hôm nay */}
-        <div className="p-4 sm:p-5 rounded-xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-xs relative overflow-hidden">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-medium text-emerald-600 dark:text-emerald-400 flex items-center gap-1.5 font-semibold">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-              Đi làm hôm nay
-            </span>
-            <div className="w-7 h-7 rounded-lg bg-emerald-50 dark:bg-emerald-950 text-emerald-600 dark:text-emerald-300 flex items-center justify-center">
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-            </div>
-          </div>
-          <div className="text-2xl sm:text-3xl font-extrabold font-mono mt-1 text-emerald-600 dark:text-emerald-400">
-            {summary.presentToday}
-          </div>
-          <div className="text-[11px] text-zinc-500 dark:text-zinc-400 mt-1 flex items-center justify-between">
-            <span>Đúng giờ: <strong>{summary.onTimeToday}</strong></span>
-            <span className="text-emerald-600 font-mono font-bold">{summary.attendanceRate}%</span>
-          </div>
-        </div>
-
-        {/* Card 3: Đi muộn hôm nay */}
-        <div className="p-4 sm:p-5 rounded-xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-xs relative overflow-hidden">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-medium text-amber-600 dark:text-amber-400 font-semibold">
-              Đi muộn hôm nay
-            </span>
-            <div className="w-7 h-7 rounded-lg bg-amber-50 dark:bg-amber-950 text-amber-600 dark:text-amber-300 flex items-center justify-center">
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-            </div>
-          </div>
-          <div className="text-2xl sm:text-3xl font-extrabold font-mono mt-1 text-amber-600 dark:text-amber-400">
-            {summary.lateToday}
-          </div>
-          <div className="text-[11px] text-zinc-400 dark:text-zinc-500 mt-1 truncate">
-            {summary.lateToday > 0 ? "Sau khung giờ 08:00" : "Không có ai đi muộn"}
-          </div>
-        </div>
-
-        {/* Card 4: Nghỉ / Vắng hôm nay */}
-        <div className="p-4 sm:p-5 rounded-xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-xs relative overflow-hidden">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-medium text-rose-600 dark:text-rose-400 font-semibold">
-              Nghỉ / Chưa đến
-            </span>
-            <div className="w-7 h-7 rounded-lg bg-rose-50 dark:bg-rose-950 text-rose-600 dark:text-rose-300 flex items-center justify-center">
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
-              </svg>
-            </div>
-          </div>
-          <div className="text-2xl sm:text-3xl font-extrabold font-mono mt-1 text-rose-600 dark:text-rose-400">
-            {summary.absentToday}
-          </div>
-          <div className="text-[11px] text-zinc-400 dark:text-zinc-500 mt-1 truncate">
-            {summary.absentToday > 0 ? "Chưa thực hiện check-in" : "Đầy đủ 100% nhân sự"}
-          </div>
-        </div>
-
-        {/* Card 5: Tỷ lệ chuyên cần */}
-        <div className="col-span-2 lg:col-span-1 p-4 sm:p-5 rounded-xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-xs relative overflow-hidden">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-medium text-zinc-500 dark:text-zinc-400">
-              Tỷ lệ chuyên cần
-            </span>
-            <div className="w-7 h-7 rounded-lg bg-purple-50 dark:bg-purple-950 text-purple-600 dark:text-purple-300 flex items-center justify-center">
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
-              </svg>
-            </div>
-          </div>
-          <div className="text-2xl sm:text-3xl font-extrabold font-mono mt-1 text-zinc-900 dark:text-zinc-100">
-            {summary.attendanceRate}%
-          </div>
-          {/* Thanh mini progress */}
-          <div className="w-full bg-zinc-100 dark:bg-zinc-800 h-1.5 rounded-full mt-2 overflow-hidden">
-            <div
-              style={{ width: `${summary.attendanceRate}%` }}
-              className="bg-emerald-500 h-full rounded-full transition-all duration-500"
-            />
-          </div>
-        </div>
-      </div>
 
       {/* Mobile View: Thiết kế gọn gàng dạng 2x2 + 1 thanh tỷ lệ (sm:hidden) */}
       <div className="sm:hidden space-y-2.5">
@@ -368,6 +279,7 @@ export default function DashboardPage() {
         <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none -mx-3.5 px-3.5 text-xs">
           {[
             { id: "all", label: "Tất cả", icon: "🌟" },
+            { id: "shopee", label: "Shopee E-com", icon: "🛍️" },
             { id: "attendance", label: "Chấm công", icon: "⏱️" },
             { id: "tasks", label: "Công việc", icon: "📋" },
             { id: "leaderboard", label: "Vinh danh", icon: "🏆" },
@@ -379,11 +291,10 @@ export default function DashboardPage() {
                 key={tab.id}
                 type="button"
                 onClick={() => setMobileTab(tab.id as typeof mobileTab)}
-                className={`px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition cursor-pointer flex items-center gap-1.5 shrink-0 ${
-                  isActive
-                    ? "bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 shadow-xs"
-                    : "bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-700"
-                }`}
+                className={`px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition cursor-pointer flex items-center gap-1.5 shrink-0 ${isActive
+                  ? "bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 shadow-xs"
+                  : "bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-700"
+                  }`}
               >
                 <span>{tab.icon}</span>
                 <span>{tab.label}</span>
@@ -398,60 +309,234 @@ export default function DashboardPage() {
          ========================================================================= */}
       {loadingStats ? (
         <div className="p-12 text-center">
-          <LoadingSection text="Đang xử lý dữ liệu và tạo biểu đồ chuyên cần..." size="md" />
+          <LoadingSection text="Đang xử lý dữ liệu và tạo biểu đồ chuyên cần & thương mại điện tử..." size="md" />
         </div>
-      ) : statsData ? (
-        <div className="space-y-4 sm:space-y-6">
-          {/* Hàng biểu đồ 1: Xu hướng 7 ngày (60%) + Donut tỷ lệ hôm nay (40%) */}
-          <div
-            className={`${
-              mobileTab === "all" || mobileTab === "attendance" ? "block" : "hidden"
-            } lg:block`}
-          >
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 sm:gap-6">
-              <div className="lg:col-span-7">
-                <AttendanceTrendChart data={statsData.weeklyTrend} />
+      ) : (
+        <div className="space-y-6 sm:space-y-8">
+          {/* =========================================================================
+              PHÂN KHU 1: THƯƠNG MẠI ĐIỆN TỬ SHOPEE (ĐƠN HÀNG & QUẢN LÝ SẢN PHẨM)
+             ========================================================================= */}
+          {shopeeStats && (
+            <div
+              className={`${mobileTab === "all" || mobileTab === "shopee" ? "block" : "hidden"
+                } lg:block space-y-4 sm:space-y-5`}
+            >
+              {/* Tiêu đề phân khu & Quick Action Links */}
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2.5 pb-2.5 border-b border-zinc-200 dark:border-zinc-800">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-8 h-8 rounded-lg bg-orange-50 dark:bg-orange-950/60 border border-orange-200 dark:border-orange-800/60 flex items-center justify-center text-base">
+                    🛍️
+                  </div>
+                  <div>
+                    <h2 className="text-sm sm:text-base font-bold text-zinc-900 dark:text-zinc-100 flex items-center gap-2">
+                      <span>Thương Mại Điện Tử Shopee</span>
+                      <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-orange-100 dark:bg-orange-950 text-orange-700 dark:text-orange-300 border border-orange-200 dark:border-orange-800">
+                        {shopeeStats.summary.totalOrders} đơn • {shopeeStats.summary.totalProducts} SP
+                      </span>
+                    </h2>
+                    <p className="text-xs text-zinc-500 dark:text-zinc-400">
+                      Báo cáo trực quan tình hình kinh doanh, phân bổ đơn hàng và tồn kho sản phẩm từ Shop
+                    </p>
+                  </div>
+                </div>
+
+                {/* Quick Action Navigation Buttons */}
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  <Link
+                    href="/dashboard/shopee-orders"
+                    className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-xs font-medium text-zinc-700 dark:text-zinc-300 hover:text-orange-600 hover:border-orange-200 dark:hover:border-orange-800 transition shadow-2xs"
+                  >
+                    <span>📑</span>
+                    <span>Đơn hàng</span>
+                    <span className="text-[10px] font-mono px-1 rounded bg-zinc-100 dark:bg-zinc-800">
+                      {shopeeStats.summary.totalOrders}
+                    </span>
+                  </Link>
+
+                  <Link
+                    href="/dashboard/shopee-products"
+                    className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-xs font-medium text-zinc-700 dark:text-zinc-300 hover:text-orange-600 hover:border-orange-200 dark:hover:border-orange-800 transition shadow-2xs"
+                  >
+                    <span>📦</span>
+                    <span>Sản phẩm</span>
+                    <span className="text-[10px] font-mono px-1 rounded bg-zinc-100 dark:bg-zinc-800">
+                      {shopeeStats.summary.totalProducts}
+                    </span>
+                  </Link>
+
+                  {(user?.role === "admin" || user?.role === "director") && (
+                    <Link
+                      href="/dashboard/shopee-logs"
+                      className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-xs font-medium text-zinc-700 dark:text-zinc-300 hover:text-orange-600 hover:border-orange-200 dark:hover:border-orange-800 transition shadow-2xs"
+                    >
+                      <span>📊</span>
+                      <span>Nhật ký</span>
+                    </Link>
+                  )}
+                </div>
               </div>
-              <div className="lg:col-span-5">
-                <AttendanceDonutChart
-                  data={statsData.statusBreakdown}
-                  totalEmployees={summary.totalEmployees}
-                  attendanceRate={summary.attendanceRate}
-                />
+
+              {/* 4 Thẻ KPI Shopee Nổi Bật */}
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+                {/* KPI 1: Tổng đơn hàng & Doanh thu */}
+                <div className="p-4 rounded-xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-xs relative overflow-hidden">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-medium text-zinc-500 dark:text-zinc-400">
+                      Tổng đơn Shopee
+                    </span>
+                    <div className="w-7 h-7 rounded-lg bg-orange-50 dark:bg-orange-950 text-orange-600 dark:text-orange-300 flex items-center justify-center text-xs">
+                      📑
+                    </div>
+                  </div>
+                  <div className="text-2xl sm:text-3xl font-extrabold font-mono mt-1 text-zinc-900 dark:text-zinc-100">
+                    {shopeeStats.summary.totalOrders}
+                  </div>
+                  <div className="text-[11px] text-orange-600 dark:text-orange-400 font-mono font-semibold mt-1 truncate">
+                    ₫{shopeeStats.summary.totalRevenue.toLocaleString("vi-VN")}
+                  </div>
+                </div>
+
+                {/* KPI 2: Danh mục sản phẩm & Tỷ lệ còn hàng */}
+                <div className="p-4 rounded-xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-xs relative overflow-hidden">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-medium text-zinc-500 dark:text-zinc-400">
+                      Tổng sản phẩm
+                    </span>
+                    <div className="w-7 h-7 rounded-lg bg-indigo-50 dark:bg-indigo-950 text-indigo-600 dark:text-indigo-300 flex items-center justify-center text-xs">
+                      📦
+                    </div>
+                  </div>
+                  <div className="text-2xl sm:text-3xl font-extrabold font-mono mt-1 text-zinc-900 dark:text-zinc-100">
+                    {shopeeStats.summary.totalProducts}
+                  </div>
+                  <div className="text-[11px] text-zinc-500 dark:text-zinc-400 mt-1 flex items-center justify-between">
+                    <span>Còn: <strong className="text-emerald-600 font-mono">{shopeeStats.summary.inStockProducts}</strong></span>
+                    <span className="text-rose-500 font-mono">Hết: {shopeeStats.summary.outOfStockProducts}</span>
+                  </div>
+                </div>
+
+                {/* KPI 3: Tổng lượng tồn kho */}
+                <div className="p-4 rounded-xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-xs relative overflow-hidden">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-medium text-zinc-500 dark:text-zinc-400">
+                      Tổng tồn kho
+                    </span>
+                    <div className="w-7 h-7 rounded-lg bg-emerald-50 dark:bg-emerald-950 text-emerald-600 dark:text-emerald-300 flex items-center justify-center text-xs">
+                      🏭
+                    </div>
+                  </div>
+                  <div className="text-2xl sm:text-3xl font-extrabold font-mono mt-1 text-emerald-600 dark:text-emerald-400">
+                    {shopeeStats.summary.totalStock.toLocaleString("vi-VN")}
+                  </div>
+                  <div className="text-[11px] text-zinc-400 mt-1 truncate">
+                    Toàn bộ phân loại hàng
+                  </div>
+                </div>
+
+                {/* KPI 4: Lượt bán 30 ngày qua */}
+                <div className="p-4 rounded-xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-xs relative overflow-hidden">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-medium text-zinc-500 dark:text-zinc-400">
+                      Doanh số bán (30 ngày)
+                    </span>
+                    <div className="w-7 h-7 rounded-lg bg-amber-50 dark:bg-amber-950 text-amber-600 dark:text-amber-300 flex items-center justify-center text-xs">
+                      🔥
+                    </div>
+                  </div>
+                  <div className="text-2xl sm:text-3xl font-extrabold font-mono mt-1 text-amber-600 dark:text-amber-400">
+                    {shopeeStats.summary.totalSales30d.toLocaleString("vi-VN")}
+                  </div>
+                  <div className="text-[11px] text-zinc-400 mt-1 truncate">
+                    Sản phẩm đã xuất bán
+                  </div>
+                </div>
               </div>
+
+              {/* Hàng biểu đồ Shopee 1: Trạng Thái Đơn Hàng & Kênh Giao Hàng */}
+              <ShopeeOrderCharts
+                orderStatusBreakdown={shopeeStats.orderStatusBreakdown}
+                shippingBreakdown={shopeeStats.shippingBreakdown}
+                paymentBreakdown={shopeeStats.paymentBreakdown}
+                totalOrders={shopeeStats.summary.totalOrders}
+                totalRevenue={shopeeStats.summary.totalRevenue}
+              />
+
+              {/* Hàng biểu đồ Shopee 2: Tồn Kho / Phân Khúc Giá & Top 5 Bán Chạy */}
+              <ShopeeProductCharts
+                totalProducts={shopeeStats.summary.totalProducts}
+                inStockProducts={shopeeStats.summary.inStockProducts}
+                outOfStockProducts={shopeeStats.summary.outOfStockProducts}
+                totalStock={shopeeStats.summary.totalStock}
+                totalSales30d={shopeeStats.summary.totalSales30d}
+                productPriceBreakdown={shopeeStats.productPriceBreakdown}
+                topSellingProducts={shopeeStats.topSellingProducts}
+              />
             </div>
-          </div>
-
-          {/* Hàng biểu đồ 2: Tiến độ Công việc & Dự án */}
-          <div
-            className={`${
-              mobileTab === "all" || mobileTab === "tasks" ? "block" : "hidden"
-            } lg:block`}
-          >
-            <TaskProgressChart data={statsData.taskStats} />
-          </div>
-
-          {/* Hàng 3: Bảng Vinh Danh Chuyên Cần & Gương Mẫu Tháng */}
-          <div
-            className={`${
-              mobileTab === "all" || mobileTab === "leaderboard" ? "block" : "hidden"
-            } lg:block`}
-          >
-            <PunctualityLeaderboard data={statsData.punctualityLeaderboard} />
-          </div>
+          )}
 
           {/* =========================================================================
+              PHÂN KHU 2: CHUYÊN CẦN & CÔNG VIỆC NHÂN SỰ
+             ========================================================================= */}
+          {statsData && (
+            <div className="space-y-4 sm:space-y-6 pt-2">
+              <div className="pb-2 border-b border-zinc-200 dark:border-zinc-800">
+                <h2 className="text-sm sm:text-base font-bold text-zinc-900 dark:text-zinc-100 flex items-center gap-2">
+                  <span>⏱️</span>
+                  <span>Chuyên Cần &amp; Quản Lý Nhân Sự</span>
+                </h2>
+                <p className="text-xs text-zinc-500 dark:text-zinc-400">
+                  Dữ liệu chấm công hàng ngày, tỷ lệ đúng giờ và tiến độ thực thi công việc nội bộ
+                </p>
+              </div>
+              {/* Hàng biểu đồ 1: Xu hướng 7 ngày (60%) + Donut tỷ lệ hôm nay (40%) */}
+              <div
+                className={`${mobileTab === "all" || mobileTab === "attendance" ? "block" : "hidden"
+                  } lg:block`}
+              >
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 sm:gap-6">
+                  <div className="lg:col-span-7">
+                    <AttendanceTrendChart data={statsData.weeklyTrend} />
+                  </div>
+                  <div className="lg:col-span-5">
+                    <AttendanceDonutChart
+                      data={statsData.statusBreakdown}
+                      totalEmployees={summary.totalEmployees}
+                      attendanceRate={summary.attendanceRate}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Hàng biểu đồ 2: Tiến độ Công việc & Dự án */}
+              <div
+                className={`${mobileTab === "all" || mobileTab === "tasks" ? "block" : "hidden"
+                  } lg:block`}
+              >
+                <TaskProgressChart data={statsData.taskStats} />
+              </div>
+
+              {/* Hàng 3: Bảng Vinh Danh Chuyên Cần & Gương Mẫu Tháng */}
+              <div
+                className={`${mobileTab === "all" || mobileTab === "leaderboard" ? "block" : "hidden"
+                  } lg:block`}
+              >
+                <PunctualityLeaderboard data={statsData.punctualityLeaderboard} />
+              </div>
+
+              {/* =========================================================================
               5. DỮ LIỆU & DANH SÁCH NHÂN VIÊN (EMPLOYEE DIRECTORY & ATTENDANCE)
              ========================================================================= */}
-          <div
-            className={`${
-              mobileTab === "all" || mobileTab === "employees" ? "block" : "hidden"
-            } lg:block`}
-          >
-            <EmployeeAttendanceTable employees={statsData.employeeAttendance} />
-          </div>
+              <div
+                className={`${mobileTab === "all" || mobileTab === "employees" ? "block" : "hidden"
+                  } lg:block`}
+              >
+                <EmployeeAttendanceTable employees={statsData.employeeAttendance} />
+              </div>
+            </div>
+          )}
         </div>
-      ) : null}
+      )}
     </div>
   );
 }
+

@@ -5,6 +5,7 @@ export * from "./department";
 export * from "./chat";
 export * from "./task";
 export * from "./asset";
+export * from "./shopee";
 
 // 4 Role chính trong hệ thống: Admin, Giám đốc, Quản lý, Nhân viên
 export type UserRole = "admin" | "director" | "manager" | "employee";

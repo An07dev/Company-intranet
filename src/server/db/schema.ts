@@ -531,5 +531,180 @@ AssetSchema.index({ currentAssigneeId: 1, status: 1 });
 export const MongoAssetModel: Model<IAssetDocument> =
   mongoose.models.Asset || mongoose.model<IAssetDocument>("Asset", AssetSchema);
 
+export interface IShopeeOrderDocument {
+  id: string;
+  order_sn: string;
+  shop_username?: string;
+  buyer_username: string;
+  total_amount: number;
+  payment_method: string;
+  order_status: string;
+  status_description?: string;
+  shipping_carrier: string;
+  tracking_number?: string;
+  items: {
+    product_name: string;
+    variation?: string;
+    quantity: number;
+  }[];
+  raw_text?: string;
+  synced_at: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+const ShopeeOrderSchema = new Schema<IShopeeOrderDocument>(
+  {
+    id: { type: String, required: true, unique: true, index: true },
+    order_sn: { type: String, required: true, unique: true, index: true },
+    shop_username: { type: String, default: "baobiyensen", index: true },
+    buyer_username: { type: String, required: true },
+    total_amount: { type: Number, default: 0 },
+    payment_method: { type: String, default: "Chưa rõ" },
+    order_status: { type: String, default: "Chờ xử lý", index: true },
+    status_description: { type: String, default: "" },
+    shipping_carrier: { type: String, default: "" },
+    tracking_number: { type: String, default: "" },
+    items: [
+      {
+        product_name: { type: String, required: true },
+        variation: { type: String, default: "" },
+        quantity: { type: Number, default: 1 },
+      },
+    ],
+    raw_text: { type: String },
+    synced_at: { type: String, required: true },
+    createdAt: { type: String, required: true },
+    updatedAt: { type: String, required: true },
+  },
+  {
+    timestamps: false,
+    versionKey: false,
+  }
+);
+
+ShopeeOrderSchema.index({ order_status: 1, createdAt: -1 });
+ShopeeOrderSchema.index({ shop_username: 1, createdAt: -1 });
+
+export const MongoShopeeOrderModel: Model<IShopeeOrderDocument> =
+  mongoose.models.ShopeeOrder || mongoose.model<IShopeeOrderDocument>("ShopeeOrder", ShopeeOrderSchema);
+
+export interface IShopeeProductVariationDoc {
+  model_id: string;
+  name: string;
+  sku: string;
+  price: number;
+  price_display?: string;
+  stock: number;
+  sales: number;
+  image?: string;
+}
+
+export interface IShopeeProductDocument {
+  id: string;
+  item_id: string;
+  name: string;
+  parent_sku?: string;
+  image?: string;
+  product_url?: string;
+  price_min: number;
+  price_max: number;
+  price_display: string;
+  stock: number;
+  sales_30d: number;
+  views_30d?: string;
+  status: string;
+  variations: IShopeeProductVariationDoc[];
+  shop_username?: string;
+  synced_at: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+const ShopeeProductSchema = new Schema<IShopeeProductDocument>(
+  {
+    id: { type: String, required: true, unique: true, index: true },
+    item_id: { type: String, required: true, unique: true, index: true },
+    name: { type: String, required: true, index: true },
+    parent_sku: { type: String, default: "", index: true },
+    image: { type: String, default: "" },
+    product_url: { type: String, default: "" },
+    price_min: { type: Number, default: 0 },
+    price_max: { type: Number, default: 0 },
+    price_display: { type: String, default: "" },
+    stock: { type: Number, default: 0, index: true },
+    sales_30d: { type: Number, default: 0 },
+    views_30d: { type: String, default: "0" },
+    status: { type: String, default: "Đang hoạt động", index: true },
+    variations: [
+      {
+        model_id: { type: String, required: true },
+        name: { type: String, default: "" },
+        sku: { type: String, default: "" },
+        price: { type: Number, default: 0 },
+        price_display: { type: String, default: "" },
+        stock: { type: Number, default: 0 },
+        sales: { type: Number, default: 0 },
+        image: { type: String, default: "" },
+      },
+    ],
+    shop_username: { type: String, default: "baobiyensen", index: true },
+    synced_at: { type: String, required: true },
+    createdAt: { type: String, required: true },
+    updatedAt: { type: String, required: true },
+  },
+  {
+    timestamps: false,
+    versionKey: false,
+  }
+);
+
+ShopeeProductSchema.index({ shop_username: 1, createdAt: -1 });
+ShopeeProductSchema.index({ status: 1, createdAt: -1 });
+ShopeeProductSchema.index({ "variations.sku": 1 });
+
+export const MongoShopeeProductModel: Model<IShopeeProductDocument> =
+  mongoose.models.ShopeeProduct ||
+  mongoose.model<IShopeeProductDocument>("ShopeeProduct", ShopeeProductSchema);
+
+export interface IShopeeLogDocument {
+  id: string;
+  level: string; // 'info' | 'warn' | 'error' | 'success'
+  type: string; // 'order_sync' | 'product_sync' | 'alarm_cron' | 'crawler_dom' | 'system'
+  source: string; // 'chrome_extension_background' | 'chrome_extension_content' | 'chrome_extension_popup' | 'backend_server'
+  shop_username?: string;
+  message: string;
+  details?: Record<string, any>;
+  duration_ms?: number;
+  createdAt: string;
+}
+
+const ShopeeLogSchema = new Schema<IShopeeLogDocument>(
+  {
+    id: { type: String, required: true, unique: true, index: true },
+    level: { type: String, required: true, enum: ["info", "warn", "error", "success"], index: true },
+    type: { type: String, required: true, default: "system", index: true },
+    source: { type: String, required: true, default: "chrome_extension", index: true },
+    shop_username: { type: String, default: "baobiyensen", index: true },
+    message: { type: String, required: true },
+    details: { type: Schema.Types.Mixed, default: {} },
+    duration_ms: { type: Number },
+    createdAt: { type: String, required: true },
+  },
+  {
+    timestamps: false,
+    versionKey: false,
+  }
+);
+
+ShopeeLogSchema.index({ createdAt: -1 });
+ShopeeLogSchema.index({ level: 1, createdAt: -1 });
+ShopeeLogSchema.index({ type: 1, createdAt: -1 });
+ShopeeLogSchema.index({ shop_username: 1, createdAt: -1 });
+
+export const MongoShopeeLogModel: Model<IShopeeLogDocument> =
+  mongoose.models.ShopeeLog ||
+  mongoose.model<IShopeeLogDocument>("ShopeeLog", ShopeeLogSchema);
+
 
 

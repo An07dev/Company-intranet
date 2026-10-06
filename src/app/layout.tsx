@@ -18,6 +18,7 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "Cổng Thông Tin Nội Bộ | Doanh Nghiệp",
   description: "Hệ thống quản lý nội bộ doanh nghiệp - Xác thực & Quản trị",
+  referrer: "no-referrer",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

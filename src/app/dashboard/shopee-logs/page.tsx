@@ -1,0 +1,725 @@
+"use client";
+
+import React, { useState, useEffect, useCallback, useRef } from "react";
+import { useAuth } from "@/context/AuthContext";
+import { ShopeeLog, ShopeeLogStats } from "@/types";
+import { useToast } from "@/context/ToastContext";
+
+export default function ShopeeLogsPage() {
+  const { user, isLoading: authLoading } = useAuth();
+  const { toast } = useToast();
+
+  const [logs, setLogs] = useState<ShopeeLog[]>([]);
+  const [stats, setStats] = useState<ShopeeLogStats | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [clearing, setClearing] = useState(false);
+
+  // Filters & Search
+  const [searchQuery, setSearchQuery] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [selectedLevel, setSelectedLevel] = useState<string>("all");
+  const [selectedType, setSelectedType] = useState<string>("all");
+  const [selectedShop, setSelectedShop] = useState<string>("all");
+
+  // Auto Refresh (0 = Off, 5 = 5s, 10 = 10s, 30 = 30s)
+  const [autoRefreshInterval, setAutoRefreshInterval] = useState<number>(0);
+  const autoRefreshTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Pagination
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(50);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalRecords, setTotalRecords] = useState(0);
+
+  // Expanded row ID for JSON details & copy tracker
+  const [expandedLogId, setExpandedLogId] = useState<string | null>(null);
+  const [copiedId, setCopiedId] = useState<string | null>(null);
+
+  // Debounce search input
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(searchQuery.trim());
+      setCurrentPage(1);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
+  // Fetch logs from API
+  const fetchLogs = useCallback(
+    async (isManualRefresh = false) => {
+      if (isManualRefresh) setRefreshing(true);
+      else setLoading(true);
+
+      try {
+        const params = new URLSearchParams({
+          page: currentPage.toString(),
+          limit: pageSize.toString(),
+        });
+
+        if (debouncedSearch) params.set("search", debouncedSearch);
+        if (selectedLevel !== "all") params.set("level", selectedLevel);
+        if (selectedType !== "all") params.set("type", selectedType);
+        if (selectedShop !== "all") params.set("shop_username", selectedShop);
+
+        const res = await fetch(`/api/shopee/logs?${params.toString()}`);
+        const json = await res.json();
+
+        if (json.success && json.data) {
+          setLogs(json.data.logs || []);
+          setTotalRecords(json.data.total || 0);
+          setTotalPages(json.data.totalPages || 1);
+          setStats(json.data.stats || null);
+        } else {
+          toast.error("Không thể tải danh sách nhật ký: " + (json.error || "Lỗi máy chủ"));
+        }
+      } catch (err: any) {
+        toast.error("Lỗi kết nối khi tải nhật ký: " + err.message);
+      } finally {
+        setLoading(false);
+        setRefreshing(false);
+      }
+    },
+    [currentPage, pageSize, debouncedSearch, selectedLevel, selectedType, selectedShop, toast]
+  );
+
+  // Initial and reactive fetch
+  useEffect(() => {
+    fetchLogs();
+  }, [fetchLogs]);
+
+  // Handle auto-refresh interval
+  useEffect(() => {
+    if (autoRefreshTimerRef.current) {
+      clearInterval(autoRefreshTimerRef.current);
+      autoRefreshTimerRef.current = null;
+    }
+
+    if (autoRefreshInterval > 0) {
+      autoRefreshTimerRef.current = setInterval(() => {
+        fetchLogs(true);
+      }, autoRefreshInterval * 1000);
+    }
+
+    return () => {
+      if (autoRefreshTimerRef.current) {
+        clearInterval(autoRefreshTimerRef.current);
+      }
+    };
+  }, [autoRefreshInterval, fetchLogs]);
+
+  // Copy JSON details to clipboard
+  const handleCopyJson = (log: ShopeeLog) => {
+    const payload = JSON.stringify(log.details || log, null, 2);
+    navigator.clipboard.writeText(payload);
+    setCopiedId(log.id || "copied");
+    toast.success("Đã sao chép chi tiết JSON vào Clipboard!");
+    setTimeout(() => setCopiedId(null), 2500);
+  };
+
+  // Delete single log
+  const handleDeleteLog = async (id: string) => {
+    try {
+      const res = await fetch(`/api/shopee/logs?id=${id}`, { method: "DELETE" });
+      const json = await res.json();
+      if (json.success) {
+        toast.success("Đã xóa dòng nhật ký!");
+        setLogs((prev) => prev.filter((item) => item.id !== id));
+        if (expandedLogId === id) setExpandedLogId(null);
+      } else {
+        toast.error("Lỗi khi xóa nhật ký: " + json.error);
+      }
+    } catch {
+      toast.error("Lỗi kết nối khi xóa");
+    }
+  };
+
+  // Clear all logs
+  const handleClearAll = async () => {
+    if (!confirm("⚠️ Bạn có chắc chắn muốn XÓA TOÀN BỘ nhật ký log không?\n\nThao tác này không thể hoàn tác.")) {
+      return;
+    }
+
+    setClearing(true);
+    try {
+      const res = await fetch("/api/shopee/logs", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          shop_username: selectedShop !== "all" ? selectedShop : undefined,
+          level: selectedLevel !== "all" ? selectedLevel : undefined,
+        }),
+      });
+      const json = await res.json();
+      if (json.success) {
+        toast.success(`Đã dọn dẹp ${json.deletedCount || 0} bản ghi nhật ký!`);
+        fetchLogs();
+      } else {
+        toast.error("Lỗi khi xóa nhật ký: " + json.message);
+      }
+    } catch {
+      toast.error("Lỗi kết nối khi dọn dẹp nhật ký");
+    } finally {
+      setClearing(false);
+    }
+  };
+
+  // Format relative timestamp
+  const formatTime = (isoString?: string): { exact: string; dateStr: string; relative: string } => {
+    if (!isoString) return { exact: "--:--:--", dateStr: "--/--", relative: "" };
+    const date = new Date(isoString);
+    if (isNaN(date.getTime())) return { exact: String(isoString), dateStr: "", relative: "" };
+
+    const diffSec = Math.floor((Date.now() - date.getTime()) / 1000);
+    let relative = "";
+    if (diffSec < 10) relative = "vừa xong";
+    else if (diffSec < 60) relative = `${diffSec}s trước`;
+    else if (diffSec < 3600) relative = `${Math.floor(diffSec / 60)}m trước`;
+    else if (diffSec < 86400) relative = `${Math.floor(diffSec / 3600)}h trước`;
+    else relative = `${Math.floor(diffSec / 86400)} ngày trước`;
+
+    return {
+      exact: date.toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit", second: "2-digit" }),
+      dateStr: date.toLocaleDateString("vi-VN", { day: "2-digit", month: "2-digit" }),
+      relative,
+    };
+  };
+
+  // Level Badge Renderer
+  const renderLevelBadge = (level: string) => {
+    switch (level?.toLowerCase()) {
+      case "success":
+        return (
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/40">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+            SUCCESS
+          </span>
+        );
+      case "error":
+        return (
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-rose-100 text-rose-800 dark:bg-rose-950/60 dark:text-rose-300 border border-rose-200 dark:border-rose-800/40">
+            <span className="w-1.5 h-1.5 rounded-full bg-rose-500 animate-pulse"></span>
+            ERROR
+          </span>
+        );
+      case "warn":
+        return (
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300 border border-amber-200 dark:border-amber-800/40">
+            <span className="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
+            WARN
+          </span>
+        );
+      default:
+        return (
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-sky-100 text-sky-800 dark:bg-sky-950/60 dark:text-sky-300 border border-sky-200 dark:border-sky-800/40">
+            <span className="w-1.5 h-1.5 rounded-full bg-sky-500"></span>
+            INFO
+          </span>
+        );
+    }
+  };
+
+  // Type Badge Renderer
+  const renderTypeBadge = (type: string) => {
+    switch (type) {
+      case "order_sync":
+        return (
+          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-medium bg-indigo-50 text-indigo-700 dark:bg-indigo-950/40 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800/40">
+            <span>📑</span> Kéo Đơn
+          </span>
+        );
+      case "product_sync":
+        return (
+          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-medium bg-orange-50 text-orange-700 dark:bg-orange-950/40 dark:text-orange-300 border border-orange-200 dark:border-orange-800/40">
+            <span>📦</span> Kéo Sản Phẩm
+          </span>
+        );
+      case "alarm_cron":
+        return (
+          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-medium bg-purple-50 text-purple-700 dark:bg-purple-950/40 dark:text-purple-300 border border-purple-200 dark:border-purple-800/40">
+            <span>⏰</span> Chrome Alarms
+          </span>
+        );
+      case "crawler_dom":
+        return (
+          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-medium bg-teal-50 text-teal-700 dark:bg-teal-950/40 dark:text-teal-300 border border-teal-200 dark:border-teal-800/40">
+            <span>🌐</span> DOM Scraper
+          </span>
+        );
+      default:
+        return (
+          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-medium bg-zinc-100 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300">
+            <span>⚙️</span> Hệ thống
+          </span>
+        );
+    }
+  };
+
+  // Source Badge Renderer
+  const renderSourceBadge = (source: string) => {
+    if (source.includes("background")) {
+      return (
+        <span className="text-[11px] text-zinc-500 dark:text-zinc-400 font-mono">
+          [Background SW]
+        </span>
+      );
+    }
+    if (source.includes("content")) {
+      return (
+        <span className="text-[11px] text-zinc-500 dark:text-zinc-400 font-mono">
+          [Content Script]
+        </span>
+      );
+    }
+    if (source.includes("popup")) {
+      return (
+        <span className="text-[11px] text-zinc-500 dark:text-zinc-400 font-mono">
+          [Popup UI]
+        </span>
+      );
+    }
+    return (
+      <span className="text-[11px] text-zinc-500 dark:text-zinc-400 font-mono">
+        [API Server]
+      </span>
+    );
+  };
+
+  // Chỉ cho phép Ban Giám đốc và Quản trị viên (ADMIN) truy cập
+  if (!authLoading && user && user.role !== "admin" && user.role !== "director") {
+    return (
+      <div className="p-8 max-w-xl mx-auto my-12 text-center bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl shadow-sm space-y-3">
+        <div className="w-12 h-12 rounded-2xl bg-rose-50 dark:bg-rose-950/60 text-rose-500 flex items-center justify-center text-2xl mx-auto">
+          🔒
+        </div>
+        <h2 className="text-base font-bold text-zinc-900 dark:text-white">
+          Không có quyền truy cập
+        </h2>
+        <p className="text-xs text-zinc-500 leading-relaxed">
+          Chức năng <strong>Nhật ký Đồng bộ</strong> chỉ dành riêng cho <strong>Ban Giám đốc</strong> và <strong>Quản trị viên (ADMIN)</strong>.
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="p-6 max-w-[1600px] mx-auto space-y-6">
+      {/* 1. Header Section */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <div className="flex items-center gap-3">
+            <h1 className="text-2xl font-bold tracking-tight text-zinc-900 dark:text-zinc-100">
+              Nhật Ký Đồng Bộ Shopee
+            </h1>
+            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-blue-100 text-blue-700 dark:bg-blue-950/60 dark:text-blue-300">
+              Extension & Background Monitor
+            </span>
+          </div>
+          <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-1">
+            Theo dõi thời gian thực tiến trình cào dữ liệu, kích hoạt Chrome Alarms, mở tab tự động và bắt lỗi kỹ thuật
+          </p>
+        </div>
+
+        <div className="flex flex-wrap items-center gap-2">
+          {/* Auto Refresh Toggle */}
+          <div className="flex items-center gap-1.5 px-3 py-1.5 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-xl text-xs font-semibold shadow-sm">
+            <span
+              className={`w-2 h-2 rounded-full ${
+                autoRefreshInterval > 0 ? "bg-emerald-500 animate-ping" : "bg-zinc-300 dark:bg-zinc-600"
+              }`}
+            ></span>
+            <span className="text-zinc-500 dark:text-zinc-400">Tự động:</span>
+            <select
+              value={autoRefreshInterval}
+              onChange={(e) => setAutoRefreshInterval(parseInt(e.target.value, 10))}
+              className="bg-transparent text-zinc-800 dark:text-zinc-200 font-semibold focus:outline-none cursor-pointer"
+            >
+              <option value={0}>Tắt</option>
+              <option value={5}>Mỗi 5s</option>
+              <option value={10}>Mỗi 10s</option>
+              <option value={30}>Mỗi 30s</option>
+            </select>
+          </div>
+
+          {/* Refresh Button */}
+          <button
+            onClick={() => fetchLogs(true)}
+            disabled={refreshing || loading}
+            className="inline-flex items-center gap-2 px-4 py-2 text-xs font-semibold rounded-xl bg-white dark:bg-zinc-800 text-zinc-700 dark:text-zinc-200 border border-zinc-200 dark:border-zinc-700 hover:bg-zinc-50 dark:hover:bg-zinc-700/60 transition-colors shadow-sm disabled:opacity-50"
+          >
+            <svg
+              className={`w-3.5 h-3.5 ${refreshing ? "animate-spin text-blue-500" : ""}`}
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+              />
+            </svg>
+            <span>{refreshing ? "Đang tải..." : "Làm mới"}</span>
+          </button>
+
+          {/* Clear Logs Button */}
+          {logs.length > 0 && (
+            <button
+              onClick={handleClearAll}
+              disabled={clearing}
+              className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-semibold rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-600 dark:bg-rose-950/30 dark:hover:bg-rose-950/50 dark:text-rose-400 border border-rose-200 dark:border-rose-900/40 transition-colors"
+              title="Dọn dẹp nhật ký"
+            >
+              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                />
+              </svg>
+              <span>{clearing ? "Đang xóa..." : "Dọn log"}</span>
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* 2. Stat Cards Section */}
+      <div className="grid grid-cols-2 sm:grid-cols-5 gap-3.5">
+        <div className="p-4 rounded-2xl bg-white dark:bg-zinc-800/80 border border-zinc-200/80 dark:border-zinc-700/60 shadow-xs">
+          <div className="flex items-center justify-between text-zinc-500 dark:text-zinc-400 text-xs font-medium">
+            <span>Tổng Nhật Ký</span>
+            <span>📋</span>
+          </div>
+          <div className="text-2xl font-bold tracking-tight text-zinc-900 dark:text-zinc-100 mt-2">
+            {(stats?.total || 0).toLocaleString()}
+          </div>
+          <div className="text-[11px] text-zinc-400 dark:text-zinc-500 mt-0.5">Toàn bộ sự kiện đã lưu</div>
+        </div>
+
+        <div className="p-4 rounded-2xl bg-emerald-50/50 dark:bg-emerald-950/20 border border-emerald-200/60 dark:border-emerald-900/40 shadow-xs">
+          <div className="flex items-center justify-between text-emerald-700 dark:text-emerald-400 text-xs font-semibold">
+            <span>Thành Công</span>
+            <span>🟢</span>
+          </div>
+          <div className="text-2xl font-bold tracking-tight text-emerald-800 dark:text-emerald-300 mt-2">
+            {(stats?.successCount || 0).toLocaleString()}
+          </div>
+          <div className="text-[11px] text-emerald-600/70 dark:text-emerald-500 mt-0.5">Đã đồng bộ xong</div>
+        </div>
+
+        <div className="p-4 rounded-2xl bg-sky-50/50 dark:bg-sky-950/20 border border-sky-200/60 dark:border-sky-900/40 shadow-xs">
+          <div className="flex items-center justify-between text-sky-700 dark:text-sky-400 text-xs font-semibold">
+            <span>Thông Tin</span>
+            <span>🔵</span>
+          </div>
+          <div className="text-2xl font-bold tracking-tight text-sky-800 dark:text-sky-300 mt-2">
+            {(stats?.infoCount || 0).toLocaleString()}
+          </div>
+          <div className="text-[11px] text-sky-600/70 dark:text-sky-500 mt-0.5">Tiến trình quét & mở tab</div>
+        </div>
+
+        <div className="p-4 rounded-2xl bg-amber-50/50 dark:bg-amber-950/20 border border-amber-200/60 dark:border-amber-900/40 shadow-xs">
+          <div className="flex items-center justify-between text-amber-700 dark:text-amber-400 text-xs font-semibold">
+            <span>Cảnh Báo</span>
+            <span>🟡</span>
+          </div>
+          <div className="text-2xl font-bold tracking-tight text-amber-800 dark:text-amber-300 mt-2">
+            {(stats?.warnCount || 0).toLocaleString()}
+          </div>
+          <div className="text-[11px] text-amber-600/70 dark:text-amber-500 mt-0.5">Lật lại trang / thử lại</div>
+        </div>
+
+        <div className="p-4 rounded-2xl bg-rose-50/50 dark:bg-rose-950/20 border border-rose-200/60 dark:border-rose-900/40 shadow-xs">
+          <div className="flex items-center justify-between text-rose-700 dark:text-rose-400 text-xs font-semibold">
+            <span>Lỗi Phát Sinh</span>
+            <span>🔴</span>
+          </div>
+          <div className="text-2xl font-bold tracking-tight text-rose-800 dark:text-rose-300 mt-2">
+            {(stats?.errorCount || 0).toLocaleString()}
+          </div>
+          <div className="text-[11px] text-rose-600/70 dark:text-rose-500 mt-0.5">Lỗi kết nối hoặc DOM</div>
+        </div>
+      </div>
+
+      {/* 3. Filter Bar */}
+      <div className="p-4 rounded-2xl bg-white dark:bg-zinc-800/80 border border-zinc-200/80 dark:border-zinc-700/60 shadow-xs space-y-3">
+        <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
+          {/* Search Box */}
+          <div className="sm:col-span-2 relative">
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Tìm theo nội dung log, mã đơn, item ID hoặc chi tiết lỗi..."
+              className="w-full pl-9 pr-4 py-2 text-xs rounded-xl bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-zinc-900 dark:text-zinc-100"
+            />
+            <svg
+              className="w-4 h-4 text-zinc-400 absolute left-3 top-2.5"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+            {searchQuery && (
+              <button
+                onClick={() => setSearchQuery("")}
+                className="absolute right-3 top-2.5 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 text-xs"
+              >
+                ✕
+              </button>
+            )}
+          </div>
+
+          {/* Level Filter */}
+          <div>
+            <select
+              value={selectedLevel}
+              onChange={(e) => {
+                setSelectedLevel(e.target.value);
+                setCurrentPage(1);
+              }}
+              className="w-full px-3 py-2 text-xs rounded-xl bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 focus:outline-none focus:ring-2 focus:ring-blue-500/20 text-zinc-800 dark:text-zinc-200"
+            >
+              <option value="all">Mọi cấp độ (Tất cả)</option>
+              <option value="error">🔴 Chỉ xem Lỗi (ERROR)</option>
+              <option value="warn">🟡 Chỉ xem Cảnh báo (WARN)</option>
+              <option value="success">🟢 Chỉ xem Thành công (SUCCESS)</option>
+              <option value="info">🔵 Chỉ xem Thông tin (INFO)</option>
+            </select>
+          </div>
+
+          {/* Type Filter */}
+          <div>
+            <select
+              value={selectedType}
+              onChange={(e) => {
+                setSelectedType(e.target.value);
+                setCurrentPage(1);
+              }}
+              className="w-full px-3 py-2 text-xs rounded-xl bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 focus:outline-none focus:ring-2 focus:ring-blue-500/20 text-zinc-800 dark:text-zinc-200"
+            >
+              <option value="all">Mọi loại hoạt động (Tất cả)</option>
+              <option value="order_sync">📑 Kéo đơn hàng</option>
+              <option value="product_sync">📦 Kéo danh mục sản phẩm</option>
+              <option value="alarm_cron">⏰ Lịch trình Google Alarms</option>
+              <option value="crawler_dom">🌐 Thao tác lật trang DOM</option>
+              <option value="system">⚙️ Hệ thống chung</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      {/* 4. Logs List & Detail Table */}
+      <div className="bg-white dark:bg-zinc-800/80 border border-zinc-200/80 dark:border-zinc-700/60 rounded-2xl shadow-xs overflow-hidden">
+        {loading ? (
+          <div className="py-20 text-center space-y-3">
+            <div className="w-8 h-8 border-3 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto"></div>
+            <p className="text-xs text-zinc-500 dark:text-zinc-400 font-medium">Đang tải nhật ký hoạt động...</p>
+          </div>
+        ) : logs.length === 0 ? (
+          <div className="py-16 text-center space-y-3">
+            <div className="text-4xl">📭</div>
+            <h3 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">Chưa có bản ghi nhật ký nào</h3>
+            <p className="text-xs text-zinc-500 dark:text-zinc-400 max-w-md mx-auto">
+              Khi bạn kích hoạt tiện ích Shopee Sync trên trình duyệt, các sự kiện kéo đơn, kéo sản phẩm và bắt lỗi sẽ tự động hiển thị tại đây.
+            </p>
+          </div>
+        ) : (
+          <div className="divide-y divide-zinc-200/70 dark:divide-zinc-700/60">
+            {logs.map((log) => {
+              const isExpanded = expandedLogId === log.id;
+              const time = formatTime(log.createdAt);
+
+              return (
+                <div
+                  key={log.id}
+                  className={`transition-colors ${
+                    log.level === "error"
+                      ? "bg-rose-50/20 hover:bg-rose-50/40 dark:bg-rose-950/10 dark:hover:bg-rose-950/20"
+                      : log.level === "warn"
+                      ? "bg-amber-50/20 hover:bg-amber-50/40 dark:bg-amber-950/10 dark:hover:bg-amber-950/20"
+                      : "hover:bg-zinc-50/80 dark:hover:bg-zinc-750/50"
+                  }`}
+                >
+                  <div
+                    onClick={() => setExpandedLogId(isExpanded ? null : log.id || null)}
+                    className="p-4 cursor-pointer flex flex-col md:flex-row md:items-center justify-between gap-3 text-xs"
+                  >
+                    {/* Left: Time + Badges + Message */}
+                    <div className="flex items-start md:items-center gap-3 flex-1 min-w-0">
+                      {/* Timestamp */}
+                      <div className="shrink-0 text-left w-24">
+                        <div className="font-mono text-zinc-800 dark:text-zinc-200 font-semibold">{time.exact}</div>
+                        <div className="text-[10px] text-zinc-400">{time.relative}</div>
+                      </div>
+
+                      {/* Level Badge */}
+                      <div className="shrink-0">{renderLevelBadge(log.level)}</div>
+
+                      {/* Type Badge */}
+                      <div className="shrink-0 hidden sm:block">{renderTypeBadge(log.type)}</div>
+
+                      {/* Source */}
+                      <div className="shrink-0 hidden lg:block">{renderSourceBadge(log.source)}</div>
+
+                      {/* Message Content */}
+                      <div className="font-medium text-zinc-900 dark:text-zinc-100 truncate pr-2 flex-1">
+                        {log.message}
+                      </div>
+                    </div>
+
+                    {/* Right: Shop + Expand Indicator */}
+                    <div className="flex items-center gap-3 shrink-0 self-end md:self-center">
+                      {log.shop_username && (
+                        <span className="text-[11px] font-mono px-2 py-0.5 rounded bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400">
+                          @{log.shop_username}
+                        </span>
+                      )}
+
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setExpandedLogId(isExpanded ? null : log.id || null);
+                        }}
+                        className="inline-flex items-center gap-1 text-[11px] text-blue-600 dark:text-blue-400 hover:underline font-semibold"
+                      >
+                        <span>{isExpanded ? "Đóng" : "Chi tiết"}</span>
+                        <svg
+                          className={`w-3.5 h-3.5 transition-transform ${isExpanded ? "rotate-180" : ""}`}
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                        >
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                        </svg>
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Expandable JSON Details */}
+                  {isExpanded && (
+                    <div className="px-5 pb-5 pt-1 bg-zinc-900 text-zinc-200 rounded-b-xl border-t border-zinc-800 text-xs font-mono">
+                      <div className="flex items-center justify-between py-2 border-b border-zinc-800 mb-3">
+                        <div className="flex items-center gap-2">
+                          <span className="text-zinc-400 text-[11px]">Mã Log:</span>
+                          <span className="text-blue-400 font-semibold">{log.id}</span>
+                          {log.duration_ms && (
+                            <span className="text-zinc-400 text-[11px]">
+                              • Thực thi: <strong className="text-amber-300">{log.duration_ms}ms</strong>
+                            </span>
+                          )}
+                        </div>
+
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={() => handleCopyJson(log)}
+                            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-[11px] transition-colors"
+                          >
+                            <span>{copiedId === log.id ? "✓ Đã chép" : "📋 Sao chép JSON"}</span>
+                          </button>
+
+                          <button
+                            onClick={() => log.id && handleDeleteLog(log.id)}
+                            className="inline-flex items-center gap-1 px-2.5 py-1 rounded bg-rose-950/60 hover:bg-rose-900 text-rose-300 text-[11px] transition-colors"
+                          >
+                            <span>🗑️ Xóa</span>
+                          </button>
+                        </div>
+                      </div>
+
+                      <div className="overflow-x-auto max-h-96 py-2 px-3 bg-zinc-950/70 rounded-lg border border-zinc-800/80 leading-relaxed">
+                        <pre className="text-[11.5px] text-zinc-300 whitespace-pre-wrap break-all">
+                          {JSON.stringify(
+                            {
+                              id: log.id,
+                              level: log.level,
+                              type: log.type,
+                              source: log.source,
+                              shop_username: log.shop_username,
+                              message: log.message,
+                              createdAt: log.createdAt,
+                              details: log.details || {},
+                            },
+                            null,
+                            2
+                          )}
+                        </pre>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        )}
+
+        {/* 5. Pagination */}
+        {totalPages > 1 && (
+          <div className="p-4 border-t border-zinc-200/80 dark:border-zinc-700/60 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs">
+            <div className="text-zinc-500 dark:text-zinc-400">
+              Hiển thị{" "}
+              <strong>
+                {Math.min((currentPage - 1) * pageSize + 1, totalRecords)} -{" "}
+                {Math.min(currentPage * pageSize, totalRecords)}
+              </strong>{" "}
+              trong tổng số <strong>{totalRecords.toLocaleString()}</strong> bản ghi
+            </div>
+
+            <div className="flex items-center gap-1">
+              <button
+                onClick={() => setCurrentPage(1)}
+                disabled={currentPage <= 1}
+                className="px-2.5 py-1.5 rounded-lg border border-zinc-200 dark:border-zinc-700 disabled:opacity-40 hover:bg-zinc-50 dark:hover:bg-zinc-700/60 font-medium"
+              >
+                « Đầu
+              </button>
+              <button
+                onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                disabled={currentPage <= 1}
+                className="px-2.5 py-1.5 rounded-lg border border-zinc-200 dark:border-zinc-700 disabled:opacity-40 hover:bg-zinc-50 dark:hover:bg-zinc-700/60 font-medium"
+              >
+                ‹ Trước
+              </button>
+
+              <span className="px-3 py-1 font-semibold text-zinc-700 dark:text-zinc-300">
+                {currentPage} / {totalPages}
+              </span>
+
+              <button
+                onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                disabled={currentPage >= totalPages}
+                className="px-2.5 py-1.5 rounded-lg border border-zinc-200 dark:border-zinc-700 disabled:opacity-40 hover:bg-zinc-50 dark:hover:bg-zinc-700/60 font-medium"
+              >
+                Sau ›
+              </button>
+              <button
+                onClick={() => setCurrentPage(totalPages)}
+                disabled={currentPage >= totalPages}
+                className="px-2.5 py-1.5 rounded-lg border border-zinc-200 dark:border-zinc-700 disabled:opacity-40 hover:bg-zinc-50 dark:hover:bg-zinc-700/60 font-medium"
+              >
+                Cuối »
+              </button>
+
+              <select
+                value={pageSize}
+                onChange={(e) => {
+                  setPageSize(parseInt(e.target.value, 10));
+                  setCurrentPage(1);
+                }}
+                className="ml-2 px-2 py-1 rounded-lg border border-zinc-200 dark:border-zinc-700 bg-transparent font-medium"
+              >
+                <option value={25}>25 / trang</option>
+                <option value={50}>50 / trang</option>
+                <option value={100}>100 / trang</option>
+              </select>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
