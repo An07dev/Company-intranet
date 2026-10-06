@@ -4,6 +4,9 @@ import { useEffect, useState, useCallback, useMemo } from "react";
 import Link from "next/link";
 import { ShopeeProduct } from "@/types";
 import { ShopeeProductDetailModal } from "@/components/shopee/ShopeeProductDetailModal";
+import { BarcodePrintModal } from "@/components/inventory/BarcodePrintModal";
+import { BarcodeScannerModal } from "@/components/inventory/BarcodeScannerModal";
+import { ScannedProductModal } from "@/components/inventory/ScannedProductModal";
 import { useToast } from "@/context/ToastContext";
 
 interface ProductStats {
@@ -40,6 +43,13 @@ export default function InventoryPage() {
   // Detail Modal & Copy State
   const [selectedProduct, setSelectedProduct] = useState<ShopeeProduct | null>(null);
   const [copiedSku, setCopiedSku] = useState<string | null>(null);
+
+  // Barcode / QR State
+  const [printProduct, setPrintProduct] = useState<ShopeeProduct | null>(null);
+  const [isScannerOpen, setIsScannerOpen] = useState(false);
+  const [scannedProduct, setScannedProduct] = useState<ShopeeProduct | null>(null);
+  const [scannedCode, setScannedCode] = useState("");
+  const [isScannedResultOpen, setIsScannedResultOpen] = useState(false);
 
   // Debounce search input
   useEffect(() => {
@@ -101,6 +111,76 @@ export default function InventoryPage() {
     fetchInventory();
   }, [fetchInventory]);
 
+  // Xử lý khi quét mã thành công (từ Camera, Máy quét cầm tay hoặc tải ảnh)
+  const handleScanSuccess = async (code: string) => {
+    setIsScannerOpen(false);
+    const cleanCode = code.trim();
+    setScannedCode(cleanCode);
+
+    try {
+      // 1. Thử tra cứu bằng mã quét đầy đủ
+      let res = await fetch(`/api/shopee/products?search=${encodeURIComponent(cleanCode)}&limit=1`);
+      let json = await res.json();
+
+      // 2. Nếu không ra và mã có tiền tố SKU-, thử bỏ tiền tố
+      if ((!json.success || !json.data?.products?.length) && /^SKU-/i.test(cleanCode)) {
+        const raw = cleanCode.replace(/^SKU-/i, "");
+        res = await fetch(`/api/shopee/products?search=${encodeURIComponent(raw)}&limit=1`);
+        json = await res.json();
+      }
+
+      if (json.success && json.data?.products?.length > 0) {
+        setScannedProduct(json.data.products[0]);
+      } else {
+        setScannedProduct(null);
+      }
+      setIsScannedResultOpen(true);
+    } catch {
+      toast.error("Lỗi khi tra cứu mã sản phẩm");
+      setScannedProduct(null);
+      setIsScannedResultOpen(true);
+    }
+  };
+
+  // Lắng nghe phím bấm từ Máy quét mã vạch cầm tay (USB / Bluetooth)
+  useEffect(() => {
+    let barcodeBuffer = "";
+    let lastKeyTime = Date.now();
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Bỏ qua nếu người dùng đang nhập trong input / textarea
+      const target = e.target as HTMLElement;
+      if (
+        target &&
+        (target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.isContentEditable)
+      ) {
+        return;
+      }
+
+      const now = Date.now();
+      const timeDiff = now - lastKeyTime;
+      lastKeyTime = now;
+
+      // Máy quét mã vạch thường gửi các ký tự cực nhanh (< 70ms)
+      if (timeDiff > 90) {
+        barcodeBuffer = "";
+      }
+
+      if (e.key === "Enter") {
+        if (barcodeBuffer.length >= 2) {
+          e.preventDefault();
+          handleScanSuccess(barcodeBuffer.trim());
+          barcodeBuffer = "";
+        }
+      } else if (e.key.length === 1) {
+        barcodeBuffer += e.key;
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, []);
+
   // Handle Copy SKU
   const handleCopySku = (sku: string, e?: React.MouseEvent) => {
     if (e) e.stopPropagation();
@@ -144,7 +224,10 @@ export default function InventoryPage() {
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
-    link.setAttribute("download", `Bao_cao_ton_kho_chi_nhanh_${new Date().toISOString().slice(0, 10)}.csv`);
+    link.setAttribute(
+      "download",
+      `Bao_cao_ton_kho_chi_nhanh_${new Date().toISOString().slice(0, 10)}.csv`
+    );
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -203,11 +286,22 @@ export default function InventoryPage() {
             Quản lý Kho & Tồn kho chi nhánh
           </h1>
           <p className="text-xs sm:text-sm text-zinc-500 dark:text-zinc-400 mt-0.5">
-            Theo dõi mức tồn thực tế theo từng SKU, cảnh báo hết hàng và phân bổ hàng tồn đa kênh
+            Theo dõi mức tồn thực tế theo từng SKU, in mã vạch / QR và quét mã tra cứu nhanh số lượng tồn kho
           </p>
         </div>
 
         <div className="flex items-center gap-2 flex-wrap">
+          {/* Nút Quét Mã Tồn Kho Nổi Bật */}
+          <button
+            type="button"
+            onClick={() => setIsScannerOpen(true)}
+            className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-bold rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white transition shadow-sm cursor-pointer"
+            title="Mở camera hoặc máy quét cầm tay để tra cứu tồn kho tức thì"
+          >
+            <span className="text-sm">📷</span>
+            <span>Quét Mã Tồn Kho</span>
+          </button>
+
           <button
             type="button"
             onClick={handleExportCSV}
@@ -294,7 +388,7 @@ export default function InventoryPage() {
             type="text"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Tìm theo mã SKU, tên hàng hóa, mã Item ID..."
+            placeholder="Tìm theo mã SKU, tên hàng hóa, mã Item ID hoặc quét mã..."
             className="w-full pl-9 pr-8 py-2 text-xs rounded-xl border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 focus:outline-hidden focus:ring-2 focus:ring-amber-500 transition-all"
           />
           <span className="absolute left-3 top-2.5 text-zinc-400 text-xs">🔍</span>
@@ -576,17 +670,30 @@ export default function InventoryPage() {
 
                       {/* Action */}
                       <td className="py-3 px-4 text-center" onClick={(e) => e.stopPropagation()}>
-                        <button
-                          type="button"
-                          onClick={() => setSelectedProduct(p)}
-                          className="p-1.5 rounded-lg text-zinc-500 hover:text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-950/40 transition-colors"
-                          title="Xem chi tiết SKU và phân loại tồn kho"
-                        >
-                          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                          </svg>
-                        </button>
+                        <div className="flex items-center justify-center gap-1">
+                          {/* Nút In tem nhãn mã vạch/QR */}
+                          <button
+                            type="button"
+                            onClick={() => setPrintProduct(p)}
+                            className="p-1.5 rounded-lg text-zinc-500 hover:text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-950/40 transition-colors"
+                            title="In mã Barcode & QR Code dán tem sản phẩm"
+                          >
+                            <span className="text-sm">🖨️</span>
+                          </button>
+
+                          {/* Nút Xem chi tiết */}
+                          <button
+                            type="button"
+                            onClick={() => setSelectedProduct(p)}
+                            className="p-1.5 rounded-lg text-zinc-500 hover:text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-950/40 transition-colors"
+                            title="Xem chi tiết SKU và phân loại tồn kho"
+                          >
+                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                            </svg>
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   );
@@ -703,6 +810,35 @@ export default function InventoryPage() {
           onClose={() => setSelectedProduct(null)}
         />
       )}
+
+      {/* 7. Barcode & QR Code Print Modal */}
+      <BarcodePrintModal
+        product={printProduct}
+        isOpen={!!printProduct}
+        onClose={() => setPrintProduct(null)}
+      />
+
+      {/* 8. Barcode & QR Scanner Modal (Camera / Gun / Image) */}
+      <BarcodeScannerModal
+        isOpen={isScannerOpen}
+        onClose={() => setIsScannerOpen(false)}
+        onScanSuccess={handleScanSuccess}
+      />
+
+      {/* 9. Scanned Product & Stock Result Modal */}
+      <ScannedProductModal
+        product={scannedProduct}
+        scannedCode={scannedCode}
+        isOpen={isScannedResultOpen}
+        onClose={() => setIsScannedResultOpen(false)}
+        onScanAnother={() => {
+          setIsScannedResultOpen(false);
+          setIsScannerOpen(true);
+        }}
+        onPrintLabel={(prod) => {
+          setPrintProduct(prod);
+        }}
+      />
     </div>
   );
 }
