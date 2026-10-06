@@ -32,12 +32,19 @@ export async function POST(request: NextRequest) {
     await connectToDatabase();
     const now = new Date().toISOString();
 
-    // 1. LOẠI BỎ TOÀN BỘ ĐƠN HÀNG EXTENSION CŨ
+    // 1. LOẠI BỎ TOÀN BỘ ĐƠN HÀNG VÀ SẢN PHẨM EXTENSION CŨ
     const deleteRes = await MongoShopeeOrderModel.deleteMany({
       $or: [
         { shop_username: "baobiyensen" },
         { shop_username: { $not: /^sapo_/ } },
         { raw_text: { $regex: /chrome_extension/i } },
+      ],
+    });
+
+    const deleteProdRes = await MongoShopeeProductModel.deleteMany({
+      $or: [
+        { shop_username: "baobiyensen" },
+        { shop_username: { $not: /^sapo/ } },
       ],
     });
 

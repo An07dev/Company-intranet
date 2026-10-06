@@ -29,8 +29,8 @@ async function syncAll() {
   const productCol = mongoose.connection.collection("shopee_products");
   const now = new Date().toISOString();
 
-  // BƯỚC 1: XÓA SẠCH CÁC ĐƠN HÀNG CŨ TỪ EXTENSION (không thuộc Sapo)
-  console.log("[2/5] Đang loại bỏ các đơn hàng từ Chrome Extension...");
+  // BƯỚC 1: XÓA SẠCH CÁC ĐƠN HÀNG VÀ SẢN PHẨM CŨ TỪ EXTENSION (không thuộc Sapo)
+  console.log("[2/5] Đang loại bỏ đơn hàng & sản phẩm từ Chrome Extension...");
   const deleteRes = await orderCol.deleteMany({
     $or: [
       { shop_username: "baobiyensen" },
@@ -38,7 +38,13 @@ async function syncAll() {
       { raw_text: { $regex: /chrome_extension/i } },
     ],
   });
-  console.log(`=> Đã xóa sạch ${deleteRes.deletedCount} đơn hàng cũ từ Chrome Extension.`);
+  const deleteProdRes = await productCol.deleteMany({
+    $or: [
+      { shop_username: "baobiyensen" },
+      { shop_username: { $not: /^sapo/ } },
+    ],
+  });
+  console.log(`=> Đã xóa sạch ${deleteRes.deletedCount} đơn hàng và ${deleteProdRes.deletedCount} sản phẩm cũ từ Extension.`);
 
   // BƯỚC 2: ĐỒNG BỘ TOÀN BỘ SẢN PHẨM TỪ SAPO (432 SKU)
   console.log("[3/5] Đang kéo toàn bộ danh mục sản phẩm từ Sapo...");
