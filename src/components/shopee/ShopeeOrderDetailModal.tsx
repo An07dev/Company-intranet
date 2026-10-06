@@ -252,7 +252,7 @@ export function ShopeeOrderDetailModal({
             </div>
           </div>
 
-          {/* Section: Raw log / Extension payload (nếu có) */}
+          {/* Section: Raw log / Sapo payload (nếu có) */}
           {order.raw_text && (
             <div className="border border-zinc-200 dark:border-zinc-800 rounded-xl overflow-hidden">
               <button
@@ -260,7 +260,7 @@ export function ShopeeOrderDetailModal({
                 onClick={() => setShowRaw(!showRaw)}
                 className="w-full flex items-center justify-between p-3 bg-zinc-50 dark:bg-zinc-800/40 text-left text-xs font-semibold text-zinc-600 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
               >
-                <span>Dữ liệu gốc từ Extension (Raw text)</span>
+                <span>Dữ liệu gốc Sapo Webhook / API (Raw JSON)</span>
                 <span className="text-zinc-400 text-xs">{showRaw ? "▲ Thu gọn" : "▼ Mở rộng"}</span>
               </button>
               {showRaw && (

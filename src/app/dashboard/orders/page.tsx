@@ -222,18 +222,16 @@ export default function MultiChannelOrdersPage() {
     }
   };
 
-  // Đồng bộ lại toàn bộ đơn hàng từ Sapo Omnichannel
+  // Đồng bộ lại toàn bộ đơn hàng từ Sapo Omnichannel (loại bỏ đơn extension cũ)
   const handleSyncFromSapo = async () => {
     setSyncingSapo(true);
     try {
-      const res = await fetch("/api/sapo/sync-orders", {
+      const res = await fetch("/api/sapo/sync-all", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ limit: 100 }),
       });
       const data = await res.json();
       if (data.success) {
-        toast.success(data.message || "Đồng bộ đơn hàng từ Sapo thành công!");
+        toast.success(data.message || "Đồng bộ toàn diện từ Sapo thành công!");
         await fetchOrders(true);
       } else {
         toast.error(data.message || "Lỗi đồng bộ từ Sapo");
@@ -541,7 +539,7 @@ export default function MultiChannelOrdersPage() {
             <p className="text-xs text-zinc-500 mt-1 max-w-md mx-auto">
               {debouncedSearch || selectedStatus !== "all" || selectedShop !== "all"
                 ? "Thử tìm kiếm với từ khóa khác hoặc xóa bộ lọc để xem tất cả đơn hàng."
-                : "Dữ liệu đơn hàng sẽ được tự động đồng bộ qua Webhook Sapo (POST /api/webhooks/sapo) hoặc Chrome Extension."}
+                : "Dữ liệu đơn hàng được tự động đồng bộ qua Sapo Webhook & Admin API thời gian thực."}
             </p>
           </div>
 

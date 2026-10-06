@@ -23,6 +23,7 @@ export default function ShopeeProductsPage() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [deletingAll, setDeletingAll] = useState(false);
+  const [syncingSapo, setSyncingSapo] = useState(false);
 
   // Filters & Search
   const [searchQuery, setSearchQuery] = useState("");
@@ -157,6 +158,24 @@ export default function ShopeeProductsPage() {
     }
   };
 
+  const handleSyncFromSapo = async () => {
+    setSyncingSapo(true);
+    try {
+      const res = await fetch("/api/sapo/sync-all", { method: "POST" });
+      const json = await res.json();
+      if (json.success) {
+        toast.success(json.message || "Đã đồng bộ toàn bộ 432 sản phẩm từ Sapo!");
+        fetchProducts(true);
+      } else {
+        toast.error("Lỗi đồng bộ Sapo: " + json.message);
+      }
+    } catch {
+      toast.error("Không thể kết nối API Sapo");
+    } finally {
+      setSyncingSapo(false);
+    }
+  };
+
   return (
     <div className="p-6 max-w-[1600px] mx-auto space-y-6">
       {/* 1. Header Section */}
@@ -176,6 +195,16 @@ export default function ShopeeProductsPage() {
         </div>
 
         <div className="flex items-center gap-2">
+          <button
+            onClick={handleSyncFromSapo}
+            disabled={syncingSapo}
+            className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs transition-colors disabled:opacity-60"
+            title="Đồng bộ toàn bộ 432 sản phẩm trực tiếp từ Sapo Admin API"
+          >
+            <span className={syncingSapo ? "animate-spin" : ""}>📥</span>
+            <span>{syncingSapo ? "Đang kéo từ Sapo..." : "Đồng bộ từ Sapo"}</span>
+          </button>
+
           <button
             onClick={() => fetchProducts(true)}
             disabled={refreshing || loading}
@@ -408,8 +437,7 @@ export default function ShopeeProductsPage() {
               Chưa có sản phẩm nào
             </h3>
             <p className="text-xs text-zinc-500 dark:text-zinc-400 max-w-md mx-auto leading-relaxed">
-              Mở tab <strong>Shopee Kênh Người Bán</strong> (trang Quản lý Sản phẩm) và bấm nút{" "}
-              <strong className="text-orange-600">"📦 Đồng bộ TẤT CẢ sản phẩm"</strong> trên tiện ích Chrome Extension để kéo dữ liệu tự động về đây.
+              Bấm nút <strong className="text-emerald-600">"📥 Đồng bộ từ Sapo"</strong> ở trên để kéo toàn bộ 432 sản phẩm & số lượng tồn kho tự động về hệ thống.
             </p>
           </div>
         ) : (

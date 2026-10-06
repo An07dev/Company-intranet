@@ -309,14 +309,14 @@ export default function ShopeeLogsPage() {
         <div>
           <div className="flex items-center gap-3">
             <h1 className="text-2xl font-bold tracking-tight text-zinc-900 dark:text-zinc-100">
-              Nhật Ký Đồng Bộ Shopee
+              Nhật Ký Đồng Bộ Bán Hàng & Webhook
             </h1>
-            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-blue-100 text-blue-700 dark:bg-blue-950/60 dark:text-blue-300">
-              Extension & Background Monitor
+            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300">
+              Sapo Omnichannel & Webhook Monitor
             </span>
           </div>
           <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-1">
-            Theo dõi thời gian thực tiến trình cào dữ liệu, kích hoạt Chrome Alarms, mở tab tự động và bắt lỗi kỹ thuật
+            Theo dõi thời gian thực tiến trình nhận đơn hàng tự động từ Webhook Sapo và các tác vụ đồng bộ hệ thống
           </p>
         </div>
 
