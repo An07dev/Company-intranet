@@ -22,8 +22,8 @@ export function BarcodePrintModal({ product, isOpen, onClose }: BarcodePrintModa
     product?.price_display && product?.price_display !== "₫0" && product?.price_display !== "₫"
       ? product.price_display
       : product?.price_min
-      ? `₫${product.price_min.toLocaleString("vi-VN")}`
-      : "--";
+        ? `₫${product.price_min.toLocaleString("vi-VN")}`
+        : "--";
 
   // Generate QR Code
   useEffect(() => {
@@ -102,7 +102,7 @@ export function BarcodePrintModal({ product, isOpen, onClose }: BarcodePrintModa
               </label>
               <div className="px-3 py-1.5 bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-900/60 text-amber-800 dark:text-amber-300 rounded-xl font-semibold flex items-center gap-1.5">
                 <span>📱</span>
-                <span>Mã QR Code (Duy nhất)</span>
+                <span>Mã QR Code</span>
               </div>
             </div>
 
@@ -162,13 +162,12 @@ export function BarcodePrintModal({ product, isOpen, onClose }: BarcodePrintModa
             <div className="flex justify-center p-6 bg-zinc-100 dark:bg-zinc-950/60 rounded-2xl border border-zinc-200 dark:border-zinc-800">
               <div
                 id="barcode-print-sample"
-                className={`bg-white text-black p-3 rounded-xl border border-zinc-300 shadow-md flex flex-col justify-between items-center transition-all ${
-                  labelSize === "40x30"
-                    ? "w-[230px] min-h-[170px]"
-                    : labelSize === "75x50"
+                className={`bg-white text-black p-3 rounded-xl border border-zinc-300 shadow-md flex flex-col justify-between items-center transition-all ${labelSize === "40x30"
+                  ? "w-[230px] min-h-[170px]"
+                  : labelSize === "75x50"
                     ? "w-[320px] min-h-[220px]"
                     : "w-[270px] min-h-[190px]"
-                }`}
+                  }`}
               >
                 {/* Header tem */}
                 <div className="w-full flex items-center justify-between border-b border-black/15 pb-1 mb-1">
@@ -197,8 +196,8 @@ export function BarcodePrintModal({ product, isOpen, onClose }: BarcodePrintModa
                         labelSize === "40x30"
                           ? "w-20 h-20"
                           : labelSize === "75x50"
-                          ? "w-28 h-28"
-                          : "w-24 h-24"
+                            ? "w-28 h-28"
+                            : "w-24 h-24"
                       }
                     />
                   ) : (
@@ -282,13 +281,12 @@ export function BarcodePrintModal({ product, isOpen, onClose }: BarcodePrintModa
         {Array.from({ length: copyCount }).map((_, idx) => (
           <div
             key={idx}
-            className={`print-label-item bg-white text-black p-2 border border-black/30 flex flex-col justify-between items-center ${
-              labelSize === "40x30"
-                ? "w-[40mm] h-[30mm]"
-                : labelSize === "75x50"
+            className={`print-label-item bg-white text-black p-2 border border-black/30 flex flex-col justify-between items-center ${labelSize === "40x30"
+              ? "w-[40mm] h-[30mm]"
+              : labelSize === "75x50"
                 ? "w-[75mm] h-[50mm]"
                 : "w-[50mm] h-[30mm]"
-            }`}
+              }`}
           >
             <div className="w-full flex items-center justify-between text-[7pt] font-extrabold uppercase border-b border-black pb-0.5 mb-0.5">
               <span>BAO BÌ YẾN SEN</span>
@@ -308,8 +306,8 @@ export function BarcodePrintModal({ product, isOpen, onClose }: BarcodePrintModa
                     labelSize === "40x30"
                       ? "w-[17mm] h-[17mm]"
                       : labelSize === "75x50"
-                      ? "w-[28mm] h-[28mm]"
-                      : "w-[20mm] h-[20mm]"
+                        ? "w-[28mm] h-[28mm]"
+                        : "w-[20mm] h-[20mm]"
                   }
                 />
               )}
