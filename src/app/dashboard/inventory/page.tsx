@@ -167,31 +167,28 @@ export default function InventoryPage() {
         <div className="flex items-center gap-1.5 w-full sm:w-auto">
           <button
             onClick={() => setStockFilter("all")}
-            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition ${
-              stockFilter === "all"
-                ? "bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900"
-                : "border border-zinc-200 dark:border-zinc-700 hover:bg-zinc-100 dark:hover:bg-zinc-800"
-            }`}
+            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition ${stockFilter === "all"
+              ? "bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900"
+              : "border border-zinc-200 dark:border-zinc-700 hover:bg-zinc-100 dark:hover:bg-zinc-800"
+              }`}
           >
             Tất cả ({products.length})
           </button>
           <button
             onClick={() => setStockFilter("low")}
-            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition ${
-              stockFilter === "low"
-                ? "bg-amber-600 text-white"
-                : "border border-zinc-200 dark:border-zinc-700 hover:bg-zinc-100 dark:hover:bg-zinc-800 text-amber-600 dark:text-amber-400"
-            }`}
+            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition ${stockFilter === "low"
+              ? "bg-amber-600 text-white"
+              : "border border-zinc-200 dark:border-zinc-700 hover:bg-zinc-100 dark:hover:bg-zinc-800 text-amber-600 dark:text-amber-400"
+              }`}
           >
             Sắp hết ({lowStockCount})
           </button>
           <button
             onClick={() => setStockFilter("out")}
-            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition ${
-              stockFilter === "out"
-                ? "bg-rose-600 text-white"
-                : "border border-zinc-200 dark:border-zinc-700 hover:bg-zinc-100 dark:hover:bg-zinc-800 text-rose-600 dark:text-rose-400"
-            }`}
+            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition ${stockFilter === "out"
+              ? "bg-rose-600 text-white"
+              : "border border-zinc-200 dark:border-zinc-700 hover:bg-zinc-100 dark:hover:bg-zinc-800 text-rose-600 dark:text-rose-400"
+              }`}
           >
             Hết hàng ({outOfStockCount})
           </button>
@@ -213,7 +210,6 @@ export default function InventoryPage() {
               <tr>
                 <th className="py-3 px-4">Mã SKU</th>
                 <th className="py-3 px-4">Tên hàng hóa / Sản phẩm</th>
-                <th className="py-3 px-4 text-right">Giá bán niêm yết</th>
                 <th className="py-3 px-4 text-center">Tồn kho khả dụng</th>
                 <th className="py-3 px-4 text-center">Trạng thái tồn</th>
                 <th className="py-3 px-4 text-center">Kho lưu trữ</th>
@@ -260,20 +256,14 @@ export default function InventoryPage() {
                         </div>
                       </td>
 
-                      {/* Price */}
-                      <td className="py-3 px-4 text-right font-mono text-zinc-700 dark:text-zinc-300">
-                        {(p.price || 0).toLocaleString("vi-VN")} ₫
-                      </td>
-
                       {/* Stock */}
                       <td className="py-3 px-4 text-center">
-                        <span className={`inline-block px-3 py-1 rounded-full font-mono font-extrabold text-xs ${
-                          isOutOfStock
-                            ? "bg-rose-100 text-rose-700 dark:bg-rose-950 dark:text-rose-300"
-                            : isLowStock
+                        <span className={`inline-block px-3 py-1 rounded-full font-mono font-extrabold text-xs ${isOutOfStock
+                          ? "bg-rose-100 text-rose-700 dark:bg-rose-950 dark:text-rose-300"
+                          : isLowStock
                             ? "bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300"
                             : "bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300"
-                        }`}>
+                          }`}>
                           {(p.stock || 0).toLocaleString("vi-VN")}
                         </span>
                       </td>
