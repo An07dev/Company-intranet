@@ -252,6 +252,23 @@ export const SapoService = {
   },
 
   /**
+   * Xóa nhà cung cấp trên Sapo
+   * Sapo Admin REST API hỗ trợ chuyển trạng thái sang "deleted" để gỡ bỏ NCC khỏi danh sách hoạt động
+   */
+  async deleteSupplier(id: number | string): Promise<any> {
+    try {
+      return await sapoFetch(`/admin/suppliers/${id}.json`, {
+        method: "DELETE",
+      });
+    } catch {
+      return await sapoFetch(`/admin/suppliers/${id}.json`, {
+        method: "PUT",
+        body: JSON.stringify({ supplier: { id: Number(id), status: "deleted" } }),
+      });
+    }
+  },
+
+  /**
    * Tạo đơn hàng mới trên Sapo Omnichannel
    */
   async createOrder(orderData: any): Promise<any> {

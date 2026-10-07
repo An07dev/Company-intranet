@@ -125,3 +125,55 @@ export async function POST(request: NextRequest) {
     );
   }
 }
+
+export async function DELETE(request: NextRequest) {
+  try {
+    const { searchParams } = new URL(request.url);
+    let id = searchParams.get("id");
+
+    if (!id) {
+      try {
+        const body = await request.json();
+        id = body?.id;
+      } catch {}
+    }
+
+    if (!id) {
+      return NextResponse.json(
+        { success: false, message: "Thiếu ID nhà cung cấp cần xóa" },
+        { status: 400 }
+      );
+    }
+
+    const supplierId = Number(id);
+    const result = await SapoService.deleteSupplier(supplierId);
+
+    try {
+      await LogModel.createLog({
+        level: "info",
+        type: "supplier_delete",
+        source: "sapo_supplier_delete",
+        shop_username: "sapo_omnichannel",
+        message: `Đã xóa nhà cung cấp trên Sapo (ID: ${supplierId})`,
+        details: { id: supplierId, result },
+      });
+    } catch {}
+
+    return NextResponse.json({
+      success: true,
+      message: "Đã xóa nhà cung cấp trên Sapo thành công!",
+      data: result,
+    });
+  } catch (error: any) {
+    console.error("[Sapo Delete Supplier Error]:", error);
+    return NextResponse.json(
+      {
+        success: false,
+        message: "Lỗi xóa nhà cung cấp trên Sapo",
+        error: error.message || String(error),
+      },
+      { status: 500 }
+    );
+  }
+}
+

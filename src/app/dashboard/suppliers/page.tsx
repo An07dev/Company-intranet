@@ -47,6 +47,10 @@ export default function SuppliersPage() {
   // Modal Create
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [creating, setCreating] = useState(false);
+
+  // Modal Delete
+  const [supplierToDelete, setSupplierToDelete] = useState<Supplier | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [createForm, setCreateForm] = useState({
     name: "",
     code: "",
@@ -167,6 +171,31 @@ export default function SuppliersPage() {
       toast.error("Không thể kết nối đến máy chủ");
     } finally {
       setCreating(false);
+    }
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!supplierToDelete) return;
+    setIsDeleting(true);
+    try {
+      const res = await fetch(`/api/sapo/suppliers?id=${supplierToDelete.id}`, {
+        method: "DELETE",
+      });
+      const data = await res.json();
+      if (data.success) {
+        toast.success(`Đã xóa nhà cung cấp "${supplierToDelete.name}" thành công trên Sapo!`);
+        setSuppliers((prev) => prev.filter((s) => s.id !== supplierToDelete.id));
+        if (selectedSupplier?.id === supplierToDelete.id) {
+          setSelectedSupplier(null);
+        }
+        setSupplierToDelete(null);
+      } else {
+        toast.error(data.message || "Lỗi xóa nhà cung cấp trên Sapo");
+      }
+    } catch {
+      toast.error("Không thể kết nối đến máy chủ để xóa nhà cung cấp");
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -553,13 +582,23 @@ export default function SuppliersPage() {
 
                     {/* Action */}
                     <td className="py-3 px-4 text-center">
-                      <button
-                        type="button"
-                        onClick={() => handleOpenDetail(s)}
-                        className="px-2.5 py-1 text-xs font-semibold rounded-lg border border-zinc-200 dark:border-zinc-700 hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-700 dark:text-zinc-200 transition cursor-pointer"
-                      >
-                        Chi tiết / Sửa
-                      </button>
+                      <div className="flex items-center justify-center gap-1.5">
+                        <button
+                          type="button"
+                          onClick={() => handleOpenDetail(s)}
+                          className="px-2.5 py-1 text-xs font-semibold rounded-lg border border-zinc-200 dark:border-zinc-700 hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-700 dark:text-zinc-200 transition cursor-pointer"
+                        >
+                          Chi tiết / Sửa
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setSupplierToDelete(s)}
+                          className="px-2.5 py-1 text-xs font-semibold rounded-lg border border-rose-200 dark:border-rose-900/60 bg-rose-50/50 dark:bg-rose-950/30 hover:bg-rose-100 dark:hover:bg-rose-900/50 text-rose-600 dark:text-rose-400 transition cursor-pointer"
+                          title="Xóa nhà cung cấp"
+                        >
+                          Xóa
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))
@@ -755,7 +794,15 @@ export default function SuppliersPage() {
                   <span className="text-[11px] text-zinc-400">
                     Cập nhật lần cuối: {selectedSupplier.updated_on ? new Date(selectedSupplier.updated_on).toLocaleString("vi-VN") : "—"}
                   </span>
-                  <div className="flex gap-2">
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setSupplierToDelete(selectedSupplier)}
+                      className="px-3.5 py-2 text-xs font-semibold rounded-xl border border-rose-200 dark:border-rose-900/60 bg-rose-50 dark:bg-rose-950/40 hover:bg-rose-100 dark:hover:bg-rose-900/60 text-rose-600 dark:text-rose-400 transition flex items-center gap-1.5 cursor-pointer shadow-xs"
+                    >
+                      <span>🗑️</span>
+                      <span>Xóa NCC</span>
+                    </button>
                     <button
                       type="button"
                       onClick={() => setIsEditing(true)}
@@ -1071,6 +1118,77 @@ export default function SuppliersPage() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Xác nhận Xóa Nhà Cung Cấp */}
+      {supplierToDelete && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-3xl max-w-md w-full p-6 space-y-4 shadow-2xl animate-in fade-in zoom-in-95 duration-150">
+            <div className="flex items-center gap-3">
+              <div className="w-11 h-11 rounded-2xl bg-rose-100 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400 flex items-center justify-center text-xl shrink-0">
+                🗑️
+              </div>
+              <div>
+                <h3 className="text-base font-bold text-zinc-900 dark:text-zinc-100">
+                  Xác nhận xóa nhà cung cấp
+                </h3>
+                <p className="text-xs text-zinc-500">
+                  Đồng bộ gỡ bỏ nhà cung cấp trên hệ thống và Sapo
+                </p>
+              </div>
+            </div>
+
+            <div className="p-4 rounded-2xl bg-zinc-50 dark:bg-zinc-800/60 border border-zinc-200/70 dark:border-zinc-700/60 space-y-2 text-xs">
+              <div className="flex justify-between">
+                <span className="text-zinc-500">Tên nhà cung cấp:</span>
+                <span className="font-bold text-zinc-900 dark:text-zinc-100 text-right">{supplierToDelete.name}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-zinc-500">Mã NCC:</span>
+                <span className="font-mono font-bold text-zinc-800 dark:text-zinc-200">{supplierToDelete.code || `ID-${supplierToDelete.id}`}</span>
+              </div>
+              {supplierToDelete.phone && (
+                <div className="flex justify-between">
+                  <span className="text-zinc-500">Số điện thoại:</span>
+                  <span className="font-mono text-zinc-800 dark:text-zinc-200">{supplierToDelete.phone}</span>
+                </div>
+              )}
+            </div>
+
+            <p className="text-xs text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/40 p-3 rounded-xl border border-rose-200 dark:border-rose-900/40">
+              ⚠️ <strong>Cảnh báo:</strong> Thao tác này sẽ gỡ bỏ nhà cung cấp khỏi danh sách và đồng bộ trạng thái <em>Đã xóa (deleted)</em> sang Sapo. Bạn có chắc chắn muốn xóa?
+            </p>
+
+            <div className="flex items-center justify-end gap-2 pt-2">
+              <button
+                type="button"
+                onClick={() => setSupplierToDelete(null)}
+                disabled={isDeleting}
+                className="px-4 py-2 text-xs font-semibold rounded-xl border border-zinc-200 dark:border-zinc-700 hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-700 dark:text-zinc-300 transition cursor-pointer"
+              >
+                Hủy bỏ
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmDelete}
+                disabled={isDeleting}
+                className="px-4 py-2 text-xs font-semibold rounded-xl bg-rose-600 hover:bg-rose-700 text-white transition flex items-center gap-1.5 shadow-xs disabled:opacity-60 cursor-pointer"
+              >
+                {isDeleting ? (
+                  <>
+                    <span className="inline-block animate-spin">⏳</span>
+                    <span>Đang xóa trên Sapo...</span>
+                  </>
+                ) : (
+                  <>
+                    <span>🗑️</span>
+                    <span>Xác nhận xóa</span>
+                  </>
+                )}
+              </button>
+            </div>
           </div>
         </div>
       )}
