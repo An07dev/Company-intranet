@@ -206,6 +206,32 @@ export const SapoService = {
   },
 
   /**
+   * Lấy danh sách đơn hàng từ Sapo có phân trang và bộ lọc
+   */
+  async getOrders(params?: {
+    page?: number;
+    limit?: number;
+    status?: string;
+    query?: string;
+    name?: string;
+  }): Promise<{ orders: any[] }> {
+    const page = params?.page || 1;
+    const limit = params?.limit || 20;
+    let endpoint = `/admin/orders.json?page=${page}&limit=${limit}`;
+    if (params?.status) endpoint += `&status=${encodeURIComponent(params.status)}`;
+    if (params?.query) endpoint += `&query=${encodeURIComponent(params.query.trim())}`;
+    if (params?.name) endpoint += `&name=${encodeURIComponent(params.name.trim())}`;
+    return sapoFetch<{ orders: any[] }>(endpoint);
+  },
+
+  /**
+   * Lấy chi tiết một đơn hàng trên Sapo theo ID
+   */
+  async getOrderById(id: number | string): Promise<{ order: any }> {
+    return sapoFetch<{ order: any }>(`/admin/orders/${id}.json`);
+  },
+
+  /**
    * Cập nhật thông tin nhà cung cấp trên Sapo
    */
   async updateSupplier(id: number, supplierData: Partial<SapoSupplier>): Promise<any> {
@@ -265,11 +291,40 @@ export const SapoService = {
 
   /**
    * Hủy đơn hàng trên Sapo
+   * Giá trị hợp lệ theo Sapo API: "customer", "fraud", "inventory", "declined", "wrong_item", "duplicate", "contact", "delivery", "other"
    */
   async cancelOrder(id: number | string, reason = "customer"): Promise<any> {
+    const validReasons = [
+      "customer",
+      "fraud",
+      "inventory",
+      "declined",
+      "wrong_item",
+      "duplicate",
+      "contact",
+      "delivery",
+      "other",
+    ];
+
+    let sapoReason = "customer";
+    if (reason && validReasons.includes(reason.toLowerCase())) {
+      sapoReason = reason.toLowerCase();
+    } else if (reason) {
+      const lower = reason.toLowerCase();
+      if (lower.includes("khách") || lower.includes("customer")) sapoReason = "customer";
+      else if (lower.includes("kho") || lower.includes("hết") || lower.includes("inventory")) sapoReason = "inventory";
+      else if (lower.includes("ảo") || lower.includes("lận") || lower.includes("fraud")) sapoReason = "fraud";
+      else if (lower.includes("từ chối") || lower.includes("thanh toán") || lower.includes("declined")) sapoReason = "declined";
+      else if (lower.includes("nhầm") || lower.includes("sai") || lower.includes("wrong")) sapoReason = "wrong_item";
+      else if (lower.includes("trùng") || lower.includes("duplicate")) sapoReason = "duplicate";
+      else if (lower.includes("liên hệ") || lower.includes("gọi") || lower.includes("contact")) sapoReason = "contact";
+      else if (lower.includes("giao") || lower.includes("vận chuyển") || lower.includes("ship") || lower.includes("delivery")) sapoReason = "delivery";
+      else sapoReason = "other";
+    }
+
     return sapoFetch(`/admin/orders/${id}/cancel.json`, {
       method: "POST",
-      body: JSON.stringify({ order_cancel: { reason, email: false } }),
+      body: JSON.stringify({ order_cancel: { reason: sapoReason, email: false } }),
     });
   },
 

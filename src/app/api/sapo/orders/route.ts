@@ -288,7 +288,7 @@ export async function PATCH(request: NextRequest) {
     const order = await MongoShopeeOrderModel.findOne({ order_sn });
     if (!order) {
       return NextResponse.json(
-        { success: false, message: "Không tìm thấy đơn hàng" },
+        { success: false, message: "Không tìm thấy đơn hàng trong hệ thống" },
         { status: 404 }
       );
     }
@@ -301,40 +301,70 @@ export async function PATCH(request: NextRequest) {
       } catch {}
     }
 
+    // Nếu không có sapoId trong raw_text, thử lấy từ order.id hoặc tìm kiếm trực tiếp trên Sapo
+    if (!sapoId) {
+      if (order.id && /^\d+$/.test(String(order.id)) && String(order.id).length >= 7) {
+        sapoId = order.id;
+      } else {
+        try {
+          const cleanSn = String(order_sn).replace(/^#/, "").trim();
+          const searchRes = await SapoService.getOrders({ query: cleanSn, limit: 5 });
+          const matched =
+            searchRes.orders?.find(
+              (o: any) =>
+                String(o.order_number) === cleanSn ||
+                String(o.name).replace(/^#/, "") === cleanSn ||
+                String(o.id) === cleanSn
+            ) || searchRes.orders?.[0];
+          if (matched?.id) {
+            sapoId = matched.id;
+          }
+        } catch (searchErr: any) {
+          console.warn("[Sapo Order Search Warning]:", searchErr.message);
+        }
+      }
+    }
+
+    if (!sapoId) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: `Không tìm thấy mã đơn tương ứng trên Sapo Omnichannel cho đơn hàng #${order_sn}`,
+        },
+        { status: 400 }
+      );
+    }
+
+    let sapoResponse: any = null;
     let newStatus = order.order_status;
 
     if (action === "cancel") {
-      if (sapoId) {
-        try {
-          await SapoService.cancelOrder(sapoId, reason);
-        } catch (err: any) {
-          console.warn("[Sapo Cancel Warning]:", err.message);
-        }
-      }
+      sapoResponse = await SapoService.cancelOrder(sapoId, reason);
       newStatus = "Đã hủy";
     } else if (action === "close") {
-      if (sapoId) {
-        try {
-          await SapoService.closeOrder(sapoId);
-        } catch (err: any) {
-          console.warn("[Sapo Close Warning]:", err.message);
-        }
-      }
+      sapoResponse = await SapoService.closeOrder(sapoId);
       newStatus = "Đã giao";
     } else if (action === "open") {
-      if (sapoId) {
-        try {
-          await SapoService.openOrder(sapoId);
-        } catch (err: any) {
-          console.warn("[Sapo Open Warning]:", err.message);
-        }
-      }
+      sapoResponse = await SapoService.openOrder(sapoId);
       newStatus = "Chờ xử lý";
+    } else {
+      return NextResponse.json(
+        { success: false, message: `Hành động không hợp lệ: ${action}` },
+        { status: 400 }
+      );
     }
+
+    const updatedRaw = sapoResponse?.order ? JSON.stringify(sapoResponse.order) : order.raw_text;
 
     await MongoShopeeOrderModel.updateOne(
       { order_sn },
-      { $set: { order_status: newStatus, updatedAt: now } }
+      {
+        $set: {
+          order_status: newStatus,
+          raw_text: updatedRaw,
+          updatedAt: now,
+        },
+      }
     );
 
     await LogModel.createLog({
@@ -342,24 +372,27 @@ export async function PATCH(request: NextRequest) {
       type: "order_action",
       source: "sapo_order_action",
       shop_username: order.shop_username,
-      message: `Thao tác [${action.toUpperCase()}] đơn hàng #${order_sn} -> Trạng thái: ${newStatus}`,
-      details: { order_sn, action, reason, newStatus },
+      message: `Thao tác [${action.toUpperCase()}] đơn hàng #${order_sn} trên Sapo thành công -> Trạng thái: ${newStatus}`,
+      details: { order_sn, sapoId, action, reason, newStatus },
     });
+
+    const actionText =
+      action === "cancel" ? "hủy" : action === "close" ? "hoàn tất / đóng" : "mở lại";
 
     return NextResponse.json({
       success: true,
-      message: `Thao tác [${action}] đơn hàng #${order_sn} thành công! Trạng thái mới: ${newStatus}`,
-      data: { order_sn, order_status: newStatus },
+      message: `Đã ${actionText} đơn hàng #${order_sn} thành công trên Sapo! Trạng thái mới: ${newStatus}`,
+      data: { order_sn, order_status: newStatus, sapo_order: sapoResponse?.order },
     });
   } catch (error: any) {
     console.error("[Sapo Order Action Error]:", error);
     return NextResponse.json(
       {
         success: false,
-        message: "Lỗi thực hiện hành động trên đơn hàng",
+        message: `Lỗi thao tác trên Sapo: ${error.message || String(error)}`,
         error: error.message || String(error),
       },
-      { status: 500 }
+      { status: 400 }
     );
   }
 }

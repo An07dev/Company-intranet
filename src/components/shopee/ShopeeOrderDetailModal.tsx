@@ -14,6 +14,18 @@ interface ShopeeOrderDetailModalProps {
   onOrderUpdated?: () => void;
 }
 
+const SAPO_CANCEL_REASONS = [
+  { value: "customer", label: "Khách yêu cầu hủy đơn (Customer requested)" },
+  { value: "inventory", label: "Hết hàng tồn kho (Out of stock)" },
+  { value: "wrong_item", label: "Đặt nhầm sản phẩm / thông tin (Wrong item)" },
+  { value: "duplicate", label: "Đơn hàng trùng lặp (Duplicate order)" },
+  { value: "contact", label: "Không liên hệ được khách hàng (Cannot contact)" },
+  { value: "delivery", label: "Lỗi vận chuyển / không giao được (Delivery issue)" },
+  { value: "fraud", label: "Đơn hàng gian lận / đơn ảo (Fraud)" },
+  { value: "declined", label: "Khách từ chối thanh toán (Payment declined)" },
+  { value: "other", label: "Lý do khác (Other)" },
+];
+
 export function ShopeeOrderDetailModal({
   order,
   isOpen,
@@ -38,8 +50,10 @@ export function ShopeeOrderDetailModal({
     tags: "",
   });
 
-  // Action State (Cancel/Close)
+  // Action State (Cancel/Close/Open)
   const [actionLoading, setActionLoading] = useState(false);
+  const [showCancelModal, setShowCancelModal] = useState(false);
+  const [cancelReasonKey, setCancelReasonKey] = useState("customer");
 
   if (!isOpen || !order) return null;
 
@@ -137,23 +151,41 @@ export function ShopeeOrderDetailModal({
     }
   };
 
-  const handleOrderAction = async (action: "cancel" | "close" | "open") => {
-    let reason = "customer";
-    if (action === "cancel") {
-      const promptReason = prompt(
-        "Nhập lý do hủy đơn hàng (hoặc để trống mặc định 'Khách yêu cầu hủy'):",
-        "Khách yêu cầu hủy"
-      );
-      if (promptReason === null) return;
-      reason = promptReason || "customer";
-    } else {
-      const confirmed = confirm(
-        action === "close"
-          ? "Bạn có chắc chắn muốn hoàn tất / đóng đơn hàng này trên Sapo?"
-          : "Bạn có chắc chắn muốn mở lại đơn hàng này trên Sapo?"
-      );
-      if (!confirmed) return;
+  const handleConfirmCancel = async () => {
+    setActionLoading(true);
+    try {
+      const res = await fetch("/api/sapo/orders", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          order_sn: order.order_sn,
+          action: "cancel",
+          reason: cancelReasonKey,
+        }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        toast.success(data.message || "Đã hủy đơn hàng trên Sapo thành công!");
+        setShowCancelModal(false);
+        onOrderUpdated?.();
+        onClose();
+      } else {
+        toast.error(data.message || "Lỗi khi hủy đơn hàng trên Sapo");
+      }
+    } catch (err: any) {
+      toast.error("Không thể kết nối API Sapo: " + (err.message || String(err)));
+    } finally {
+      setActionLoading(false);
     }
+  };
+
+  const handleOrderAction = async (action: "close" | "open") => {
+    const confirmed = confirm(
+      action === "close"
+        ? "Bạn có chắc chắn muốn hoàn tất / đóng đơn hàng này trên Sapo?"
+        : "Bạn có chắc chắn muốn mở lại đơn hàng này trên Sapo?"
+    );
+    if (!confirmed) return;
 
     setActionLoading(true);
     try {
@@ -163,7 +195,6 @@ export function ShopeeOrderDetailModal({
         body: JSON.stringify({
           order_sn: order.order_sn,
           action,
-          reason,
         }),
       });
       const data = await res.json();
@@ -464,10 +495,10 @@ export function ShopeeOrderDetailModal({
             {order.order_status !== "Đã hủy" && (
               <button
                 type="button"
-                onClick={() => handleOrderAction("cancel")}
+                onClick={() => setShowCancelModal(true)}
                 disabled={actionLoading}
                 className="px-3 py-1.5 rounded-xl border border-rose-200 dark:border-rose-900 bg-rose-50 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300 hover:bg-rose-100 font-semibold text-xs transition-colors flex items-center gap-1 cursor-pointer disabled:opacity-50"
-                title="Hủy đơn hàng trên hệ thống Sapo"
+                title="Hủy đơn hàng trực tiếp trên hệ thống Sapo"
               >
                 <span>❌</span>
                 <span>Hủy đơn Sapo</span>
@@ -529,6 +560,80 @@ export function ShopeeOrderDetailModal({
             Đóng
           </button>
         </div>
+
+        {/* Modal Xác nhận Hủy Đơn Hàng trên Sapo */}
+        {showCancelModal && (
+          <div
+            className="fixed inset-0 z-[60] bg-black/70 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in duration-150"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-3xl max-w-md w-full p-5 shadow-2xl space-y-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-2xl bg-rose-50 dark:bg-rose-950/70 border border-rose-200 dark:border-rose-900 flex items-center justify-center text-rose-600 text-lg">
+                  ⚠️
+                </div>
+                <div>
+                  <h4 className="font-bold text-sm text-zinc-900 dark:text-zinc-100">
+                    Hủy đơn hàng #{order.order_sn} trên Sapo
+                  </h4>
+                  <p className="text-[11px] text-zinc-500 dark:text-zinc-400">
+                    Đồng bộ trạng thái hủy trực tiếp 2 chiều với Sapo Omnichannel
+                  </p>
+                </div>
+              </div>
+
+              <div className="p-3 bg-amber-50/80 dark:bg-amber-950/40 border border-amber-200/80 dark:border-amber-900/60 rounded-2xl text-xs text-amber-900 dark:text-amber-200 leading-relaxed">
+                Lưu ý: Thao tác này sẽ gửi yêu cầu hủy trực tiếp đến máy chủ Sapo. Khi đơn hủy thành công, số lượng tồn kho của các sản phẩm sẽ được tự động hoàn lại theo quy tắc của Sapo và không thể hoàn tác.
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="block text-xs font-semibold text-zinc-700 dark:text-zinc-300">
+                  Lý do hủy đơn trên Sapo <span className="text-rose-500">*</span>
+                </label>
+                <select
+                  value={cancelReasonKey}
+                  onChange={(e) => setCancelReasonKey(e.target.value)}
+                  disabled={actionLoading}
+                  className="w-full text-xs font-medium px-3 py-2.5 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 focus:outline-hidden focus:ring-2 focus:ring-rose-500 cursor-pointer"
+                >
+                  {SAPO_CANCEL_REASONS.map((r) => (
+                    <option key={r.value} value={r.value}>
+                      {r.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="flex items-center justify-end gap-2 pt-2 border-t border-zinc-100 dark:border-zinc-800">
+                <button
+                  type="button"
+                  onClick={() => setShowCancelModal(false)}
+                  disabled={actionLoading}
+                  className="px-3.5 py-2 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-700 font-semibold text-xs transition-colors cursor-pointer"
+                >
+                  Hủy bỏ
+                </button>
+                <button
+                  type="button"
+                  onClick={handleConfirmCancel}
+                  disabled={actionLoading}
+                  className="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-semibold text-xs transition-colors flex items-center gap-1.5 disabled:opacity-50 cursor-pointer shadow-xs shadow-rose-600/30"
+                >
+                  {actionLoading ? (
+                    <>
+                      <span className="animate-spin">⏳</span>
+                      <span>Đang hủy trên Sapo...</span>
+                    </>
+                  ) : (
+                    <>
+                      <span>Xác nhận hủy trên Sapo</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
