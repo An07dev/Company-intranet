@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useCallback, useRef } from "react";
+import React, { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { ShopeeLog, ShopeeLogStats } from "@/types";
 import { useToast } from "@/context/ToastContext";
@@ -28,9 +28,26 @@ export default function ShopeeLogsPage() {
 
   // Pagination
   const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize, setPageSize] = useState(50);
+  const [pageSize, setPageSize] = useState(25);
   const [totalPages, setTotalPages] = useState(1);
   const [totalRecords, setTotalRecords] = useState(0);
+
+  // Pagination page buttons with ellipsis
+  const paginationItems = useMemo(() => {
+    const items: (number | string)[] = [];
+    if (totalPages <= 7) {
+      for (let i = 1; i <= totalPages; i++) items.push(i);
+    } else {
+      if (currentPage <= 4) {
+        items.push(1, 2, 3, 4, 5, "...", totalPages);
+      } else if (currentPage >= totalPages - 3) {
+        items.push(1, "...", totalPages - 4, totalPages - 3, totalPages - 2, totalPages - 1, totalPages);
+      } else {
+        items.push(1, "...", currentPage - 1, currentPage, currentPage + 1, "...", totalPages);
+      }
+    }
+    return items;
+  }, [totalPages, currentPage]);
 
   // Expanded row ID for JSON details & copy tracker
   const [expandedLogId, setExpandedLogId] = useState<string | null>(null);
@@ -528,7 +545,22 @@ export default function ShopeeLogsPage() {
             </p>
           </div>
         ) : (
-          <div className="divide-y divide-zinc-200/70 dark:divide-zinc-700/60">
+          <div>
+            {/* Table Header Bar */}
+            <div className="hidden md:flex items-center justify-between px-4 py-2.5 bg-zinc-50/80 dark:bg-zinc-800/80 border-b border-zinc-200/80 dark:border-zinc-700/60 text-zinc-500 dark:text-zinc-400 font-semibold uppercase tracking-wider text-[11px]">
+              <div className="flex items-center gap-3 flex-1 min-w-0">
+                <span className="w-24 shrink-0">Thời gian</span>
+                <span className="w-20 shrink-0">Cấp độ</span>
+                <span className="w-28 shrink-0 hidden sm:inline">Loại tác vụ</span>
+                <span className="w-28 shrink-0 hidden lg:inline">Nguồn</span>
+                <span className="flex-1 truncate">Nội dung thông điệp & Dữ liệu</span>
+              </div>
+              <div className="shrink-0 text-right w-36">
+                <span>Gian hàng / Chi tiết</span>
+              </div>
+            </div>
+
+            <div className="divide-y divide-zinc-200/70 dark:divide-zinc-700/60">
             {logs.map((log) => {
               const isExpanded = expandedLogId === log.id;
               const time = formatTime(log.createdAt);
@@ -654,68 +686,125 @@ export default function ShopeeLogsPage() {
                 </div>
               );
             })}
+            </div>
           </div>
         )}
 
-        {/* 5. Pagination */}
-        {totalPages > 1 && (
-          <div className="p-4 border-t border-zinc-200/80 dark:border-zinc-700/60 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs">
-            <div className="text-zinc-500 dark:text-zinc-400">
+        {/* 5. Pagination Bar */}
+        {!loading && totalRecords > 0 && (
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 px-5 py-4 border-t border-zinc-200/80 dark:border-zinc-700/60 bg-zinc-50/60 dark:bg-zinc-900/60 text-xs">
+            <div className="text-zinc-500 dark:text-zinc-400 text-center sm:text-left">
               Hiển thị{" "}
-              <strong>
-                {Math.min((currentPage - 1) * pageSize + 1, totalRecords)} -{" "}
-                {Math.min(currentPage * pageSize, totalRecords)}
+              <strong className="text-zinc-800 dark:text-zinc-200">
+                {Math.min((currentPage - 1) * pageSize + 1, totalRecords).toLocaleString("vi-VN")} -{" "}
+                {Math.min(currentPage * pageSize, totalRecords).toLocaleString("vi-VN")}
               </strong>{" "}
-              trong tổng số <strong>{totalRecords.toLocaleString()}</strong> bản ghi
-            </div>
-
-            <div className="flex items-center gap-1">
-              <button
-                onClick={() => setCurrentPage(1)}
-                disabled={currentPage <= 1}
-                className="px-2.5 py-1.5 rounded-lg border border-zinc-200 dark:border-zinc-700 disabled:opacity-40 hover:bg-zinc-50 dark:hover:bg-zinc-700/60 font-medium"
-              >
-                « Đầu
-              </button>
-              <button
-                onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-                disabled={currentPage <= 1}
-                className="px-2.5 py-1.5 rounded-lg border border-zinc-200 dark:border-zinc-700 disabled:opacity-40 hover:bg-zinc-50 dark:hover:bg-zinc-700/60 font-medium"
-              >
-                ‹ Trước
-              </button>
-
-              <span className="px-3 py-1 font-semibold text-zinc-700 dark:text-zinc-300">
+              trong tổng số{" "}
+              <strong className="text-zinc-800 dark:text-zinc-200">
+                {totalRecords.toLocaleString("vi-VN")}
+              </strong>{" "}
+              bản ghi nhật ký (Trang{" "}
+              <span className="font-semibold text-zinc-800 dark:text-zinc-200">
                 {currentPage} / {totalPages}
               </span>
+              )
+            </div>
 
-              <button
-                onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-                disabled={currentPage >= totalPages}
-                className="px-2.5 py-1.5 rounded-lg border border-zinc-200 dark:border-zinc-700 disabled:opacity-40 hover:bg-zinc-50 dark:hover:bg-zinc-700/60 font-medium"
-              >
-                Sau ›
-              </button>
-              <button
-                onClick={() => setCurrentPage(totalPages)}
-                disabled={currentPage >= totalPages}
-                className="px-2.5 py-1.5 rounded-lg border border-zinc-200 dark:border-zinc-700 disabled:opacity-40 hover:bg-zinc-50 dark:hover:bg-zinc-700/60 font-medium"
-              >
-                Cuối »
-              </button>
+            <div className="flex items-center gap-2 flex-wrap justify-center">
+              {/* Page size dropdown */}
+              <div className="flex items-center gap-1.5 pr-2 border-r border-zinc-200 dark:border-zinc-700">
+                <span className="text-[11px] text-zinc-400 whitespace-nowrap">Hiển thị:</span>
+                <select
+                  value={pageSize}
+                  onChange={(e) => {
+                    setPageSize(parseInt(e.target.value, 10));
+                    setCurrentPage(1);
+                  }}
+                  className="py-1 px-2 text-xs font-semibold rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-zinc-700 dark:text-zinc-200 focus:outline-hidden cursor-pointer"
+                >
+                  <option value={15}>15 / trang</option>
+                  <option value={25}>25 / trang</option>
+                  <option value={50}>50 / trang</option>
+                  <option value={100}>100 / trang</option>
+                </select>
+              </div>
 
-              <select
-                value={pageSize}
-                onChange={(e) => {
-                  setPageSize(parseInt(e.target.value, 10));
-                  setCurrentPage(1);
-                }}
-                className="ml-2 px-2 py-1 rounded-lg border border-zinc-200 dark:border-zinc-700 bg-transparent font-medium"
-              >
-                <option value={25}>25 / trang</option>
-                <option value={50}>50 / trang</option>
-                <option value={100}>100 / trang</option>
-              </select>
+              {/* Navigation buttons */}
+              <div className="flex items-center gap-1">
+                {/* Trang đầu */}
+                <button
+                  type="button"
+                  onClick={() => setCurrentPage(1)}
+                  disabled={currentPage <= 1}
+                  className="px-2.5 py-1.5 text-xs font-semibold rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-zinc-700 dark:text-zinc-200 hover:bg-zinc-50 dark:hover:bg-zinc-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer"
+                  title="Về trang đầu tiên"
+                >
+                  ««
+                </button>
+
+                {/* Trang trước */}
+                <button
+                  type="button"
+                  onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                  disabled={currentPage <= 1}
+                  className="px-3 py-1.5 text-xs font-semibold rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-zinc-700 dark:text-zinc-200 hover:bg-zinc-50 dark:hover:bg-zinc-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer"
+                >
+                  Trước
+                </button>
+
+                {/* Danh sách trang số */}
+                {paginationItems.map((item, idx) => {
+                  if (item === "...") {
+                    return (
+                      <span
+                        key={`dots-${idx}`}
+                        className="w-8 h-8 flex items-center justify-center text-xs text-zinc-400 font-bold"
+                      >
+                        ...
+                      </span>
+                    );
+                  }
+
+                  const pageNum = Number(item);
+                  const isActive = currentPage === pageNum;
+
+                  return (
+                    <button
+                      key={`page-${pageNum}`}
+                      type="button"
+                      onClick={() => setCurrentPage(pageNum)}
+                      className={`w-8 h-8 text-xs font-semibold rounded-xl transition-all cursor-pointer ${
+                        isActive
+                          ? "bg-blue-600 text-white shadow-sm font-bold scale-105"
+                          : "border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-700"
+                      }`}
+                    >
+                      {pageNum}
+                    </button>
+                  );
+                })}
+
+                {/* Trang sau */}
+                <button
+                  type="button"
+                  onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                  disabled={currentPage >= totalPages}
+                  className="px-3 py-1.5 text-xs font-semibold rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-zinc-700 dark:text-zinc-200 hover:bg-zinc-50 dark:hover:bg-zinc-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer"
+                >
+                  Sau
+                </button>
+
+                {/* Trang cuối */}
+                <button
+                  type="button"
+                  onClick={() => setCurrentPage(totalPages)}
+                  disabled={currentPage >= totalPages}
+                  className="px-2.5 py-1.5 text-xs font-semibold rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-zinc-700 dark:text-zinc-200 hover:bg-zinc-50 dark:hover:bg-zinc-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer"
+                  title="Đến trang cuối cùng"
+                >
+                  »»
+                </button>
+              </div>
             </div>
           </div>
         )}
