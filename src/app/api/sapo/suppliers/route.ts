@@ -80,22 +80,43 @@ export async function PUT(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
+  let attemptedCode = "";
   try {
     const body = await request.json();
     const { name, code, ...rest } = body;
 
-    if (!name) {
+    if (!name || !name.trim()) {
       return NextResponse.json(
         { success: false, message: "Tên nhà cung cấp không được để trống" },
         { status: 400 }
       );
     }
 
-    const result = await SapoService.createSupplier({
-      name,
-      code: code || `SUP${Date.now().toString().slice(-6)}`,
+    const trimmedCode = code ? String(code).trim() : "";
+    attemptedCode = trimmedCode;
+
+    // Sapo yêu cầu: Nếu người dùng tự đặt mã, không được bắt đầu bằng 'SUP' (Sapo dành riêng tiền tố SUP để tự sinh mã)
+    if (trimmedCode && /^SUP/i.test(trimmedCode)) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: "Mã nhà cung cấp không được bắt đầu bằng chữ 'SUP' (tiền tố này dành riêng cho hệ thống Sapo tự động sinh mã). Vui lòng chọn mã khác hoặc để trống ô này.",
+        },
+        { status: 400 }
+      );
+    }
+
+    const supplierPayload: any = {
+      name: name.trim(),
       ...rest,
-    });
+    };
+
+    // Nếu người dùng nhập mã riêng, gửi mã đó; nếu để trống, bỏ trường code để Sapo tự sinh mã chuẩn
+    if (trimmedCode) {
+      supplierPayload.code = trimmedCode;
+    }
+
+    const result = await SapoService.createSupplier(supplierPayload);
 
     try {
       await LogModel.createLog({
@@ -115,11 +136,26 @@ export async function POST(request: NextRequest) {
     });
   } catch (error: any) {
     console.error("[Sapo Create Supplier Error]:", error);
+
+    const errorMsg = error?.message || String(error);
+    let friendlyMessage = "Lỗi tạo nhà cung cấp mới trên Sapo";
+
+    // Xử lý lỗi Sapo trả về 500 khi trùng mã nhà cung cấp (kể cả với nhà cung cấp đã bị xóa)
+    if (errorMsg.includes("500") || errorMsg.includes("Internal Server Error") || errorMsg.includes("Internal server error")) {
+      if (attemptedCode) {
+        friendlyMessage = `Mã nhà cung cấp "${attemptedCode}" đã tồn tại hoặc đã từng được sử dụng trên Sapo (kể cả những nhà cung cấp đã từng bị xóa). Vui lòng đổi mã khác hoặc để trống để Sapo tự động tạo mã mới.`;
+      } else {
+        friendlyMessage = "Máy chủ Sapo gặp lỗi khi xử lý dữ liệu. Vui lòng thử lại sau giây lát hoặc để trống ô Mã NCC.";
+      }
+    } else if (errorMsg.includes("must not start with SUP")) {
+      friendlyMessage = "Mã nhà cung cấp không được bắt đầu bằng chữ 'SUP'. Vui lòng chọn mã khác hoặc để trống.";
+    }
+
     return NextResponse.json(
       {
         success: false,
-        message: "Lỗi tạo nhà cung cấp mới trên Sapo",
-        error: error.message || String(error),
+        message: friendlyMessage,
+        error: errorMsg,
       },
       { status: 500 }
     );
