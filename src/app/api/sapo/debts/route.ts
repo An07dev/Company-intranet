@@ -55,10 +55,11 @@ function parseOrderDebtData(doc: any) {
     raw.billing_address?.phone ||
     "";
 
+  // Ưu tiên Họ tên trên tài khoản khách hàng CRM Sapo
   const customerName =
-    raw.shipping_address?.name ||
     [raw.customer?.last_name, raw.customer?.first_name].filter(Boolean).join(" ").trim() ||
     raw.customer?.name ||
+    raw.shipping_address?.name ||
     doc.buyer_username ||
     "Khách lẻ";
 
@@ -72,10 +73,13 @@ function parseOrderDebtData(doc: any) {
   const createdTime = new Date(raw.created_on || raw.created_at || doc.createdAt).getTime();
   const paidTime = raw.paid_on ? new Date(raw.paid_on).getTime() : null;
   const totalPrice = Number(raw.total_price || doc.total_amount) || 0;
-  const totalReceived = Number(raw.total_received) || 0;
+  const rawReceived = Number(raw.total_received) || 0;
   const outstanding = Number(
-    raw.total_outstanding ?? raw.unpaid_amount ?? (totalPrice > totalReceived ? totalPrice - totalReceived : 0)
+    raw.total_outstanding ?? raw.unpaid_amount ?? (totalPrice > rawReceived ? totalPrice - rawReceived : 0)
   );
+
+  // Số tiền thực thu (nếu out = 0 và đã trả hết thì = total_price)
+  const totalReceived = rawReceived > 0 ? rawReceived : Math.max(0, totalPrice - outstanding);
 
   const sapoId = raw.id || (/^\d+$/.test(doc.id) ? doc.id : null);
   const financialStatus = raw.financial_status || (doc.status_description?.includes("pending") ? "pending" : "paid");
@@ -108,8 +112,8 @@ function parseOrderDebtData(doc: any) {
  * GET /api/sapo/debts
  * Query Parameters:
  *  - type: 'summary' | 'customers' | 'orders' | 'customer_detail'
- *  - start_date: YYYY-MM-DD (mặc định 30 ngày trước)
- *  - end_date: YYYY-MM-DD (mặc định hôm nay)
+ *  - start_date: YYYY-MM-DD (mặc định 30 ngày trước: 2026-09-08)
+ *  - end_date: YYYY-MM-DD (mặc định hôm nay: 2026-10-07)
  *  - filter: 'cuoi_ky' | 'phat_sinh' | 'all' (mặc định 'cuoi_ky')
  *  - search: string (tên hoặc SĐT)
  *  - page, limit
@@ -171,11 +175,11 @@ export async function GET(request: NextRequest) {
         }
         // B: Đơn phát sinh trong kỳ (startTime <= created_time <= endTime)
         else if (order.created_time >= startTime && order.created_time <= endTime) {
-          if (order.has_debt || (order.paid_time && order.paid_time > order.created_time + 60000)) {
-            totalTangTrongKy += order.total_price;
-            if (order.total_received > 0) {
-              totalGiamTrongKy += order.total_received;
-            }
+          totalTangTrongKy += order.total_price;
+          if (order.total_received > 0) {
+            totalGiamTrongKy += order.total_received;
+          }
+          if (order.outstanding > 0) {
             hasCustomerDebt = true;
           }
         }
@@ -220,7 +224,6 @@ export async function GET(request: NextRequest) {
         const order = parseOrderDebtData(doc);
         if (order.is_cancelled && !includeCancelled) continue;
 
-        // Bỏ qua đơn khách lẻ không có SĐT nếu bảng công nợ khách hàng cần theo dõi đối tượng cụ thể
         const rawPhone = order.customer_phone.replace(/\D/g, "");
         const key = rawPhone ? `phone_${rawPhone.slice(-9)}` : `name_${order.customer_name.toLowerCase()}`;
 
@@ -247,6 +250,14 @@ export async function GET(request: NextRequest) {
         c.order_count++;
         c.total_spent += order.total_price;
 
+        // Cập nhật tên nếu có tên CRM chuẩn
+        if (order.customer_name && order.customer_name !== "Khách lẻ") {
+          c.name = order.customer_name;
+        }
+        if (order.customer_address && !c.address) {
+          c.address = order.customer_address;
+        }
+
         let isOrderRelevant = false;
 
         // A: Đơn tạo trước kỳ
@@ -263,13 +274,11 @@ export async function GET(request: NextRequest) {
         }
         // B: Đơn tạo trong kỳ
         else if (order.created_time >= startTime && order.created_time <= endTime) {
-          if (order.has_debt || (order.paid_time && order.paid_time > order.created_time + 60000)) {
-            c.tang_trong_ky += order.total_price;
-            if (order.total_received > 0) {
-              c.giam_trong_ky += order.total_received;
-            }
-            isOrderRelevant = true;
+          c.tang_trong_ky += order.total_price;
+          if (order.total_received > 0) {
+            c.giam_trong_ky += order.total_received;
           }
+          isOrderRelevant = true;
         }
 
         if (order.outstanding > 0) {
@@ -308,9 +317,8 @@ export async function GET(request: NextRequest) {
         if (filterType === "cuoi_ky" && c.cuoi_ky <= 0) continue;
         if (filterType === "phat_sinh" && c.cuoi_ky <= 0 && c.tang_trong_ky <= 0 && c.giam_trong_ky <= 0) continue;
 
-        // Ẩn nhóm "Khách lẻ" không có SĐT nếu không muốn lẫn vào đối tượng khách nợ
+        // Ẩn nhóm khách lẻ vô danh không có SĐT
         if (!c.phone && (c.name === "Khách lẻ" || c.name === "Chưa rõ")) {
-          // Bỏ qua dòng khách lẻ vô danh
           continue;
         }
 

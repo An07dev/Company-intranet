@@ -580,6 +580,7 @@ const ShopeeOrderSchema = new Schema<IShopeeOrderDocument>(
   {
     timestamps: false,
     versionKey: false,
+    collection: "shopee_orders",
   }
 );
 
@@ -587,7 +588,7 @@ ShopeeOrderSchema.index({ order_status: 1, createdAt: -1 });
 ShopeeOrderSchema.index({ shop_username: 1, createdAt: -1 });
 
 export const MongoShopeeOrderModel: Model<IShopeeOrderDocument> =
-  mongoose.models.ShopeeOrder || mongoose.model<IShopeeOrderDocument>("ShopeeOrder", ShopeeOrderSchema);
+  mongoose.models.ShopeeOrder || mongoose.model<IShopeeOrderDocument>("ShopeeOrder", ShopeeOrderSchema, "shopee_orders");
 
 export interface IShopeeProductVariationDoc {
   model_id: string;
@@ -672,6 +673,7 @@ const ShopeeProductSchema = new Schema<IShopeeProductDocument>(
   {
     timestamps: false,
     versionKey: false,
+    collection: "shopee_products",
   }
 );
 
@@ -681,7 +683,7 @@ ShopeeProductSchema.index({ "variations.sku": 1 });
 
 export const MongoShopeeProductModel: Model<IShopeeProductDocument> =
   mongoose.models.ShopeeProduct ||
-  mongoose.model<IShopeeProductDocument>("ShopeeProduct", ShopeeProductSchema);
+  mongoose.model<IShopeeProductDocument>("ShopeeProduct", ShopeeProductSchema, "shopee_products");
 
 export interface IShopeeLogDocument {
   id: string;
