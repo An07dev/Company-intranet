@@ -30,22 +30,6 @@ const SAPO_ORDER_SOURCES = [
   { value: "other", label: "✏️ Nguồn khác (Tự nhập...)" },
 ];
 
-const SHIPPING_CARRIERS = [
-  { value: "", label: "-- Không chọn / Chưa gán --" },
-  { value: "Giao hàng tiết kiệm (GHTK)", label: "⚡ GHTK (Giao Hàng Tiết Kiệm)" },
-  { value: "Giao hàng nhanh (GHN)", label: "🚀 GHN (Giao Hàng Nhanh)" },
-  { value: "Viettel Post", label: "🔴 Viettel Post" },
-  { value: "VNPost", label: "📮 VNPost (Bưu Điện Việt Nam)" },
-  { value: "J&T Express", label: "🚚 J&T Express" },
-  { value: "Shopee Xpress (SPX)", label: "🟠 Shopee Xpress (SPX)" },
-  { value: "GrabExpress", label: "🟢 GrabExpress" },
-  { value: "Ahamove", label: "🛵 Ahamove" },
-  { value: "Lalamove", label: "🚐 Lalamove" },
-  { value: "Shipper nội bộ", label: "🏍️ Shipper nội bộ cửa hàng" },
-  { value: "Khách lấy tại quầy", label: "🚶 Khách tự lấy tại quầy" },
-  { value: "other", label: "✏️ Đơn vị khác (Tự nhập...)" },
-];
-
 export function CreateOrderModal({ isOpen, onClose, onOrderCreated }: CreateOrderModalProps) {
   const { toast } = useToast();
 
@@ -57,9 +41,6 @@ export function CreateOrderModal({ isOpen, onClose, onOrderCreated }: CreateOrde
   const [buyerEmail, setBuyerEmail] = useState("");
   const [buyerAddress, setBuyerAddress] = useState("");
   const [paymentMethod, setPaymentMethod] = useState("Tiền mặt");
-  const [carrierSelect, setCarrierSelect] = useState("");
-  const [customCarrier, setCustomCarrier] = useState("");
-  const [trackingNumber, setTrackingNumber] = useState("");
   const [note, setNote] = useState("");
   const [tags, setTags] = useState("internal_website");
   const [customerList, setCustomerList] = useState<any[]>([]);
@@ -151,11 +132,6 @@ export function CreateOrderModal({ isOpen, onClose, onOrderCreated }: CreateOrde
         ? (customSource.trim() || "Khác")
         : sourceSelect;
 
-    const finalCarrier =
-      carrierSelect === "other"
-        ? customCarrier.trim()
-        : carrierSelect;
-
     setLoading(true);
     try {
       const payload = {
@@ -171,8 +147,6 @@ export function CreateOrderModal({ isOpen, onClose, onOrderCreated }: CreateOrde
           quantity: Number(it.quantity) || 1,
         })),
         payment_method: paymentMethod,
-        shipping_carrier: finalCarrier,
-        tracking_number: trackingNumber.trim(),
         note: note.trim(),
         tags: tags.trim(),
       };
@@ -439,14 +413,14 @@ export function CreateOrderModal({ isOpen, onClose, onOrderCreated }: CreateOrde
             </div>
           </div>
 
-          {/* 3. Thanh toán & Vận chuyển */}
+          {/* 3. Thanh toán & Ghi chú */}
           <div className="bg-zinc-50 dark:bg-zinc-800/40 p-3.5 rounded-2xl border border-zinc-200/60 dark:border-zinc-800 space-y-3">
             <div className="font-semibold text-zinc-800 dark:text-zinc-200 flex items-center gap-1.5">
               <span>💳</span>
-              <span>Thanh toán & Vận chuyển</span>
+              <span>Thanh toán & Ghi chú</span>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
                 <label className="block text-[11px] font-medium text-zinc-600 dark:text-zinc-400 mb-1">
                   Hình thức thanh toán
@@ -454,68 +428,13 @@ export function CreateOrderModal({ isOpen, onClose, onOrderCreated }: CreateOrde
                 <select
                   value={paymentMethod}
                   onChange={(e) => setPaymentMethod(e.target.value)}
-                  className="w-full px-3 py-2 bg-white dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 rounded-xl text-zinc-900 dark:text-zinc-100 font-medium focus:ring-2 focus:ring-emerald-500 focus:outline-hidden"
+                  className="w-full px-3 py-2 bg-white dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 rounded-xl text-zinc-900 dark:text-zinc-100 font-medium focus:ring-2 focus:ring-emerald-500 focus:outline-hidden text-xs"
                 >
                   <option value="Tiền mặt">💵 Tiền mặt</option>
                   <option value="Chuyển khoản">🏦 Chuyển khoản ngân hàng</option>
                   <option value="COD">📦 Thu hộ COD</option>
                   <option value="Ví điện tử">📱 Ví điện tử</option>
                 </select>
-              </div>
-
-              {/* Đơn vị vận chuyển Dropdown */}
-              <div>
-                <label className="block text-[11px] font-medium text-zinc-600 dark:text-zinc-400 mb-1">
-                  Đơn vị vận chuyển
-                </label>
-                <select
-                  value={carrierSelect}
-                  onChange={(e) => setCarrierSelect(e.target.value)}
-                  className="w-full px-3 py-2 bg-white dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 rounded-xl text-zinc-900 dark:text-zinc-100 font-medium focus:ring-2 focus:ring-emerald-500 focus:outline-hidden text-xs cursor-pointer"
-                >
-                  {SHIPPING_CARRIERS.map((c) => (
-                    <option key={c.value} value={c.value}>
-                      {c.label}
-                    </option>
-                  ))}
-                </select>
-                {carrierSelect === "other" && (
-                  <input
-                    type="text"
-                    placeholder="Nhập tên đơn vị vận chuyển..."
-                    value={customCarrier}
-                    onChange={(e) => setCustomCarrier(e.target.value)}
-                    className="w-full mt-1.5 px-3 py-2 bg-white dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 rounded-xl text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 focus:ring-2 focus:ring-emerald-500 focus:outline-hidden text-xs animate-in fade-in duration-150"
-                  />
-                )}
-              </div>
-
-              <div>
-                <label className="block text-[11px] font-medium text-zinc-600 dark:text-zinc-400 mb-1">
-                  Mã vận đơn (Tracking)
-                </label>
-                <input
-                  type="text"
-                  placeholder="Mã bill gửi hàng"
-                  value={trackingNumber}
-                  onChange={(e) => setTrackingNumber(e.target.value)}
-                  className="w-full px-3 py-2 bg-white dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 rounded-xl text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 font-mono focus:ring-2 focus:ring-emerald-500 focus:outline-hidden"
-                />
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div>
-                <label className="block text-[11px] font-medium text-zinc-600 dark:text-zinc-400 mb-1">
-                  Ghi chú đơn hàng (Note)
-                </label>
-                <textarea
-                  rows={2}
-                  placeholder="Giao giờ hành chính, đóng gói cẩn thận..."
-                  value={note}
-                  onChange={(e) => setNote(e.target.value)}
-                  className="w-full px-3 py-2 bg-white dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 rounded-xl text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 focus:ring-2 focus:ring-emerald-500 focus:outline-hidden resize-none"
-                />
               </div>
 
               <div>
@@ -527,12 +446,22 @@ export function CreateOrderModal({ isOpen, onClose, onOrderCreated }: CreateOrde
                   placeholder="Ví dụ: vãng lai, khách vip, giao gấp..."
                   value={tags}
                   onChange={(e) => setTags(e.target.value)}
-                  className="w-full px-3 py-2 bg-white dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 rounded-xl text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 focus:ring-2 focus:ring-emerald-500 focus:outline-hidden"
+                  className="w-full px-3 py-2 bg-white dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 rounded-xl text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 focus:ring-2 focus:ring-emerald-500 focus:outline-hidden text-xs"
                 />
-                <span className="text-[10px] text-zinc-400 mt-1 block">
-                  Phân cách nhiều thẻ bằng dấu phẩy
-                </span>
               </div>
+            </div>
+
+            <div>
+              <label className="block text-[11px] font-medium text-zinc-600 dark:text-zinc-400 mb-1">
+                Ghi chú đơn hàng (Note)
+              </label>
+              <textarea
+                rows={2}
+                placeholder="Giao giờ hành chính, đóng gói cẩn thận..."
+                value={note}
+                onChange={(e) => setNote(e.target.value)}
+                className="w-full px-3 py-2 bg-white dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 rounded-xl text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 focus:ring-2 focus:ring-emerald-500 focus:outline-hidden resize-none text-xs"
+              />
             </div>
           </div>
 
