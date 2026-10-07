@@ -377,7 +377,10 @@ export const SapoService = {
   /**
    * Tải ảnh sản phẩm lên Sapo
    */
-  async uploadProductImage(productId: number | string, imageObj: { src?: string; attachment?: string; filename?: string }): Promise<any> {
+  async uploadProductImage(
+    productId: number | string,
+    imageObj: { src?: string; attachment?: string; filename?: string; variant_ids?: (number | string)[] }
+  ): Promise<any> {
     return sapoFetch(`/admin/products/${productId}/images.json`, {
       method: "POST",
       body: JSON.stringify({ image: imageObj }),

@@ -79,8 +79,47 @@ export function CreateProductModal({
     setSku(`YS-${randomCode}`);
   };
 
+  // Nén ảnh trên trình duyệt trước khi tải lên (giảm dung lượng ảnh chụp 3-10MB xuống ~150KB)
+  const compressImage = (file: File): Promise<string> => {
+    return new Promise((resolve) => {
+      const img = new Image();
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        img.onload = () => {
+          const maxDim = 1200;
+          let width = img.width;
+          let height = img.height;
+          if (width > maxDim || height > maxDim) {
+            if (width > height) {
+              height = Math.round((height * maxDim) / width);
+              width = maxDim;
+            } else {
+              width = Math.round((width * maxDim) / height);
+              height = maxDim;
+            }
+          }
+          const canvas = document.createElement("canvas");
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext("2d");
+          if (!ctx) {
+            resolve(e.target?.result as string);
+            return;
+          }
+          ctx.drawImage(img, 0, 0, width, height);
+          const dataUrl = canvas.toDataURL("image/jpeg", 0.85);
+          resolve(dataUrl);
+        };
+        img.onerror = () => resolve(e.target?.result as string);
+        img.src = e.target?.result as string;
+      };
+      reader.onerror = () => resolve("");
+      reader.readAsDataURL(file);
+    });
+  };
+
   // Xử lý tệp hình ảnh
-  const handleFileChange = (file: File) => {
+  const handleFileChange = async (file: File) => {
     if (!file) return;
 
     if (!file.type.startsWith("image/")) {
@@ -88,18 +127,22 @@ export function CreateProductModal({
       return;
     }
 
-    if (file.size > 5 * 1024 * 1024) {
-      toast.error("Kích thước ảnh tối đa 5MB");
+    if (file.size > 10 * 1024 * 1024) {
+      toast.error("Kích thước ảnh tối đa 10MB");
       return;
     }
 
     setFileName(file.name);
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      const result = e.target?.result as string;
-      setImage(result);
-    };
-    reader.readAsDataURL(file);
+    try {
+      const compressed = await compressImage(file);
+      setImage(compressed || "");
+    } catch {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        setImage((e.target?.result as string) || "");
+      };
+      reader.readAsDataURL(file);
+    }
   };
 
   const handleClearImage = () => {

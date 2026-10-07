@@ -9,18 +9,19 @@ import path from "path";
 export const maxDuration = 30;
 
 /**
- * Helper: Tải ảnh (Base64 hoặc URL) lên Sapo để lưu trữ trên Sapo Bizweb CDN
- * và trả về URL ảnh CDN chính thức của Sapo (https://bizweb.dktcdn.net/...)
+ * Helper: Chuyển đổi dữ liệu ảnh (Base64 hoặc URL) thành link public trực tiếp
+ * để máy chủ Sapo có thể tải về và lưu trữ vào CDN Bizweb
  */
-async function syncImageToSapo(sapoProductId: string | number, imageInput: string): Promise<string> {
+async function uploadToPublicStorage(imageInput: string): Promise<string> {
   if (!imageInput || !imageInput.trim()) return "";
   const clean = imageInput.trim();
 
-  try {
-    let publicUrl = "";
+  if (clean.startsWith("http://") || clean.startsWith("https://")) {
+    return clean;
+  }
 
-    if (clean.startsWith("data:image/")) {
-      // 1. Tải ảnh Base64 lên dịch vụ lưu trữ trung gian Catbox để nhận public direct URL
+  if (clean.startsWith("data:image/")) {
+    try {
       const matches = clean.match(/^data:([A-Za-z-+\/]+);base64,(.+)$/);
       if (matches && matches.length === 3) {
         const mimeType = matches[1];
@@ -44,17 +45,44 @@ async function syncImageToSapo(sapoProductId: string | number, imageInput: strin
         if (catboxRes.ok) {
           const text = (await catboxRes.text()).trim();
           if (text.startsWith("http")) {
-            publicUrl = text;
+            console.log(`[Upload Public Storage] Đã tải ảnh lên trung gian thành công: ${text}`);
+            return text;
           }
+        } else {
+          console.warn("[Upload Public Storage] Phản hồi lỗi từ Catbox:", catboxRes.status);
         }
       }
-    } else if (clean.startsWith("http://") || clean.startsWith("https://")) {
-      publicUrl = clean;
+    } catch (err: any) {
+      console.warn("[Upload Public Storage Error]:", err.message);
     }
+  }
 
-    // 2. Đồng bộ URL ảnh lên Sapo qua API POST /admin/products/{id}/images.json
-    if (publicUrl) {
-      const sapoImgRes = await SapoService.uploadProductImage(sapoProductId, { src: publicUrl });
+  return clean;
+}
+
+/**
+ * Helper: Tải ảnh (Base64 hoặc URL) lên Sapo để lưu trữ trên Sapo Bizweb CDN
+ * và gắn trực tiếp vào các biến thể (variant_ids) của sản phẩm
+ */
+async function syncImageToSapo(
+  sapoProductId: string | number,
+  imageInput: string,
+  variantIds?: (string | number)[]
+): Promise<string> {
+  if (!imageInput || !imageInput.trim()) return "";
+  const clean = imageInput.trim();
+
+  try {
+    const publicUrl = await uploadToPublicStorage(clean);
+
+    // Đồng bộ URL ảnh lên Sapo qua API POST /admin/products/{id}/images.json
+    if (publicUrl && (publicUrl.startsWith("http://") || publicUrl.startsWith("https://"))) {
+      const imagePayload: any = { src: publicUrl };
+      if (variantIds && variantIds.length > 0) {
+        imagePayload.variant_ids = variantIds.map(Number).filter(Boolean);
+      }
+
+      const sapoImgRes = await SapoService.uploadProductImage(sapoProductId, imagePayload);
       if (sapoImgRes?.image?.src) {
         return sapoImgRes.image.src; // URL CDN chính thức của Sapo: https://bizweb.dktcdn.net/...
       }
@@ -236,7 +264,8 @@ export async function PATCH(request: NextRequest) {
     // Cập nhật ảnh nếu có
     if (body.image !== undefined) {
       const cleanImg = String(body.image || "").trim();
-      const finalImageUrl = cleanImg ? await syncImageToSapo(item_id, cleanImg) : "";
+      const variantIds = (product.variations || []).map((v: any) => v.model_id).filter(Boolean);
+      const finalImageUrl = cleanImg ? await syncImageToSapo(item_id, cleanImg, variantIds) : "";
 
       updateDoc.image = finalImageUrl;
       if (product.variations && product.variations.length > 0) {
@@ -326,12 +355,24 @@ export async function POST(request: NextRequest) {
       Array.isArray(variants) &&
       variants.length > 0;
 
+    // Chuẩn bị URL ảnh công khai trước khi tạo sản phẩm trên Sapo
+    let publicImageUrl = "";
+    if (image && typeof image === "string" && image.trim()) {
+      publicImageUrl = await uploadToPublicStorage(image.trim());
+    }
+
     // 1. Tạo sản phẩm trên Sapo REST API
     const sapoProductPayload: any = {
       name: name.trim(),
       tags: "kho_tong_yen_sen,internal_website",
       description: description.trim(),
     };
+
+    // Nếu đã có link ảnh công khai, gán trực tiếp vào sapoProductPayload.images
+    // Sapo sẽ tự động tải về, lưu CDN và liên kết tự động tới các biến thể (variant_ids, image_id)
+    if (publicImageUrl && (publicImageUrl.startsWith("http://") || publicImageUrl.startsWith("https://"))) {
+      sapoProductPayload.images = [{ src: publicImageUrl }];
+    }
 
     let formattedOptions: any[] = [];
     if (hasAttributes) {
@@ -376,10 +417,28 @@ export async function POST(request: NextRequest) {
 
     const sapoItemId = String(sapoProd.id);
 
-    // Đồng bộ ảnh sản phẩm lên Sapo Bizweb CDN và nhận URL chính thức
+    // Xác định URL ảnh chính thức từ Sapo Bizweb CDN
     let finalImageUrl = "";
-    if (image && typeof image === "string" && image.trim()) {
-      finalImageUrl = await syncImageToSapo(sapoItemId, image.trim());
+    if (sapoProd.images && sapoProd.images.length > 0 && sapoProd.images[0]?.src) {
+      finalImageUrl = sapoProd.images[0].src;
+    } else if (publicImageUrl && (publicImageUrl.startsWith("http://") || publicImageUrl.startsWith("https://"))) {
+      // Nếu Sapo chưa xử lý kịp ảnh trong payload tạo sản phẩm, gọi API upload kèm variant_ids
+      const variantIds = (sapoProd.variants || []).map((v: any) => v.id).filter(Boolean);
+      try {
+        const uploadImgRes = await SapoService.uploadProductImage(sapoItemId, {
+          src: publicImageUrl,
+          variant_ids: variantIds,
+        });
+        if (uploadImgRes?.image?.src) {
+          finalImageUrl = uploadImgRes.image.src;
+        }
+      } catch (uploadErr: any) {
+        console.warn("[Sapo Image Fallback Upload Warning]:", uploadErr.message);
+      }
+    }
+
+    if (!finalImageUrl) {
+      finalImageUrl = image && typeof image === "string" ? image.trim() : "";
     }
 
     // 2. Xử lý tồn kho và biến thể
