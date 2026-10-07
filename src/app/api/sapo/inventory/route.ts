@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { connectToDatabase } from "@/server/db";
-import { MongoShopeeProductModel } from "@/server/db/schema";
+import { MongoShopeeProductModel, MongoProductImageModel } from "@/server/db/schema";
 import { SapoService } from "@/server/services/sapo.service";
 import { LogModel } from "@/server/models/log.model";
 import fs from "fs/promises";
@@ -12,7 +12,7 @@ export const maxDuration = 30;
  * Helper: Chuyển đổi dữ liệu ảnh (Base64 hoặc URL) thành link public trực tiếp
  * để máy chủ Sapo có thể tải về và lưu trữ vào CDN Bizweb
  */
-async function uploadToPublicStorage(imageInput: string): Promise<string> {
+async function uploadToPublicStorage(imageInput: string, req?: NextRequest): Promise<string> {
   if (!imageInput || !imageInput.trim()) return "";
   const clean = imageInput.trim();
 
@@ -26,31 +26,32 @@ async function uploadToPublicStorage(imageInput: string): Promise<string> {
       if (matches && matches.length === 3) {
         const mimeType = matches[1];
         const base64Data = matches[2];
-        const buffer = Buffer.from(base64Data, "base64");
         let ext = "jpg";
         if (mimeType.includes("png")) ext = "png";
         else if (mimeType.includes("webp")) ext = "webp";
         else if (mimeType.includes("gif")) ext = "gif";
 
-        const form = new FormData();
-        const blob = new Blob([buffer], { type: mimeType });
-        form.append("reqtype", "fileupload");
-        form.append("fileToUpload", blob, `prod_${Date.now()}.${ext}`);
-
-        const catboxRes = await fetch("https://catbox.moe/user/api.php", {
-          method: "POST",
-          body: form,
+        // 1. Lưu ảnh trực tiếp vào cơ sở dữ liệu MongoDB phục vụ qua endpoint /api/images/[id]
+        const imgId = `img_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
+        await connectToDatabase();
+        await MongoProductImageModel.create({
+          id: imgId,
+          contentType: mimeType,
+          data: base64Data,
+          createdAt: new Date(),
         });
 
-        if (catboxRes.ok) {
-          const text = (await catboxRes.text()).trim();
-          if (text.startsWith("http")) {
-            console.log(`[Upload Public Storage] Đã tải ảnh lên trung gian thành công: ${text}`);
-            return text;
-          }
-        } else {
-          console.warn("[Upload Public Storage] Phản hồi lỗi từ Catbox:", catboxRes.status);
-        }
+        // Xác định URL công khai cho Sapo tải
+        const host = req?.headers.get("x-forwarded-host") || req?.headers.get("host") || "";
+        const proto = req?.headers.get("x-forwarded-proto") || "https";
+        const appUrl =
+          (host && !host.includes("localhost") && !host.includes("127.0.0.1") ? `${proto}://${host}` : "") ||
+          process.env.NEXT_PUBLIC_APP_URL ||
+          "https://company-intranet-bigman.vercel.app";
+
+        const selfHostedUrl = `${appUrl.replace(/\/$/, "")}/api/images/${imgId}.${ext}`;
+        console.log(`[Upload Public Storage] Đã tạo link self-hosted: ${selfHostedUrl}`);
+        return selfHostedUrl;
       }
     } catch (err: any) {
       console.warn("[Upload Public Storage Error]:", err.message);
@@ -67,13 +68,14 @@ async function uploadToPublicStorage(imageInput: string): Promise<string> {
 async function syncImageToSapo(
   sapoProductId: string | number,
   imageInput: string,
-  variantIds?: (string | number)[]
+  variantIds?: (string | number)[],
+  req?: NextRequest
 ): Promise<string> {
   if (!imageInput || !imageInput.trim()) return "";
   const clean = imageInput.trim();
 
   try {
-    const publicUrl = await uploadToPublicStorage(clean);
+    const publicUrl = await uploadToPublicStorage(clean, req);
 
     // Đồng bộ URL ảnh lên Sapo qua API POST /admin/products/{id}/images.json
     if (publicUrl && (publicUrl.startsWith("http://") || publicUrl.startsWith("https://"))) {
@@ -265,7 +267,7 @@ export async function PATCH(request: NextRequest) {
     if (body.image !== undefined) {
       const cleanImg = String(body.image || "").trim();
       const variantIds = (product.variations || []).map((v: any) => v.model_id).filter(Boolean);
-      const finalImageUrl = cleanImg ? await syncImageToSapo(item_id, cleanImg, variantIds) : "";
+      const finalImageUrl = cleanImg ? await syncImageToSapo(item_id, cleanImg, variantIds, request) : "";
 
       updateDoc.image = finalImageUrl;
       if (product.variations && product.variations.length > 0) {
@@ -358,7 +360,7 @@ export async function POST(request: NextRequest) {
     // Chuẩn bị URL ảnh công khai trước khi tạo sản phẩm trên Sapo
     let publicImageUrl = "";
     if (image && typeof image === "string" && image.trim()) {
-      publicImageUrl = await uploadToPublicStorage(image.trim());
+      publicImageUrl = await uploadToPublicStorage(image.trim(), request);
     }
 
     // 1. Tạo sản phẩm trên Sapo REST API

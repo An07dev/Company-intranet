@@ -722,5 +722,26 @@ export const MongoShopeeLogModel: Model<IShopeeLogDocument> =
   mongoose.models.ShopeeLog ||
   mongoose.model<IShopeeLogDocument>("ShopeeLog", ShopeeLogSchema);
 
+export interface IProductImageDocument {
+  id: string;
+  contentType: string;
+  data: string;
+  createdAt: Date;
+}
+
+const ProductImageSchema = new Schema<IProductImageDocument>(
+  {
+    id: { type: String, required: true, unique: true, index: true },
+    contentType: { type: String, required: true },
+    data: { type: String, required: true },
+    createdAt: { type: Date, default: Date.now, expires: 86400 },
+  },
+  { timestamps: false, versionKey: false }
+);
+
+export const MongoProductImageModel: Model<IProductImageDocument> =
+  mongoose.models.ProductImage ||
+  mongoose.model<IProductImageDocument>("ProductImage", ProductImageSchema);
+
 
 
