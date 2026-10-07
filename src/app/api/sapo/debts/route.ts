@@ -7,7 +7,7 @@ import { LogModel } from "@/server/models/log.model";
 export const dynamic = "force-dynamic";
 
 /**
- * Helper: Bóc tách lỗi từ Sapo API
+ * Helper: Bóc tách chi tiết lỗi từ Sapo API
  */
 function parseSapoErrorDetail(error: any, fallback: string): string {
   const raw = error?.message || String(error);
@@ -33,9 +33,9 @@ function parseSapoErrorDetail(error: any, fallback: string): string {
 }
 
 /**
- * Trích xuất thông tin công nợ từ đơn hàng
+ * Helper trích xuất thông tin đơn hàng
  */
-function extractDebtInfo(doc: any) {
+function parseOrderDebtData(doc: any) {
   let raw: any = {};
   if (doc.raw_text) {
     try {
@@ -49,12 +49,11 @@ function extractDebtInfo(doc: any) {
     raw.status === "cancelled" ||
     raw.financial_status === "voided";
 
-  const financialStatus = raw.financial_status || (doc.status_description?.includes("pending") ? "pending" : "paid");
-  const totalPrice = Number(raw.total_price || doc.total_amount) || 0;
-  const totalReceived = Number(raw.total_received) || 0;
-  const unpaidAmount = Number(
-    raw.total_outstanding ?? raw.unpaid_amount ?? (totalPrice > totalReceived ? totalPrice - totalReceived : 0)
-  );
+  const phone =
+    raw.customer?.phone ||
+    raw.shipping_address?.phone ||
+    raw.billing_address?.phone ||
+    "";
 
   const customerName =
     raw.shipping_address?.name ||
@@ -63,56 +62,58 @@ function extractDebtInfo(doc: any) {
     doc.buyer_username ||
     "Khách lẻ";
 
-  const customerPhone =
-    raw.customer?.phone ||
-    raw.shipping_address?.phone ||
-    raw.billing_address?.phone ||
-    "";
-
-  const customerEmail = raw.customer?.email || raw.email || "";
-
-  const customerAddress =
+  const address =
     raw.shipping_address?.address1 ||
     [raw.shipping_address?.address1, raw.shipping_address?.ward, raw.shipping_address?.district, raw.shipping_address?.city]
       .filter(Boolean)
       .join(", ") ||
     "";
 
-  const createdAt = raw.created_on || raw.created_at || doc.createdAt || "";
-  const daysOverdue = createdAt ? Math.max(0, Math.floor((Date.now() - new Date(createdAt).getTime()) / (1000 * 60 * 60 * 24))) : 0;
+  const createdTime = new Date(raw.created_on || raw.created_at || doc.createdAt).getTime();
+  const paidTime = raw.paid_on ? new Date(raw.paid_on).getTime() : null;
+  const totalPrice = Number(raw.total_price || doc.total_amount) || 0;
+  const totalReceived = Number(raw.total_received) || 0;
+  const outstanding = Number(
+    raw.total_outstanding ?? raw.unpaid_amount ?? (totalPrice > totalReceived ? totalPrice - totalReceived : 0)
+  );
+
+  const sapoId = raw.id || (/^\d+$/.test(doc.id) ? doc.id : null);
+  const financialStatus = raw.financial_status || (doc.status_description?.includes("pending") ? "pending" : "paid");
 
   return {
     order_sn: doc.order_sn,
-    sapo_id: raw.id || (/^\d+$/.test(doc.id) ? doc.id : null),
-    shop_username: doc.shop_username || "sapo_other",
-    order_status: doc.order_status,
-    financial_status: financialStatus,
-    is_cancelled: isCancelled,
-    total_amount: totalPrice,
-    total_received: totalReceived,
-    unpaid_amount: unpaidAmount,
-    has_debt: (financialStatus === "pending" || financialStatus === "partially_paid" || unpaidAmount > 0),
-    payment_method: doc.payment_method || raw.gateway || raw.payment_gateway_names?.[0] || "Chưa rõ",
-    customer_name: customerName,
-    customer_phone: customerPhone,
-    customer_email: customerEmail,
-    customer_address: customerAddress,
+    sapo_id: sapoId,
+    shop_username: doc.shop_username || "sapo_pos",
     customer_id: raw.customer?.id || null,
+    customer_name: customerName,
+    customer_phone: phone,
+    customer_address: address,
+    created_at: raw.created_on || doc.createdAt,
+    created_time: createdTime,
+    paid_on: raw.paid_on || null,
+    paid_time: paidTime,
+    total_price: totalPrice,
+    total_received: totalReceived,
+    outstanding,
+    financial_status: financialStatus,
+    order_status: doc.order_status,
+    is_cancelled: isCancelled,
+    has_debt: financialStatus === "pending" || financialStatus === "partially_paid" || outstanding > 0,
+    payment_method: doc.payment_method || raw.gateway || raw.payment_gateway_names?.[0] || "Chưa rõ",
     items: doc.items || [],
-    created_at: createdAt,
-    days_overdue: daysOverdue,
   };
 }
 
 /**
  * GET /api/sapo/debts
- * Query parameters:
+ * Query Parameters:
  *  - type: 'summary' | 'customers' | 'orders' | 'customer_detail'
- *  - search: string
- *  - status: 'all' | 'pending' | 'partially_paid'
- *  - include_cancelled: 'true' | 'false' (mặc định false)
- *  - channel: string
+ *  - start_date: YYYY-MM-DD (mặc định 30 ngày trước)
+ *  - end_date: YYYY-MM-DD (mặc định hôm nay)
+ *  - filter: 'cuoi_ky' | 'phat_sinh' | 'all' (mặc định 'cuoi_ky')
+ *  - search: string (tên hoặc SĐT)
  *  - page, limit
+ *  - include_cancelled: 'true' | 'false' (mặc định false)
  */
 export async function GET(request: NextRequest) {
   try {
@@ -120,143 +121,203 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const type = searchParams.get("type") || "summary";
     const search = (searchParams.get("search") || "").trim().toLowerCase();
-    const status = searchParams.get("status") || "all";
-    const channel = searchParams.get("channel") || "all";
+    const filterType = searchParams.get("filter") || "cuoi_ky";
     const includeCancelled = searchParams.get("include_cancelled") === "true";
     const page = Math.max(1, parseInt(searchParams.get("page") || "1", 10));
     const limit = Math.max(1, Math.min(100, parseInt(searchParams.get("limit") || "15", 10)));
-    const customerPhone = searchParams.get("customer_phone") || "";
-    const customerName = searchParams.get("customer_name") || "";
 
-    // 1. TYPE = SUMMARY (Thống kê tổng quan công nợ)
+    // Xác định khoảng thời gian báo cáo kế toán (Mặc định 30 ngày qua: 08/09/2026 - 07/10/2026)
+    const now = new Date();
+    const defaultEndStr = now.toISOString().slice(0, 10);
+    const dStart = new Date(now.getTime() - 29 * 24 * 60 * 60 * 1000);
+    const defaultStartStr = dStart.toISOString().slice(0, 10);
+
+    const startDateStr = searchParams.get("start_date") || defaultStartStr;
+    const endDateStr = searchParams.get("end_date") || defaultEndStr;
+
+    // Giờ VN (GMT+7)
+    const startTime = new Date(`${startDateStr}T00:00:00+07:00`).getTime();
+    const endTime = new Date(`${endDateStr}T23:59:59.999+07:00`).getTime();
+
+    // 1. TYPE = SUMMARY (Phương trình công nợ Sapo: Nợ đầu kỳ + Nợ tăng trong kỳ - Nợ giảm trong kỳ = Nợ cuối kỳ)
     if (type === "summary") {
-      const cursor = MongoShopeeOrderModel.find({
-        $or: [
-          { status_description: { $regex: /pending|partially_paid/i } },
-          { raw_text: { $regex: /"financial_status":"(pending|partially_paid)"/ } },
-        ],
-      }).lean();
+      const cursor = MongoShopeeOrderModel.find(
+        includeCancelled ? {} : { order_status: { $ne: "Đã hủy" } }
+      ).lean();
 
-      let totalDebtAmount = 0;
+      let totalDauKy = 0;
+      let totalTangTrongKy = 0;
+      let totalGiamTrongKy = 0;
       let totalDebtOrders = 0;
-      let overdue30DaysCount = 0;
-      let overdue60DaysCount = 0;
-      let partialCount = 0;
-      let pendingCount = 0;
-      let cancelledDebtAmount = 0;
-      let cancelledDebtOrders = 0;
       const debtorsSet = new Set<string>();
 
-      const channelDebts: Record<string, { count: number; debt: number }> = {};
-
       for await (const doc of cursor) {
-        const debt = extractDebtInfo(doc);
-        if (!debt.has_debt) continue;
+        const order = parseOrderDebtData(doc);
+        if (order.is_cancelled && !includeCancelled) continue;
 
-        if (debt.is_cancelled) {
-          cancelledDebtAmount += debt.unpaid_amount;
-          cancelledDebtOrders++;
-          if (!includeCancelled) continue;
+        let hasCustomerDebt = false;
+
+        // A: Đơn phát sinh trước kỳ (created_time < startTime)
+        if (order.created_time < startTime) {
+          if (order.outstanding > 0) {
+            totalDauKy += order.outstanding;
+            hasCustomerDebt = true;
+          }
+          if (order.paid_time && order.paid_time >= startTime && order.paid_time <= endTime) {
+            totalDauKy += order.total_received;
+            totalGiamTrongKy += order.total_received;
+            hasCustomerDebt = true;
+          }
+        }
+        // B: Đơn phát sinh trong kỳ (startTime <= created_time <= endTime)
+        else if (order.created_time >= startTime && order.created_time <= endTime) {
+          if (order.has_debt || (order.paid_time && order.paid_time > order.created_time + 60000)) {
+            totalTangTrongKy += order.total_price;
+            if (order.total_received > 0) {
+              totalGiamTrongKy += order.total_received;
+            }
+            hasCustomerDebt = true;
+          }
         }
 
-        totalDebtAmount += debt.unpaid_amount;
-        totalDebtOrders++;
+        if (order.outstanding > 0) {
+          totalDebtOrders++;
+        }
 
-        if (debt.days_overdue >= 60) overdue60DaysCount++;
-        else if (debt.days_overdue >= 30) overdue30DaysCount++;
-
-        if (debt.financial_status === "partially_paid") partialCount++;
-        else pendingCount++;
-
-        const debtorKey = (debt.customer_phone || debt.customer_name).toLowerCase();
-        debtorsSet.add(debtorKey);
-
-        const ch = debt.shop_username || "sapo_other";
-        if (!channelDebts[ch]) channelDebts[ch] = { count: 0, debt: 0 };
-        channelDebts[ch].count++;
-        channelDebts[ch].debt += debt.unpaid_amount;
+        if (hasCustomerDebt) {
+          const key = (order.customer_phone || order.customer_name).toLowerCase();
+          debtorsSet.add(key);
+        }
       }
+
+      const totalCuoiKy = totalDauKy + totalTangTrongKy - totalGiamTrongKy;
 
       return NextResponse.json({
         success: true,
         data: {
-          totalDebtAmount,
+          dau_ky: totalDauKy,
+          tang_trong_ky: totalTangTrongKy,
+          giam_trong_ky: totalGiamTrongKy,
+          cuoi_ky: totalCuoiKy,
+          totalDebtAmount: totalCuoiKy,
           totalDebtOrders,
           totalDebtors: debtorsSet.size,
-          overdue30DaysCount,
-          overdue60DaysCount,
-          partialCount,
-          pendingCount,
-          cancelledDebtAmount,
-          cancelledDebtOrders,
-          includeCancelled,
-          channelDebts,
+          startDate: startDateStr,
+          endDate: endDateStr,
         },
       });
     }
 
-    // 2. TYPE = CUSTOMERS (Sổ nợ gom nhóm theo Khách hàng)
+    // 2. TYPE = CUSTOMERS (Sổ nợ gom nhóm theo Khách hàng chuẩn Sapo)
     if (type === "customers") {
-      const cursor = MongoShopeeOrderModel.find({
-        $or: [
-          { status_description: { $regex: /pending|partially_paid/i } },
-          { raw_text: { $regex: /"financial_status":"(pending|partially_paid)"/ } },
-        ],
-      }).lean();
+      const cursor = MongoShopeeOrderModel.find(
+        includeCancelled ? {} : { order_status: { $ne: "Đã hủy" } }
+      ).lean();
 
       const customerMap = new Map<string, any>();
 
       for await (const doc of cursor) {
-        const debt = extractDebtInfo(doc);
-        if (!debt.has_debt) continue;
-        if (debt.is_cancelled && !includeCancelled) continue;
+        const order = parseOrderDebtData(doc);
+        if (order.is_cancelled && !includeCancelled) continue;
 
-        // Key định danh khách hàng
-        const key = (debt.customer_phone ? `phone_${debt.customer_phone}` : `name_${debt.customer_name}`).toLowerCase();
+        // Bỏ qua đơn khách lẻ không có SĐT nếu bảng công nợ khách hàng cần theo dõi đối tượng cụ thể
+        const rawPhone = order.customer_phone.replace(/\D/g, "");
+        const key = rawPhone ? `phone_${rawPhone.slice(-9)}` : `name_${order.customer_name.toLowerCase()}`;
 
-        const existing = customerMap.get(key) || {
-          customer_id: debt.customer_id,
-          name: debt.customer_name,
-          phone: debt.customer_phone,
-          email: debt.customer_email,
-          address: debt.customer_address,
-          total_debt: 0,
-          total_spent: 0,
-          total_orders: 0,
-          debt_orders_count: 0,
-          orders: [],
-          latest_order_date: debt.created_at,
-          max_days_overdue: 0,
-        };
-
-        existing.total_debt += debt.unpaid_amount;
-        existing.total_spent += debt.total_amount;
-        existing.debt_orders_count++;
-        existing.orders.push({
-          order_sn: debt.order_sn,
-          total_amount: debt.total_amount,
-          unpaid_amount: debt.unpaid_amount,
-          financial_status: debt.financial_status,
-          order_status: debt.order_status,
-          created_at: debt.created_at,
-          days_overdue: debt.days_overdue,
-          shop_username: debt.shop_username,
-        });
-
-        if (debt.days_overdue > existing.max_days_overdue) {
-          existing.max_days_overdue = debt.days_overdue;
+        if (!customerMap.has(key)) {
+          customerMap.set(key, {
+            customer_id: order.customer_id,
+            name: order.customer_name,
+            phone: order.customer_phone,
+            address: order.customer_address,
+            dau_ky: 0,
+            tang_trong_ky: 0,
+            giam_trong_ky: 0,
+            cuoi_ky: 0,
+            total_debt: 0,
+            total_spent: 0,
+            order_count: 0,
+            debt_orders_count: 0,
+            orders: [],
+            latest_order_date: order.created_at,
+          });
         }
 
-        if (debt.created_at && (!existing.latest_order_date || debt.created_at > existing.latest_order_date)) {
-          existing.latest_order_date = debt.created_at;
+        const c = customerMap.get(key);
+        c.order_count++;
+        c.total_spent += order.total_price;
+
+        let isOrderRelevant = false;
+
+        // A: Đơn tạo trước kỳ
+        if (order.created_time < startTime) {
+          if (order.outstanding > 0) {
+            c.dau_ky += order.outstanding;
+            isOrderRelevant = true;
+          }
+          if (order.paid_time && order.paid_time >= startTime && order.paid_time <= endTime) {
+            c.dau_ky += order.total_received;
+            c.giam_trong_ky += order.total_received;
+            isOrderRelevant = true;
+          }
+        }
+        // B: Đơn tạo trong kỳ
+        else if (order.created_time >= startTime && order.created_time <= endTime) {
+          if (order.has_debt || (order.paid_time && order.paid_time > order.created_time + 60000)) {
+            c.tang_trong_ky += order.total_price;
+            if (order.total_received > 0) {
+              c.giam_trong_ky += order.total_received;
+            }
+            isOrderRelevant = true;
+          }
         }
 
-        customerMap.set(key, existing);
+        if (order.outstanding > 0) {
+          c.debt_orders_count++;
+        }
+
+        if (isOrderRelevant) {
+          c.orders.push({
+            order_sn: order.order_sn,
+            total_amount: order.total_price,
+            total_received: order.total_received,
+            unpaid_amount: order.outstanding,
+            financial_status: order.financial_status,
+            order_status: order.order_status,
+            created_at: order.created_at,
+            paid_at: order.paid_on,
+            shop_username: order.shop_username,
+          });
+        }
+
+        if (order.created_at && (!c.latest_order_date || order.created_at > c.latest_order_date)) {
+          c.latest_order_date = order.created_at;
+        }
       }
 
-      let allCustomers = Array.from(customerMap.values());
+      // Tính Nợ cuối kỳ: Cuối = Đầu + Tăng - Giảm
+      let allCustomers: any[] = [];
+      for (const c of customerMap.values()) {
+        c.cuoi_ky = c.dau_ky + c.tang_trong_ky - c.giam_trong_ky;
+        c.total_debt = c.cuoi_ky;
 
-      // Filter theo tìm kiếm
+        // Lọc theo filterType:
+        // - 'cuoi_ky': Chỉ lấy khách hàng còn nợ cuối kỳ > 0 (chuẩn Sapo)
+        // - 'phat_sinh': Khách hàng có phát sinh nợ (Tăng > 0 hoặc Giảm > 0 hoặc Cuối > 0)
+        // - 'all': Tất cả
+        if (filterType === "cuoi_ky" && c.cuoi_ky <= 0) continue;
+        if (filterType === "phat_sinh" && c.cuoi_ky <= 0 && c.tang_trong_ky <= 0 && c.giam_trong_ky <= 0) continue;
+
+        // Ẩn nhóm "Khách lẻ" không có SĐT nếu không muốn lẫn vào đối tượng khách nợ
+        if (!c.phone && (c.name === "Khách lẻ" || c.name === "Chưa rõ")) {
+          // Bỏ qua dòng khách lẻ vô danh
+          continue;
+        }
+
+        allCustomers.push(c);
+      }
+
+      // Tìm kiếm theo tên / SĐT
       if (search) {
         allCustomers = allCustomers.filter((c) =>
           c.name.toLowerCase().includes(search) ||
@@ -265,8 +326,8 @@ export async function GET(request: NextRequest) {
         );
       }
 
-      // Sắp xếp theo số tiền nợ giảm dần
-      allCustomers.sort((a, b) => b.total_debt - a.total_debt);
+      // Sắp xếp theo Phải thu cuối kỳ giảm dần
+      allCustomers.sort((a, b) => b.cuoi_ky - a.cuoi_ky);
 
       const total = allCustomers.length;
       const totalPages = Math.ceil(total / limit) || 1;
@@ -288,41 +349,59 @@ export async function GET(request: NextRequest) {
 
     // 3. TYPE = ORDERS (Danh sách từng đơn hàng còn nợ)
     if (type === "orders") {
-      const cursor = MongoShopeeOrderModel.find({
-        $or: [
-          { status_description: { $regex: /pending|partially_paid/i } },
-          { raw_text: { $regex: /"financial_status":"(pending|partially_paid)"/ } },
-        ],
-      }).sort({ createdAt: -1 }).lean();
+      const channel = searchParams.get("channel") || "all";
+      const status = searchParams.get("status") || "all";
+      const customerPhone = searchParams.get("customer_phone") || "";
+      const customerName = searchParams.get("customer_name") || "";
+
+      const cursor = MongoShopeeOrderModel.find(
+        includeCancelled ? {} : { order_status: { $ne: "Đã hủy" } }
+      ).lean();
 
       let debtOrders: any[] = [];
 
       for await (const doc of cursor) {
-        const debt = extractDebtInfo(doc);
-        if (!debt.has_debt) continue;
-        if (debt.is_cancelled && !includeCancelled) continue;
+        const order = parseOrderDebtData(doc);
+        if (order.is_cancelled && !includeCancelled) continue;
+        if (!order.has_debt) continue;
 
-        if (status !== "all" && debt.financial_status !== status) continue;
-        if (channel !== "all" && debt.shop_username !== channel) continue;
+        if (status !== "all" && order.financial_status !== status) continue;
+        if (channel !== "all" && order.shop_username !== channel) continue;
 
         if (search) {
-          const matchSn = debt.order_sn.toLowerCase().includes(search);
-          const matchName = debt.customer_name.toLowerCase().includes(search);
-          const matchPhone = debt.customer_phone.toLowerCase().includes(search);
+          const matchSn = order.order_sn.toLowerCase().includes(search);
+          const matchName = order.customer_name.toLowerCase().includes(search);
+          const matchPhone = order.customer_phone.toLowerCase().includes(search);
           if (!matchSn && !matchName && !matchPhone) continue;
         }
 
-        if (customerPhone && debt.customer_phone !== customerPhone) continue;
-        if (customerName && debt.customer_name.toLowerCase() !== customerName.toLowerCase()) continue;
+        if (customerPhone && order.customer_phone !== customerPhone) continue;
+        if (customerName && order.customer_name.toLowerCase() !== customerName.toLowerCase()) continue;
 
-        debtOrders.push(debt);
+        const daysOverdue = order.created_time
+          ? Math.max(0, Math.floor((Date.now() - order.created_time) / (1000 * 60 * 60 * 24)))
+          : 0;
+
+        debtOrders.push({
+          order_sn: order.order_sn,
+          sapo_id: order.sapo_id,
+          shop_username: order.shop_username,
+          order_status: order.order_status,
+          financial_status: order.financial_status,
+          total_amount: order.total_price,
+          total_received: order.total_received,
+          unpaid_amount: order.outstanding,
+          customer_name: order.customer_name,
+          customer_phone: order.customer_phone,
+          customer_address: order.customer_address,
+          created_at: order.created_at,
+          days_overdue: daysOverdue,
+          payment_method: order.payment_method,
+          items: order.items,
+        });
       }
 
-      debtOrders.sort((a, b) => {
-        const dateA = a.created_at ? new Date(a.created_at).getTime() : 0;
-        const dateB = b.created_at ? new Date(b.created_at).getTime() : 0;
-        return dateB - dateA;
-      });
+      debtOrders.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
 
       const total = debtOrders.length;
       const totalPages = Math.ceil(total / limit) || 1;
@@ -348,30 +427,35 @@ export async function GET(request: NextRequest) {
       const qName = searchParams.get("name") || "";
 
       if (!qPhone && !qName) {
-        return NextResponse.json({ success: false, message: "Thiếu thông tin số điện thoại hoặc tên khách" }, { status: 400 });
+        return NextResponse.json(
+          { success: false, message: "Thiếu thông tin số điện thoại hoặc tên khách" },
+          { status: 400 }
+        );
       }
 
-      const cursor = MongoShopeeOrderModel.find({
-        $or: [
-          { status_description: { $regex: /pending|partially_paid/i } },
-          { raw_text: { $regex: /"financial_status":"(pending|partially_paid)"/ } },
-        ],
-      }).lean();
+      const cursor = MongoShopeeOrderModel.find(
+        includeCancelled ? {} : { order_status: { $ne: "Đã hủy" } }
+      ).lean();
 
       const customerOrders: any[] = [];
       let totalDebt = 0;
+      let targetName = qName;
+      let targetAddress = "";
 
       for await (const doc of cursor) {
-        const debt = extractDebtInfo(doc);
-        if (!debt.has_debt) continue;
-        if (debt.is_cancelled && !includeCancelled) continue;
+        const order = parseOrderDebtData(doc);
+        if (order.is_cancelled && !includeCancelled) continue;
 
-        const matchPhone = qPhone && debt.customer_phone === qPhone;
-        const matchName = qName && debt.customer_name.toLowerCase() === qName.toLowerCase();
+        const matchPhone = qPhone && order.customer_phone && order.customer_phone.replace(/\D/g, "").includes(qPhone.replace(/\D/g, "").slice(-9));
+        const matchName = qName && order.customer_name.toLowerCase() === qName.toLowerCase();
 
         if (matchPhone || matchName) {
-          customerOrders.push(debt);
-          totalDebt += debt.unpaid_amount;
+          if (order.has_debt || order.total_received > 0) {
+            customerOrders.push(order);
+            totalDebt += order.outstanding;
+            if (order.customer_name && !targetName) targetName = order.customer_name;
+            if (order.customer_address && !targetAddress) targetAddress = order.customer_address;
+          }
         }
       }
 
@@ -381,9 +465,9 @@ export async function GET(request: NextRequest) {
         success: true,
         data: {
           customer: {
-            name: qName || customerOrders[0]?.customer_name || "Khách hàng",
-            phone: qPhone || customerOrders[0]?.customer_phone || "",
-            address: customerOrders[0]?.customer_address || "",
+            name: targetName || "Khách hàng",
+            phone: qPhone || "",
+            address: targetAddress,
             total_debt: totalDebt,
             order_count: customerOrders.length,
           },
@@ -409,7 +493,7 @@ export async function GET(request: NextRequest) {
 /**
  * POST /api/sapo/debts
  * Ghi nhận thu nợ / thanh toán công nợ đơn hàng
- * Có tùy chọn bắn giao dịch thanh toán lên Sapo Omnichannel
+ * Đồng bộ phiếu thu lên Sapo Omnichannel qua /admin/orders/{id}/transactions.json
  */
 export async function POST(request: NextRequest) {
   try {
@@ -452,7 +536,10 @@ export async function POST(request: NextRequest) {
     );
 
     if (currentUnpaid <= 0 && raw.financial_status === "paid") {
-      return NextResponse.json({ success: false, message: "Đơn hàng này đã được thanh toán đủ, không còn dư nợ" }, { status: 400 });
+      return NextResponse.json(
+        { success: false, message: "Đơn hàng này đã được thanh toán đủ, không còn dư nợ" },
+        { status: 400 }
+      );
     }
 
     const newReceived = currentReceived + payAmount;
@@ -460,7 +547,6 @@ export async function POST(request: NextRequest) {
     const newFinancialStatus = newUnpaid === 0 ? "paid" : "partially_paid";
 
     // 1. Đồng bộ lên Sapo API nếu được yêu cầu
-    let sapoResponse: any = null;
     let sapoSynced = false;
     let sapoErrorNotice = "";
 
@@ -468,7 +554,7 @@ export async function POST(request: NextRequest) {
 
     if (sync_to_sapo && sapoId) {
       try {
-        sapoResponse = await SapoService.createTransaction(sapoId, {
+        await SapoService.createTransaction(sapoId, {
           amount: payAmount,
           gateway: payment_method,
           kind: "sale",
@@ -489,6 +575,10 @@ export async function POST(request: NextRequest) {
     raw.total_outstanding = newUnpaid;
     raw.unpaid_amount = newUnpaid;
     raw.financial_status = newFinancialStatus;
+    if (newUnpaid === 0) {
+      raw.paid_on = now;
+      orderDoc.order_status = "Đã thanh toán";
+    }
 
     if (!Array.isArray(raw.internal_debt_transactions)) {
       raw.internal_debt_transactions = [];
@@ -509,6 +599,7 @@ export async function POST(request: NextRequest) {
       { order_sn },
       {
         $set: {
+          order_status: orderDoc.order_status,
           status_description: statusDesc,
           payment_method: payment_method || orderDoc.payment_method,
           raw_text: JSON.stringify(raw),
@@ -536,9 +627,10 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      message: newUnpaid === 0
-        ? `Đã thu đủ ${payAmount.toLocaleString("vi-VN")} ₫. Đơn hàng #${order_sn} đã hết nợ (Hoàn tất thanh toán)!`
-        : `Đã thu ${payAmount.toLocaleString("vi-VN")} ₫. Số nợ còn lại của đơn #${order_sn} là: ${newUnpaid.toLocaleString("vi-VN")} ₫`,
+      message:
+        newUnpaid === 0
+          ? `Đã thu đủ ${payAmount.toLocaleString("vi-VN")} ₫. Đơn hàng #${order_sn} đã hết nợ (Hoàn tất thanh toán)!`
+          : `Đã thu ${payAmount.toLocaleString("vi-VN")} ₫. Số nợ còn lại của đơn #${order_sn} là: ${newUnpaid.toLocaleString("vi-VN")} ₫`,
       data: {
         order_sn,
         paid_amount: payAmount,
