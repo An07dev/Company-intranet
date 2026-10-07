@@ -421,11 +421,24 @@ export async function POST(request: NextRequest) {
 
     // Xác định URL ảnh chính thức từ Sapo Bizweb CDN
     let finalImageUrl = "";
+    const variantIds = (sapoProd.variants || []).map((v: any) => v.id).filter(Boolean);
+
     if (sapoProd.images && sapoProd.images.length > 0 && sapoProd.images[0]?.src) {
       finalImageUrl = sapoProd.images[0].src;
+      const imgId = sapoProd.images[0].id;
+      // Khi sản phẩm có nhiều biến thể, Sapo không tự gán ảnh vào biến thể -> Cập nhật variant_ids để hiện thumbnail trên Sapo Admin
+      if (imgId && variantIds.length > 0) {
+        try {
+          await SapoService.updateProductImage(sapoItemId, imgId, {
+            id: imgId,
+            variant_ids: variantIds,
+          });
+        } catch (linkErr: any) {
+          console.warn("[Sapo Link Image To Variants Warning]:", linkErr.message);
+        }
+      }
     } else if (publicImageUrl && (publicImageUrl.startsWith("http://") || publicImageUrl.startsWith("https://"))) {
       // Nếu Sapo chưa xử lý kịp ảnh trong payload tạo sản phẩm, gọi API upload kèm variant_ids
-      const variantIds = (sapoProd.variants || []).map((v: any) => v.id).filter(Boolean);
       try {
         const uploadImgRes = await SapoService.uploadProductImage(sapoItemId, {
           src: publicImageUrl,

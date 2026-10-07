@@ -388,6 +388,20 @@ export const SapoService = {
   },
 
   /**
+   * Cập nhật thông tin ảnh sản phẩm trên Sapo (gán variant_ids vào ảnh)
+   */
+  async updateProductImage(
+    productId: number | string,
+    imageId: number | string,
+    imageObj: { id?: number | string; variant_ids?: (number | string)[] }
+  ): Promise<any> {
+    return sapoFetch(`/admin/products/${productId}/images/${imageId}.json`, {
+      method: "PUT",
+      body: JSON.stringify({ image: imageObj }),
+    });
+  },
+
+  /**
    * Lấy danh sách ID sản phẩm từ Sapo để đối soát tồn tại
    */
   async getProductsListSimple(page = 1, limit = 250): Promise<{ products: Array<{ id: number }> }> {
