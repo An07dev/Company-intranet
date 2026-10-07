@@ -80,7 +80,8 @@ export async function POST(request: NextRequest) {
       buyer_email,
       buyer_address,
       items,
-      payment_method = "COD",
+      payment_method = "Tiền mặt",
+      payment_status,
       shipping_carrier = "",
       tracking_number = "",
       note = "",
@@ -128,12 +129,24 @@ export async function POST(request: NextRequest) {
 
     const cleanTag = finalSourceName.toLowerCase().replace(/[^a-z0-9_]/g, "_");
 
-    // Gộp tags bao gồm kênh bán hàng để phân loại dễ dàng trên Sapo Admin
+    // Xử lý phương thức thanh toán & trạng thái thanh toán
+    const paymentLabel = (payment_method || "Tiền mặt").trim();
+    const cleanPayTag = paymentLabel.toLowerCase().replace(/[^a-z0-9_]/g, "_");
+
+    // Mặc định: Chuyển khoản, Ví điện tử, Tiền mặt, Thẻ -> Đã thanh toán ("paid")
+    // COD -> Chưa thanh toán ("pending")
+    const isPaid = payment_status
+      ? payment_status === "paid"
+      : paymentLabel !== "COD" && !paymentLabel.toLowerCase().includes("thu hộ");
+
+    // Gộp tags bao gồm kênh bán hàng và phương thức thanh toán
     const combinedTags = Array.from(
       new Set(
         [
           "internal_website",
           cleanTag ? `channel_${cleanTag}` : "channel_pos",
+          `httt_${cleanPayTag}`,
+          isPaid ? "da_thanh_toan" : "chua_thanh_toan",
           ...(tags ? tags.split(",").map((t: string) => t.trim()) : []),
         ].filter(Boolean)
       )
@@ -162,9 +175,18 @@ export async function POST(request: NextRequest) {
       country: "Vietnam",
     };
 
+    const calculatedTotal = items.reduce(
+      (sum: number, it: any) => sum + (Number(it.price) || 0) * (Number(it.quantity) || 1),
+      0
+    );
+
+    const orderNote = note
+      ? `${note} | HTTT: ${paymentLabel} (${isPaid ? "Đã thanh toán" : "Chưa thanh toán"})`
+      : `Hình thức thanh toán: ${paymentLabel} (${isPaid ? "Đã thanh toán" : "Chưa thanh toán"})`;
+
     const sapoPayload: any = {
       source_name: finalSourceName,
-      note,
+      note: orderNote,
       tags: combinedTags,
       customer: customerData,
       shipping_address: addressData,
@@ -174,15 +196,31 @@ export async function POST(request: NextRequest) {
         price: Number(it.price) || 0,
         quantity: Number(it.quantity) || 1,
       })),
-      gateway: payment_method,
+      gateway: paymentLabel,
+      financial_status: isPaid ? "paid" : "pending",
       note_attributes: [
         { name: "created_via", value: "internal_website" },
         { name: "sales_channel", value: finalSourceName },
+        { name: "payment_method", value: paymentLabel },
+        { name: "hình_thức_thanh_toán", value: paymentLabel },
+        { name: "trạng_thái_thanh_toán", value: isPaid ? "Đã thanh toán" : "Chưa thanh toán" },
       ],
     };
 
     if (buyer_email) {
       sapoPayload.email = buyer_email;
+    }
+
+    // Nếu đã thanh toán, đính kèm giao dịch thanh toán để Sapo Admin hiển thị đúng phương thức và số tiền đã nhận
+    if (isPaid && calculatedTotal > 0) {
+      sapoPayload.transactions = [
+        {
+          amount: calculatedTotal,
+          gateway: paymentLabel,
+          kind: "sale",
+          status: "success",
+        },
+      ];
     }
 
     const sapoRes = await SapoService.createOrder(sapoPayload);
@@ -195,6 +233,10 @@ export async function POST(request: NextRequest) {
     // Map & lưu vào MongoDB
     const doc = mapSapoOrder(sapoOrder, now);
     doc.shop_username = finalSourceName;
+    doc.payment_method = paymentLabel;
+    if (isPaid && doc.order_status === "Chờ xử lý") {
+      doc.order_status = "Đã thanh toán";
+    }
     if (shipping_carrier) doc.shipping_carrier = shipping_carrier;
     if (tracking_number) doc.tracking_number = tracking_number;
 

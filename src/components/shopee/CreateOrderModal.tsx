@@ -40,10 +40,20 @@ export function CreateOrderModal({ isOpen, onClose, onOrderCreated }: CreateOrde
   const [buyerPhone, setBuyerPhone] = useState("");
   const [buyerEmail, setBuyerEmail] = useState("");
   const [buyerAddress, setBuyerAddress] = useState("");
-  const [paymentMethod, setPaymentMethod] = useState("Tiền mặt");
+  const [paymentMethod, setPaymentMethod] = useState("Chuyển khoản");
+  const [paymentStatus, setPaymentStatus] = useState<"paid" | "pending">("paid");
   const [note, setNote] = useState("");
   const [tags, setTags] = useState("internal_website");
   const [customerList, setCustomerList] = useState<any[]>([]);
+
+  const handlePaymentMethodChange = (val: string) => {
+    setPaymentMethod(val);
+    if (val === "COD" || val.toLowerCase().includes("thu hộ")) {
+      setPaymentStatus("pending");
+    } else {
+      setPaymentStatus("paid");
+    }
+  };
 
   React.useEffect(() => {
     if (!isOpen) return;
@@ -147,6 +157,7 @@ export function CreateOrderModal({ isOpen, onClose, onOrderCreated }: CreateOrde
           quantity: Number(it.quantity) || 1,
         })),
         payment_method: paymentMethod,
+        payment_status: paymentStatus,
         note: note.trim(),
         tags: tags.trim(),
       };
@@ -427,28 +438,43 @@ export function CreateOrderModal({ isOpen, onClose, onOrderCreated }: CreateOrde
                 </label>
                 <select
                   value={paymentMethod}
-                  onChange={(e) => setPaymentMethod(e.target.value)}
+                  onChange={(e) => handlePaymentMethodChange(e.target.value)}
                   className="w-full px-3 py-2 bg-white dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 rounded-xl text-zinc-900 dark:text-zinc-100 font-medium focus:ring-2 focus:ring-emerald-500 focus:outline-hidden text-xs"
                 >
-                  <option value="Tiền mặt">💵 Tiền mặt</option>
                   <option value="Chuyển khoản">🏦 Chuyển khoản ngân hàng</option>
+                  <option value="Ví điện tử">📱 Ví điện tử (MoMo / ZaloPay / ShopeePay)</option>
+                  <option value="Tiền mặt">💵 Tiền mặt</option>
+                  <option value="Thanh toán thẻ">💳 Quẹt thẻ POS</option>
                   <option value="COD">📦 Thu hộ COD</option>
-                  <option value="Ví điện tử">📱 Ví điện tử</option>
                 </select>
               </div>
 
               <div>
                 <label className="block text-[11px] font-medium text-zinc-600 dark:text-zinc-400 mb-1">
-                  Nhãn / Thẻ phân loại (Tags)
+                  Trạng thái thanh toán
                 </label>
-                <input
-                  type="text"
-                  placeholder="Ví dụ: vãng lai, khách vip, giao gấp..."
-                  value={tags}
-                  onChange={(e) => setTags(e.target.value)}
-                  className="w-full px-3 py-2 bg-white dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 rounded-xl text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 focus:ring-2 focus:ring-emerald-500 focus:outline-hidden text-xs"
-                />
+                <select
+                  value={paymentStatus}
+                  onChange={(e) => setPaymentStatus(e.target.value as "paid" | "pending")}
+                  className="w-full px-3 py-2 bg-white dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 rounded-xl text-zinc-900 dark:text-zinc-100 font-medium focus:ring-2 focus:ring-emerald-500 focus:outline-hidden text-xs"
+                >
+                  <option value="paid">✅ Đã thanh toán (Ghi nhận thu tiền ngay)</option>
+                  <option value="pending">⏳ Chưa thanh toán (Chờ thanh toán / Thu tiền sau)</option>
+                </select>
               </div>
+            </div>
+
+            <div>
+              <label className="block text-[11px] font-medium text-zinc-600 dark:text-zinc-400 mb-1">
+                Nhãn / Thẻ phân loại (Tags)
+              </label>
+              <input
+                type="text"
+                placeholder="Ví dụ: vãng lai, khách vip, giao gấp..."
+                value={tags}
+                onChange={(e) => setTags(e.target.value)}
+                className="w-full px-3 py-2 bg-white dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 rounded-xl text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 focus:ring-2 focus:ring-emerald-500 focus:outline-hidden text-xs"
+              />
             </div>
 
             <div>

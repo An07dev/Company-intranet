@@ -56,6 +56,17 @@ export function getShopeeOrderStatus(status?: string): StatusStyle {
     };
   }
 
+  // Đã thanh toán / Paid
+  if (s.includes("đã thanh toán") || s.includes("paid")) {
+    return {
+      label: "Đã thanh toán",
+      badgeClass:
+        "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800",
+      dotClass: "bg-emerald-500",
+      icon: "💵",
+    };
+  }
+
   // Chờ lấy hàng / Ready to ship / Đang chuẩn bị hàng
   if (
     s.includes("chờ lấy hàng") ||
