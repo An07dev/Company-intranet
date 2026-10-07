@@ -54,6 +54,7 @@ export function CreateOrderModal({ isOpen, onClose, onOrderCreated }: CreateOrde
   const [customSource, setCustomSource] = useState("");
   const [buyerName, setBuyerName] = useState("");
   const [buyerPhone, setBuyerPhone] = useState("");
+  const [buyerEmail, setBuyerEmail] = useState("");
   const [buyerAddress, setBuyerAddress] = useState("");
   const [paymentMethod, setPaymentMethod] = useState("Tiền mặt");
   const [carrierSelect, setCarrierSelect] = useState("");
@@ -61,6 +62,36 @@ export function CreateOrderModal({ isOpen, onClose, onOrderCreated }: CreateOrde
   const [trackingNumber, setTrackingNumber] = useState("");
   const [note, setNote] = useState("");
   const [tags, setTags] = useState("internal_website");
+  const [customerList, setCustomerList] = useState<any[]>([]);
+
+  React.useEffect(() => {
+    if (!isOpen) return;
+    fetch("/api/sapo/customers?limit=100")
+      .then((res) => res.json())
+      .then((json) => {
+        if (json.success && json.data?.customers) {
+          setCustomerList(json.data.customers);
+        }
+      })
+      .catch(() => {});
+  }, [isOpen]);
+
+  const handleBuyerNameChange = (val: string) => {
+    setBuyerName(val);
+    const matched = customerList.find((c) => {
+      const fullName = [c.last_name, c.first_name].filter(Boolean).join(" ") || c.name || "";
+      return fullName.toLowerCase() === val.trim().toLowerCase();
+    });
+    if (matched) {
+      if (matched.phone && !buyerPhone) setBuyerPhone(matched.phone);
+      if (matched.email && !buyerEmail) setBuyerEmail(matched.email);
+      if (matched.default_address?.address1 && !buyerAddress) {
+        setBuyerAddress(
+          [matched.default_address.address1, matched.default_address.city].filter(Boolean).join(", ")
+        );
+      }
+    }
+  };
 
   const [items, setItems] = useState<LineItemInput[]>([
     { id: "1", product_name: "", quantity: 1, price: 0 },
@@ -132,6 +163,7 @@ export function CreateOrderModal({ isOpen, onClose, onOrderCreated }: CreateOrde
         shop_username: finalSource,
         buyer_name: buyerName.trim(),
         buyer_phone: buyerPhone.trim(),
+        buyer_email: buyerEmail.trim(),
         buyer_address: buyerAddress.trim(),
         items: items.map((it) => ({
           product_name: it.product_name.trim(),
@@ -238,17 +270,35 @@ export function CreateOrderModal({ isOpen, onClose, onOrderCreated }: CreateOrde
 
               {/* Họ & tên khách hàng */}
               <div>
-                <label className="block text-[11px] font-semibold text-zinc-700 dark:text-zinc-300 mb-1">
-                  Họ & tên khách hàng <span className="text-rose-500">*</span>
-                </label>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="block text-[11px] font-semibold text-zinc-700 dark:text-zinc-300">
+                    Họ & tên khách hàng <span className="text-rose-500">*</span>
+                  </label>
+                  {customerList.length > 0 && (
+                    <span className="text-[10px] text-emerald-600 dark:text-emerald-400">
+                      Gợi ý {customerList.length} khách Sapo
+                    </span>
+                  )}
+                </div>
                 <input
                   type="text"
                   required
-                  placeholder="Ví dụ: Nguyễn Văn A hoặc Khách lẻ"
+                  list="sapo-customer-suggestions"
+                  placeholder="Ví dụ: Nguyễn Văn A hoặc chọn từ danh sách"
                   value={buyerName}
-                  onChange={(e) => setBuyerName(e.target.value)}
+                  onChange={(e) => handleBuyerNameChange(e.target.value)}
                   className="w-full px-3 py-2 bg-white dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 rounded-xl text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 focus:ring-2 focus:ring-emerald-500 focus:outline-hidden text-xs"
                 />
+                <datalist id="sapo-customer-suggestions">
+                  {customerList.map((c) => {
+                    const fullName = [c.last_name, c.first_name].filter(Boolean).join(" ") || c.name || "";
+                    return (
+                      <option key={c.id} value={fullName}>
+                        {fullName} {c.phone ? `(${c.phone})` : ""}
+                      </option>
+                    );
+                  })}
+                </datalist>
               </div>
 
               {/* Số điện thoại */}
@@ -265,8 +315,22 @@ export function CreateOrderModal({ isOpen, onClose, onOrderCreated }: CreateOrde
                 />
               </div>
 
-              {/* Địa chỉ giao hàng */}
+              {/* Email khách hàng */}
               <div>
+                <label className="block text-[11px] font-medium text-zinc-600 dark:text-zinc-400 mb-1">
+                  Email khách hàng
+                </label>
+                <input
+                  type="email"
+                  placeholder="Ví dụ: khachhang@gmail.com"
+                  value={buyerEmail}
+                  onChange={(e) => setBuyerEmail(e.target.value)}
+                  className="w-full px-3 py-2 bg-white dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 rounded-xl text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 focus:ring-2 focus:ring-emerald-500 focus:outline-hidden text-xs"
+                />
+              </div>
+
+              {/* Địa chỉ giao hàng */}
+              <div className="sm:col-span-2">
                 <label className="block text-[11px] font-medium text-zinc-600 dark:text-zinc-400 mb-1">
                   Địa chỉ giao hàng
                 </label>

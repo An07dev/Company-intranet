@@ -77,6 +77,7 @@ export async function POST(request: NextRequest) {
       source_name,
       buyer_name,
       buyer_phone,
+      buyer_email,
       buyer_address,
       items,
       payment_method = "COD",
@@ -138,18 +139,36 @@ export async function POST(request: NextRequest) {
       )
     ).join(",");
 
+    // Phân tách họ và tên khách hàng để Sapo lưu chuẩn trường Customer (Khách hàng)
+    const cleanBuyerName = (buyer_name || "").trim();
+    const nameParts = cleanBuyerName.split(/\s+/);
+    const lastName = nameParts.length > 1 ? nameParts[0] : "";
+    const firstName = nameParts.length > 1 ? nameParts.slice(1).join(" ") : nameParts[0] || "Khách lẻ";
+
+    const customerData: any = {
+      first_name: firstName,
+      last_name: lastName,
+    };
+    if (buyer_phone) customerData.phone = buyer_phone;
+    if (buyer_email) customerData.email = buyer_email;
+
+    const addressData: any = {
+      first_name: firstName,
+      last_name: lastName,
+      name: cleanBuyerName,
+      phone: buyer_phone || "",
+      address1: buyer_address || "Việt Nam",
+      city: "Hồ Chí Minh",
+      country: "Vietnam",
+    };
+
     const sapoPayload: any = {
       source_name: finalSourceName,
       note,
       tags: combinedTags,
-      email: "khachhang@yensen.vn",
-      shipping_address: {
-        name: buyer_name,
-        phone: buyer_phone || "",
-        address1: buyer_address || "Việt Nam",
-        city: "Hồ Chí Minh",
-        country: "Vietnam",
-      },
+      customer: customerData,
+      shipping_address: addressData,
+      billing_address: addressData,
       line_items: items.map((it: any) => ({
         title: it.product_name || it.title || "Sản phẩm",
         price: Number(it.price) || 0,
@@ -161,6 +180,10 @@ export async function POST(request: NextRequest) {
         { name: "sales_channel", value: finalSourceName },
       ],
     };
+
+    if (buyer_email) {
+      sapoPayload.email = buyer_email;
+    }
 
     const sapoRes = await SapoService.createOrder(sapoPayload);
     const sapoOrder = sapoRes.order;
