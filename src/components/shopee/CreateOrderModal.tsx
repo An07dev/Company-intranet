@@ -16,11 +16,22 @@ interface CreateOrderModalProps {
   onOrderCreated?: () => void;
 }
 
+const POPULAR_SOURCES = [
+  { label: "Tại quầy", icon: "🏪" },
+  { label: "Zalo", icon: "💬" },
+  { label: "Facebook", icon: "📘" },
+  { label: "Hotline", icon: "📞" },
+  { label: "Website", icon: "🌐" },
+  { label: "Telesale", icon: "💼" },
+  { label: "TikTok", icon: "🎵" },
+  { label: "Khách quen", icon: "⭐" },
+];
+
 export function CreateOrderModal({ isOpen, onClose, onOrderCreated }: CreateOrderModalProps) {
   const { toast } = useToast();
 
   const [loading, setLoading] = useState(false);
-  const [shopUsername, setShopUsername] = useState("sapo_pos");
+  const [sourceName, setSourceName] = useState("Tại quầy");
   const [buyerName, setBuyerName] = useState("");
   const [buyerPhone, setBuyerPhone] = useState("");
   const [buyerAddress, setBuyerAddress] = useState("");
@@ -86,7 +97,8 @@ export function CreateOrderModal({ isOpen, onClose, onOrderCreated }: CreateOrde
     setLoading(true);
     try {
       const payload = {
-        shop_username: shopUsername,
+        source_name: sourceName.trim() || "Tại quầy",
+        shop_username: sourceName.trim() || "Tại quầy",
         buyer_name: buyerName.trim(),
         buyer_phone: buyerPhone.trim(),
         buyer_address: buyerAddress.trim(),
@@ -157,31 +169,70 @@ export function CreateOrderModal({ isOpen, onClose, onOrderCreated }: CreateOrde
 
         {/* Form Body */}
         <form onSubmit={handleSubmit} className="overflow-y-auto p-4 sm:p-5 space-y-4 text-xs">
-          {/* 1. Kênh bán hàng & Khách hàng */}
+          {/* 1. Nguồn đơn hàng & Khách hàng */}
           <div className="bg-zinc-50 dark:bg-zinc-800/40 p-3.5 rounded-2xl border border-zinc-200/60 dark:border-zinc-800 space-y-3">
             <div className="font-semibold text-zinc-800 dark:text-zinc-200 flex items-center gap-1.5">
               <span>👤</span>
-              <span>Kênh bán & Thông tin khách hàng</span>
+              <span>Nguồn đơn & Thông tin khách hàng</span>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div>
-                <label className="block text-[11px] font-medium text-zinc-600 dark:text-zinc-400 mb-1">
-                  Kênh bán hàng <span className="text-rose-500">*</span>
+            {/* Nguồn đơn hàng (Hiển thị cột Nguồn đơn trên Sapo) */}
+            <div>
+              <div className="flex items-center justify-between mb-1">
+                <label className="block text-[11px] font-semibold text-zinc-700 dark:text-zinc-300">
+                  Nguồn đơn hàng (Hiển thị trên Sapo Admin) <span className="text-rose-500">*</span>
                 </label>
-                <select
-                  value={shopUsername}
-                  onChange={(e) => setShopUsername(e.target.value)}
-                  className="w-full px-3 py-2 bg-white dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 rounded-xl text-zinc-900 dark:text-zinc-100 font-medium focus:ring-2 focus:ring-emerald-500 focus:outline-hidden"
-                >
-                  <option value="sapo_pos">🏪 Tại quầy (Sapo POS)</option>
-                  <option value="sapo_zalo">💬 Zalo OA / Chat</option>
-                  <option value="sapo_facebook">📘 Facebook Fanpage</option>
-                  <option value="sapo_web">🌐 Website Bán Hàng</option>
-                  <option value="sapo_direct">📞 Hotline / Bán trực tiếp</option>
-                </select>
+                <span className="text-[10px] text-zinc-400">
+                  Tự do nhập bất kỳ nguồn nào hoặc chọn nhanh
+                </span>
               </div>
+              <input
+                type="text"
+                required
+                list="sapo-source-suggestions"
+                placeholder="Ví dụ: Zalo, Facebook, Hotline, Tại quầy, Telesale, Khách quen..."
+                value={sourceName}
+                onChange={(e) => setSourceName(e.target.value)}
+                className="w-full px-3 py-2 bg-white dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 rounded-xl text-zinc-900 dark:text-zinc-100 font-medium placeholder:text-zinc-400 focus:ring-2 focus:ring-emerald-500 focus:outline-hidden text-xs"
+              />
+              <datalist id="sapo-source-suggestions">
+                <option value="Tại quầy" />
+                <option value="Zalo" />
+                <option value="Facebook" />
+                <option value="Hotline" />
+                <option value="Website" />
+                <option value="Telesale" />
+                <option value="TikTok" />
+                <option value="Instagram" />
+                <option value="Khách quen" />
+                <option value="Đối tác B2B" />
+                <option value="Hội chợ / Sự kiện" />
+              </datalist>
 
+              {/* Quick source pills */}
+              <div className="flex items-center gap-1.5 flex-wrap mt-2">
+                {POPULAR_SOURCES.map((s) => {
+                  const isSelected = sourceName === s.label;
+                  return (
+                    <button
+                      key={s.label}
+                      type="button"
+                      onClick={() => setSourceName(s.label)}
+                      className={`px-2 py-0.5 rounded-lg text-[11px] font-medium transition-all flex items-center gap-1 cursor-pointer border ${
+                        isSelected
+                          ? "bg-emerald-50 dark:bg-emerald-950/60 border-emerald-500 text-emerald-700 dark:text-emerald-300 font-bold shadow-xs"
+                          : "bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-700 text-zinc-600 dark:text-zinc-300 hover:border-zinc-300 dark:hover:border-zinc-600 hover:bg-zinc-50 dark:hover:bg-zinc-800"
+                      }`}
+                    >
+                      <span>{s.icon}</span>
+                      <span>{s.label}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
               <div>
                 <label className="block text-[11px] font-medium text-zinc-600 dark:text-zinc-400 mb-1">
                   Họ & tên khách hàng <span className="text-rose-500">*</span>

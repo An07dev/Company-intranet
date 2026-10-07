@@ -73,7 +73,8 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
 
     const {
-      shop_username = "sapo_pos",
+      shop_username = "Tại quầy",
+      source_name,
       buyer_name,
       buyer_phone,
       buyer_address,
@@ -99,22 +100,46 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const sourceName = (shop_username || "omnichannel").replace(/^sapo_/, "");
+    // Xử lý nguồn đơn (source_name) do người dùng tự do nhập hoặc chọn
+    const rawInputSource = (source_name || shop_username || "Tại quầy").trim();
+
+    // Sapo bảo vệ các từ khóa hệ thống (chính xác chữ thường):
+    // ["pos", "web", "admin", "shopee", "lazada", "tiktok"].
+    // Nếu truyền đúng các từ khóa này, Sapo API sẽ từ chối 422 "cannot be set to a protected value".
+    // Tự động chuyển đổi các từ khóa này sang tên hiển thị hợp lệ trên Sapo Admin:
+    let finalSourceName = rawInputSource;
+    const lower = rawInputSource.toLowerCase();
+    if (lower === "pos" || lower === "sapo_pos") {
+      finalSourceName = "Tại quầy";
+    } else if (lower === "web" || lower === "sapo_web") {
+      finalSourceName = "Website";
+    } else if (lower === "admin") {
+      finalSourceName = "Quản trị viên";
+    } else if (lower === "shopee" || lower === "sapo_shopee") {
+      finalSourceName = "Kênh Shopee";
+    } else if (lower === "lazada" || lower === "sapo_lazada") {
+      finalSourceName = "Kênh Lazada";
+    } else if (lower === "tiktok" || lower === "sapo_tiktok") {
+      finalSourceName = "Kênh TikTok";
+    } else {
+      finalSourceName = rawInputSource.replace(/^sapo_/i, "");
+    }
+
+    const cleanTag = finalSourceName.toLowerCase().replace(/[^a-z0-9_]/g, "_");
 
     // Gộp tags bao gồm kênh bán hàng để phân loại dễ dàng trên Sapo Admin
     const combinedTags = Array.from(
       new Set(
         [
           "internal_website",
-          sourceName ? `channel_${sourceName}` : "channel_pos",
+          cleanTag ? `channel_${cleanTag}` : "channel_pos",
           ...(tags ? tags.split(",").map((t: string) => t.trim()) : []),
         ].filter(Boolean)
       )
     ).join(",");
 
-    // Sapo Open API nghiêm cấm private API client gán source_name thành các giá trị hệ thống ('pos', 'web', 'shopee'...)
-    // Do đó KHÔNG gửi trường source_name trong payload; Sapo sẽ tự gán nguồn theo API Key
     const sapoPayload: any = {
+      source_name: finalSourceName,
       note,
       tags: combinedTags,
       email: "khachhang@yensen.vn",
@@ -133,7 +158,7 @@ export async function POST(request: NextRequest) {
       gateway: payment_method,
       note_attributes: [
         { name: "created_via", value: "internal_website" },
-        { name: "sales_channel", value: shop_username },
+        { name: "sales_channel", value: finalSourceName },
       ],
     };
 
@@ -146,7 +171,7 @@ export async function POST(request: NextRequest) {
 
     // Map & lưu vào MongoDB
     const doc = mapSapoOrder(sapoOrder, now);
-    doc.shop_username = shop_username;
+    doc.shop_username = finalSourceName;
     if (shipping_carrier) doc.shipping_carrier = shipping_carrier;
     if (tracking_number) doc.tracking_number = tracking_number;
 
@@ -160,9 +185,9 @@ export async function POST(request: NextRequest) {
       level: "success",
       type: "order_create",
       source: "sapo_order_create",
-      shop_username,
-      message: `Đã tạo đơn hàng mới trên Sapo: #${doc.order_sn} - Khách: ${buyer_name}`,
-      details: { order_sn: doc.order_sn, total: doc.total_amount },
+      shop_username: finalSourceName,
+      message: `Đã tạo đơn hàng mới trên Sapo: #${doc.order_sn} - Nguồn: ${finalSourceName} - Khách: ${buyer_name}`,
+      details: { order_sn: doc.order_sn, total: doc.total_amount, source_name: finalSourceName },
     });
 
     return NextResponse.json({
