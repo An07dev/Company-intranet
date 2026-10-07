@@ -3,6 +3,8 @@ import { connectToDatabase } from "@/server/db";
 import { MongoShopeeProductModel } from "@/server/db/schema";
 import { SapoService } from "@/server/services/sapo.service";
 import { LogModel } from "@/server/models/log.model";
+import fs from "fs/promises";
+import path from "path";
 
 export const maxDuration = 30;
 
@@ -169,8 +171,75 @@ export async function PATCH(request: NextRequest) {
       }
     }
 
-    // 3. Cập nhật MongoDB
+    // 3. Khởi tạo đối tượng cập nhật MongoDB
     const updateDoc: any = { updatedAt: now };
+
+    // Cập nhật ảnh nếu có
+    if (body.image !== undefined) {
+      let finalImageUrl = "";
+      const cleanImg = String(body.image || "").trim();
+
+      if (cleanImg.startsWith("data:image/")) {
+        try {
+          const matches = cleanImg.match(/^data:([A-Za-z-+\/]+);base64,(.+)$/);
+          if (matches && matches.length === 3) {
+            const mimeType = matches[1];
+            const base64Data = matches[2];
+            const buffer = Buffer.from(base64Data, "base64");
+
+            let ext = ".jpg";
+            if (mimeType.includes("png")) ext = ".png";
+            else if (mimeType.includes("webp")) ext = ".webp";
+            else if (mimeType.includes("gif")) ext = ".gif";
+
+            const uploadDir = path.join(process.cwd(), "public", "uploads", "products");
+            await fs.mkdir(uploadDir, { recursive: true });
+
+            const fileName = `prod_${Date.now()}_${Math.random().toString(36).slice(2, 7)}${ext}`;
+            const filePath = path.join(uploadDir, fileName);
+            await fs.writeFile(filePath, buffer);
+
+            finalImageUrl = `/uploads/products/${fileName}`;
+          }
+        } catch (imgErr: any) {
+          console.warn("[Save Edited Product Image Error]:", imgErr.message);
+          finalImageUrl = cleanImg;
+        }
+      } else if (cleanImg.startsWith("http://") || cleanImg.startsWith("https://")) {
+        finalImageUrl = cleanImg;
+      }
+
+      const host = request.headers.get("x-forwarded-host") || request.headers.get("host") || "";
+      const proto = request.headers.get("x-forwarded-proto") || "https";
+      const appUrl = process.env.NEXT_PUBLIC_APP_URL || (host && !host.includes("localhost") && !host.includes("127.0.0.1") ? `${proto}://${host}` : "");
+      let publicImageUrl = "";
+      if (finalImageUrl.startsWith("http://") || finalImageUrl.startsWith("https://")) {
+        publicImageUrl = finalImageUrl;
+      } else if (finalImageUrl.startsWith("/uploads/") && appUrl) {
+        publicImageUrl = `${appUrl.replace(/\/$/, "")}${finalImageUrl}`;
+      }
+
+      if (publicImageUrl) {
+        try {
+          const imgRes = await SapoService.uploadProductImage(item_id, { src: publicImageUrl });
+          if (imgRes?.image?.src) {
+            finalImageUrl = imgRes.image.src;
+          }
+        } catch (imgErr: any) {
+          console.warn("[Sapo Upload Image Warning]:", imgErr.message);
+        }
+      }
+
+      updateDoc.image = finalImageUrl;
+      if (product.variations && product.variations.length > 0) {
+        updateDoc.variations = product.variations.map((v: any) => ({
+          ...v,
+          image: finalImageUrl,
+        }));
+      }
+    }
+
+    // 4. Cập nhật thông tin chi tiết MongoDB
     if (name) updateDoc.name = name.trim();
     if (parent_sku) updateDoc.parent_sku = parent_sku.trim();
     if (price !== undefined) {
@@ -225,6 +294,7 @@ export async function POST(request: NextRequest) {
       stock = 0,
       description = "",
       branch = "Kho Tổng Yến Sen",
+      image = "",
     } = body;
 
     if (!name || !name.trim()) {
@@ -238,8 +308,57 @@ export async function POST(request: NextRequest) {
     const numPrice = Math.max(0, Number(price) || 0);
     const numStock = Math.max(0, Number(stock) || 0);
 
+    // Xử lý ảnh (Base64 tải lên từ máy hoặc Link URL)
+    let finalImageUrl = "";
+    if (image && typeof image === "string" && image.trim()) {
+      const cleanImg = image.trim();
+
+      if (cleanImg.startsWith("data:image/")) {
+        // Tải ảnh trực tiếp từ máy -> Lưu file vào /public/uploads/products/
+        try {
+          const matches = cleanImg.match(/^data:([A-Za-z-+\/]+);base64,(.+)$/);
+          if (matches && matches.length === 3) {
+            const mimeType = matches[1];
+            const base64Data = matches[2];
+            const buffer = Buffer.from(base64Data, "base64");
+
+            let ext = ".jpg";
+            if (mimeType.includes("png")) ext = ".png";
+            else if (mimeType.includes("webp")) ext = ".webp";
+            else if (mimeType.includes("gif")) ext = ".gif";
+
+            const uploadDir = path.join(process.cwd(), "public", "uploads", "products");
+            await fs.mkdir(uploadDir, { recursive: true });
+
+            const fileName = `prod_${Date.now()}_${Math.random().toString(36).slice(2, 7)}${ext}`;
+            const filePath = path.join(uploadDir, fileName);
+            await fs.writeFile(filePath, buffer);
+
+            finalImageUrl = `/uploads/products/${fileName}`;
+          }
+        } catch (imgErr: any) {
+          console.warn("[Save Product Image Error]:", imgErr.message);
+          finalImageUrl = cleanImg; // Dự phòng lưu chuỗi base64 trực tiếp vào DB
+        }
+      } else if (cleanImg.startsWith("http://") || cleanImg.startsWith("https://")) {
+        // URL hình ảnh trực tiếp từ internet
+        finalImageUrl = cleanImg;
+      }
+    }
+
+    // Xác định URL công khai để gửi lên Sapo nếu có
+    const host = request.headers.get("x-forwarded-host") || request.headers.get("host") || "";
+    const proto = request.headers.get("x-forwarded-proto") || "https";
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL || (host && !host.includes("localhost") && !host.includes("127.0.0.1") ? `${proto}://${host}` : "");
+    let publicImageUrl = "";
+    if (finalImageUrl.startsWith("http://") || finalImageUrl.startsWith("https://")) {
+      publicImageUrl = finalImageUrl;
+    } else if (finalImageUrl.startsWith("/uploads/") && appUrl) {
+      publicImageUrl = `${appUrl.replace(/\/$/, "")}${finalImageUrl}`;
+    }
+
     // 1. Tạo sản phẩm trên Sapo REST API
-    const sapoProductPayload = {
+    const sapoProductPayload: any = {
       name: name.trim(),
       tags: "kho_tong_yen_sen,internal_website",
       description: description.trim(),
@@ -252,6 +371,10 @@ export async function POST(request: NextRequest) {
       ],
     };
 
+    if (publicImageUrl) {
+      sapoProductPayload.images = [{ src: publicImageUrl }];
+    }
+
     const createRes = await SapoService.createProduct(sapoProductPayload);
     const sapoProd = createRes.product;
 
@@ -261,6 +384,21 @@ export async function POST(request: NextRequest) {
 
     const sapoItemId = String(sapoProd.id);
     const variantId = sapoProd.variants?.[0]?.id;
+
+    // Nếu Sapo đã tự sinh CDN URL cho ảnh, ưu tiên sử dụng Sapo CDN URL
+    if (sapoProd.images && sapoProd.images.length > 0 && sapoProd.images[0]?.src) {
+      finalImageUrl = sapoProd.images[0].src;
+    } else if (publicImageUrl && (!sapoProd.images || sapoProd.images.length === 0)) {
+      // Nếu chưa có ảnh trong kết quả tạo sản phẩm, gọi API upload ảnh riêng biệt
+      try {
+        const uploadImgRes = await SapoService.uploadProductImage(sapoItemId, { src: publicImageUrl });
+        if (uploadImgRes?.image?.src) {
+          finalImageUrl = uploadImgRes.image.src;
+        }
+      } catch (err: any) {
+        console.warn("[Sapo Image Upload Warning]:", err.message);
+      }
+    }
 
     // 2. Nếu có tồn kho ban đầu, kích hoạt quản lý tồn kho và gán số lượng
     if (variantId && numStock > 0) {
@@ -277,7 +415,7 @@ export async function POST(request: NextRequest) {
       item_id: sapoItemId,
       name: name.trim(),
       parent_sku: cleanSku,
-      image: "",
+      image: finalImageUrl,
       product_url: `https://cua-hang-yen-sen.mysapo.net/admin/products/${sapoItemId}`,
       price_min: numPrice,
       price_max: numPrice,
@@ -293,6 +431,7 @@ export async function POST(request: NextRequest) {
           sku: cleanSku,
           price: numPrice,
           stock: numStock,
+          image: finalImageUrl,
         },
       ],
       shop_username: "sapo_omnichannel",

@@ -21,12 +21,55 @@ export function CreateProductModal({
   const [price, setPrice] = useState<string>("0");
   const [stock, setStock] = useState<number>(0);
   const [description, setDescription] = useState("");
+  const [image, setImage] = useState("");
+  const [imageInputType, setImageInputType] = useState<"file" | "url">("file");
+  const [urlInput, setUrlInput] = useState("");
+  const [fileName, setFileName] = useState("");
+  const [isDragging, setIsDragging] = useState(false);
   const [loading, setLoading] = useState(false);
 
   // Generate random SKU helper
   const handleGenerateSku = () => {
     const randomCode = Math.floor(100000 + Math.random() * 900000);
     setSku(`YS-${randomCode}`);
+  };
+
+  const handleFileChange = (file: File) => {
+    if (!file) return;
+
+    if (!file.type.startsWith("image/")) {
+      toast.error("Vui lòng chọn tệp hình ảnh (PNG, JPG, WEBP, GIF)");
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error("Kích thước ảnh tối đa 5MB");
+      return;
+    }
+
+    setFileName(file.name);
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const result = e.target?.result as string;
+      setImage(result);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleClearImage = () => {
+    setImage("");
+    setFileName("");
+    setUrlInput("");
+  };
+
+  const handleApplyUrl = () => {
+    if (!urlInput.trim()) return;
+    if (!urlInput.trim().startsWith("http://") && !urlInput.trim().startsWith("https://")) {
+      toast.error("Vui lòng nhập đường dẫn URL hợp lệ (bắt đầu bằng http:// hoặc https://)");
+      return;
+    }
+    setImage(urlInput.trim());
+    setFileName("");
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -52,6 +95,7 @@ export function CreateProductModal({
           stock: numStock,
           description: description.trim(),
           branch: "Kho Tổng Yến Sen",
+          image: image.trim() || undefined,
         }),
       });
 
@@ -70,6 +114,9 @@ export function CreateProductModal({
       setPrice("0");
       setStock(0);
       setDescription("");
+      setImage("");
+      setUrlInput("");
+      setFileName("");
 
       onSuccess();
       onClose();
@@ -153,6 +200,137 @@ export function CreateProductModal({
               placeholder="VD: YS-DONGTRUNG-70ML (để trống hệ thống sẽ tự sinh)"
               className="w-full px-3 py-2 text-xs rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 font-mono focus:outline-hidden focus:ring-2 focus:ring-amber-500"
             />
+          </div>
+
+          {/* Ảnh sản phẩm */}
+          <div className="space-y-1.5">
+            <div className="flex items-center justify-between">
+              <label className="block text-[11px] font-semibold text-zinc-700 dark:text-zinc-300">
+                Hình ảnh sản phẩm (tùy chọn):
+              </label>
+              {!image && (
+                <div className="inline-flex rounded-lg p-0.5 bg-zinc-100 dark:bg-zinc-800 text-[10px] font-medium">
+                  <button
+                    type="button"
+                    onClick={() => setImageInputType("file")}
+                    className={`px-2 py-0.5 rounded-md transition cursor-pointer ${
+                      imageInputType === "file"
+                        ? "bg-white dark:bg-zinc-700 text-zinc-900 dark:text-white shadow-xs font-semibold"
+                        : "text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300"
+                    }`}
+                  >
+                    Tải từ máy
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setImageInputType("url")}
+                    className={`px-2 py-0.5 rounded-md transition cursor-pointer ${
+                      imageInputType === "url"
+                        ? "bg-white dark:bg-zinc-700 text-zinc-900 dark:text-white shadow-xs font-semibold"
+                        : "text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300"
+                    }`}
+                  >
+                    Dán URL ảnh
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {image ? (
+              /* Preview khi đã chọn ảnh */
+              <div className="flex items-center gap-3 p-2.5 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-zinc-50/50 dark:bg-zinc-800/40">
+                <img
+                  src={image}
+                  alt="Ảnh xem trước"
+                  className="w-14 h-14 rounded-lg object-cover border border-zinc-200 dark:border-zinc-700 shrink-0 bg-white dark:bg-zinc-800"
+                  onError={() => {
+                    toast.error("Không thể tải ảnh từ đường dẫn này");
+                    handleClearImage();
+                  }}
+                />
+                <div className="min-w-0 flex-1">
+                  <div className="font-semibold text-zinc-800 dark:text-zinc-200 truncate text-[11px]">
+                    {fileName || (image.length > 50 ? `${image.slice(0, 45)}...` : image)}
+                  </div>
+                  <div className="text-[10px] text-emerald-600 dark:text-emerald-400 font-medium mt-0.5">
+                    ✓ Đã đính kèm ảnh thành công
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleClearImage}
+                  className="px-2.5 py-1 text-[11px] font-medium rounded-lg text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 border border-rose-200/60 dark:border-rose-900/40 transition shrink-0 cursor-pointer"
+                >
+                  ✕ Xóa ảnh
+                </button>
+              </div>
+            ) : imageInputType === "file" ? (
+              /* Khung tải ảnh từ máy tính (kéo thả hoặc nhấp chọn) */
+              <label
+                onDragOver={(e) => {
+                  e.preventDefault();
+                  setIsDragging(true);
+                }}
+                onDragLeave={() => setIsDragging(false)}
+                onDrop={(e) => {
+                  e.preventDefault();
+                  setIsDragging(false);
+                  if (e.dataTransfer.files?.[0]) {
+                    handleFileChange(e.dataTransfer.files[0]);
+                  }
+                }}
+                className={`flex flex-col items-center justify-center p-3.5 rounded-xl border-2 border-dashed cursor-pointer transition text-center ${
+                  isDragging
+                    ? "border-amber-500 bg-amber-50/50 dark:bg-amber-950/20"
+                    : "border-zinc-300 dark:border-zinc-700 hover:border-amber-400 dark:hover:border-amber-500 bg-zinc-50/40 dark:bg-zinc-800/30"
+                }`}
+              >
+                <div className="text-xl mb-1">📷</div>
+                <div className="text-[11px] font-medium text-zinc-700 dark:text-zinc-300">
+                  <span className="text-amber-600 dark:text-amber-400 font-semibold underline">
+                    Nhấp để chọn ảnh
+                  </span>{" "}
+                  hoặc kéo thả vào đây
+                </div>
+                <div className="text-[10px] text-zinc-400 mt-0.5">
+                  Hỗ trợ PNG, JPG, WEBP, GIF (Tối đa 5MB)
+                </div>
+                <input
+                  type="file"
+                  accept="image/png,image/jpeg,image/webp,image/gif"
+                  className="hidden"
+                  onChange={(e) => {
+                    if (e.target.files?.[0]) {
+                      handleFileChange(e.target.files[0]);
+                    }
+                  }}
+                />
+              </label>
+            ) : (
+              /* Khung nhập URL trực tiếp */
+              <div className="flex gap-2">
+                <input
+                  type="url"
+                  value={urlInput}
+                  onChange={(e) => setUrlInput(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      handleApplyUrl();
+                    }
+                  }}
+                  placeholder="Dán link ảnh (VD: https://example.com/san-pham.jpg)..."
+                  className="flex-1 px-3 py-2 text-xs rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 focus:outline-hidden focus:ring-2 focus:ring-amber-500"
+                />
+                <button
+                  type="button"
+                  onClick={handleApplyUrl}
+                  className="px-3 py-2 rounded-xl bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-700 dark:text-zinc-300 font-medium text-xs transition border border-zinc-200 dark:border-zinc-700 cursor-pointer"
+                >
+                  Áp dụng
+                </button>
+              </div>
+            )}
           </div>
 
           {/* Đơn giá & Số lượng tồn ban đầu */}
