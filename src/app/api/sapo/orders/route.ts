@@ -99,12 +99,24 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const sourceName = shop_username.replace(/^sapo_/, "");
+    const sourceName = (shop_username || "omnichannel").replace(/^sapo_/, "");
 
-    const sapoPayload = {
-      source_name: sourceName,
+    // Gộp tags bao gồm kênh bán hàng để phân loại dễ dàng trên Sapo Admin
+    const combinedTags = Array.from(
+      new Set(
+        [
+          "internal_website",
+          sourceName ? `channel_${sourceName}` : "channel_pos",
+          ...(tags ? tags.split(",").map((t: string) => t.trim()) : []),
+        ].filter(Boolean)
+      )
+    ).join(",");
+
+    // Sapo Open API nghiêm cấm private API client gán source_name thành các giá trị hệ thống ('pos', 'web', 'shopee'...)
+    // Do đó KHÔNG gửi trường source_name trong payload; Sapo sẽ tự gán nguồn theo API Key
+    const sapoPayload: any = {
       note,
-      tags,
+      tags: combinedTags,
       email: "khachhang@yensen.vn",
       shipping_address: {
         name: buyer_name,
@@ -119,6 +131,10 @@ export async function POST(request: NextRequest) {
         quantity: Number(it.quantity) || 1,
       })),
       gateway: payment_method,
+      note_attributes: [
+        { name: "created_via", value: "internal_website" },
+        { name: "sales_channel", value: shop_username },
+      ],
     };
 
     const sapoRes = await SapoService.createOrder(sapoPayload);
