@@ -65,6 +65,7 @@ export function CreateProductModal({
   const [fileName, setFileName] = useState("");
   const [isDragging, setIsDragging] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [apiError, setApiError] = useState<string | null>(null);
 
   // Thuộc tính & Biến thể (Sapo Options & Variants)
   const [enableAttributes, setEnableAttributes] = useState(false);
@@ -303,84 +304,91 @@ export function CreateProductModal({
       return;
     }
 
-    setLoading(true);
-    try {
-      const numPrice = Number(price.replace(/[^0-9]/g, "")) || 0;
-      const numStock = Math.max(0, Number(stock) || 0);
+      setLoading(true);
+      setApiError(null);
+      try {
+        const numPrice = Number(price.replace(/[^0-9]/g, "")) || 0;
+        const numStock = Math.max(0, Number(stock) || 0);
 
-      const hasValidAttributes =
-        enableAttributes &&
-        attributes.some((a) => a.name.trim() && a.values.length > 0) &&
-        variants.length > 0;
+        const hasValidAttributes =
+          enableAttributes &&
+          attributes.some((a) => a.name.trim() && a.values.length > 0) &&
+          variants.length > 0;
 
-      const payload: any = {
-        name: name.trim(),
-        sku: sku.trim() || undefined,
-        price: numPrice,
-        stock: hasValidAttributes ? totalVariantStock : numStock,
-        description: description.trim(),
-        branch: "Kho Tổng Yến Sen",
-        image: image.trim() || undefined,
-      };
+        const payload: any = {
+          name: name.trim(),
+          sku: sku.trim() || undefined,
+          price: numPrice,
+          stock: hasValidAttributes ? totalVariantStock : numStock,
+          description: description.trim(),
+          branch: "Kho Tổng Yến Sen",
+          image: image.trim() || undefined,
+        };
 
-      if (hasValidAttributes) {
-        payload.options = attributes
-          .filter((a) => a.name.trim() && a.values.length > 0)
-          .map((a, idx) => ({
-            name: a.name.trim(),
-            values: a.values,
-            position: idx + 1,
+        if (hasValidAttributes) {
+          payload.options = attributes
+            .filter((a) => a.name.trim() && a.values.length > 0)
+            .map((a, idx) => ({
+              name: a.name.trim(),
+              values: a.values,
+              position: idx + 1,
+            }));
+
+          payload.variants = variants.map((v) => ({
+            name: v.name,
+            sku: v.sku.trim(),
+            price: Number(v.price.replace(/[^0-9]/g, "")) || 0,
+            stock: Math.max(0, Number(v.stock) || 0),
+            option1: v.option1,
+            option2: v.option2,
+            option3: v.option3,
           }));
+        }
 
-        payload.variants = variants.map((v) => ({
-          name: v.name,
-          sku: v.sku.trim(),
-          price: Number(v.price.replace(/[^0-9]/g, "")) || 0,
-          stock: Math.max(0, Number(v.stock) || 0),
-          option1: v.option1,
-          option2: v.option2,
-          option3: v.option3,
-        }));
+        const res = await fetch("/api/sapo/inventory", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+
+        const json = await res.json();
+        if (!res.ok || !json.success) {
+          const errMsg = json.sapo_detail || json.message || json.error || "Không thể tạo hàng hóa mới lên Sapo";
+          setApiError(errMsg);
+          toast.error(errMsg);
+          return;
+        }
+
+        toast.success(
+          `Đã tạo mã hàng mới ${json.data?.parent_sku || sku} ${
+            hasValidAttributes ? `(${variants.length} phân loại)` : ""
+          } lên Sapo thành công!`
+        );
+
+        // Reset form
+        setName("");
+        setSku("");
+        setPrice("0");
+        setStock(0);
+        setDescription("");
+        setImage("");
+        setUrlInput("");
+        setFileName("");
+        setEnableAttributes(false);
+        setAttributes([{ id: "attr_1", name: "Kích thước", values: [], inputValue: "" }]);
+        setVariants([]);
+        setApiError(null);
+
+        onSuccess();
+        onClose();
+      } catch (err: any) {
+        const errMsg = err?.message || "Lỗi khi tạo hàng hóa";
+        setApiError(errMsg);
+        toast.error(errMsg);
+      } finally {
+        setLoading(false);
       }
-
-      const res = await fetch("/api/sapo/inventory", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
-
-      const json = await res.json();
-      if (!res.ok || !json.success) {
-        throw new Error(json.message || "Không thể tạo hàng hóa mới lên Sapo");
-      }
-
-      toast.success(
-        `Đã tạo mã hàng mới ${json.data?.parent_sku || sku} ${
-          hasValidAttributes ? `(${variants.length} phân loại)` : ""
-        } lên Sapo thành công!`
-      );
-
-      // Reset form
-      setName("");
-      setSku("");
-      setPrice("0");
-      setStock(0);
-      setDescription("");
-      setImage("");
-      setUrlInput("");
-      setFileName("");
-      setEnableAttributes(false);
-      setAttributes([{ id: "attr_1", name: "Kích thước", values: [], inputValue: "" }]);
-      setVariants([]);
-
-      onSuccess();
-      onClose();
-    } catch (err: any) {
-      toast.error(err.message || "Lỗi khi tạo hàng hóa");
-    } finally {
-      setLoading(false);
-    }
-  };
+    };
 
   if (!isOpen) return null;
 
@@ -418,6 +426,21 @@ export function CreateProductModal({
 
         {/* Form Body */}
         <form onSubmit={handleSubmit} className="overflow-y-auto p-4 sm:p-5 space-y-4 text-xs">
+          {apiError && (
+            <div className="p-4 rounded-2xl bg-rose-50 dark:bg-rose-950/50 border border-rose-200 dark:border-rose-900/60 text-rose-700 dark:text-rose-300 text-xs space-y-2 animate-in fade-in duration-150">
+              <div className="flex items-center gap-2 font-bold text-rose-800 dark:text-rose-200">
+                <span className="text-base">⚠️</span>
+                <span>Phản hồi lỗi từ hệ thống Sapo:</span>
+              </div>
+              <div className="font-mono text-[11px] leading-relaxed break-words bg-rose-100/60 dark:bg-rose-900/40 p-2.5 rounded-xl text-rose-900 dark:text-rose-100 border border-rose-200/50">
+                {apiError}
+              </div>
+              <div className="text-[11px] text-rose-600 dark:text-rose-400">
+                💡 <em>Mẹo khắc phục:</em> Vui lòng kiểm tra lại xem <strong>mã SKU</strong> có bị trùng lặp trên Sapo không, hoặc tên phân loại/đơn giá có ký tự đặc biệt không.
+              </div>
+            </div>
+          )}
+
           {/* Tên hàng hóa */}
           <div className="space-y-1.5">
             <label className="block text-[11px] font-semibold text-zinc-700 dark:text-zinc-300">

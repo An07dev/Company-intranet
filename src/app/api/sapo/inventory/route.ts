@@ -98,6 +98,67 @@ async function syncImageToSapo(
 }
 
 /**
+ * Helper: Bóc tách lỗi chi tiết từ Sapo API (hỗ trợ array, object, error_description, 500 duplicate SKU)
+ */
+function parseSapoErrorDetail(
+  error: any,
+  fallbackMessage: string,
+  attemptedSku?: string
+): { displayMessage: string; rawError: string } {
+  const rawError = error?.message || String(error);
+  let extractedJson: any = null;
+  const jsonMatch = rawError.match(/\{[\s\S]*\}/);
+  if (jsonMatch) {
+    try {
+      extractedJson = JSON.parse(jsonMatch[0]);
+    } catch {}
+  }
+
+  const data = extractedJson || error?.response || {};
+
+  // Case 1: errors là danh sách các lỗi [{ message, fields }]
+  if (data?.errors && Array.isArray(data.errors)) {
+    const list = data.errors.map((e: any) => {
+      if (typeof e === "string") return e;
+      const field = e.fields?.length ? `[${e.fields.join(", ")}] ` : "";
+      return `${field}${e.message || JSON.stringify(e)}`;
+    });
+    return { displayMessage: list.join(" • "), rawError };
+  }
+
+  // Case 2: errors là object { "sku": ["has already been taken"], "name": ["must not be blank"] }
+  if (data?.errors && typeof data.errors === "object") {
+    const list = Object.entries(data.errors).map(([key, val]) => {
+      const valStr = Array.isArray(val) ? val.join(", ") : String(val);
+      return `Trường "${key}": ${valStr}`;
+    });
+    return { displayMessage: list.join(" • "), rawError };
+  }
+
+  // Case 3: error_description
+  if (data?.error_description) {
+    return { displayMessage: data.error_description, rawError };
+  }
+
+  // Case 4: Lỗi 500 từ Sapo (thường do SKU bị trùng lặp trong DB Sapo)
+  if (data?.error === "Internal server error" || rawError.includes("500") || rawError.includes("Internal Server Error")) {
+    const skuHint = attemptedSku
+      ? `Mã SKU "${attemptedSku}" đã tồn tại trong cơ sở dữ liệu Sapo (kể cả những sản phẩm đã từng bị xóa). Vui lòng đổi mã SKU khác để Sapo tiếp nhận.`
+      : "Máy chủ Sapo phản hồi lỗi 500 (Internal Server Error) do dữ liệu bị trùng SKU hoặc thuộc tính không hợp lệ. Vui lòng kiểm tra lại mã SKU.";
+    return {
+      displayMessage: skuHint,
+      rawError,
+    };
+  }
+
+  if (data?.error) {
+    return { displayMessage: String(data.error), rawError };
+  }
+
+  return { displayMessage: rawError || fallbackMessage, rawError };
+}
+
+/**
  * PUT /api/sapo/inventory
  * Điều chỉnh tồn kho thực tế (Kiểm kho / Cập nhật số lượng khả dụng) 2 chiều lên Sapo
  */
@@ -137,12 +198,22 @@ export async function PUT(request: NextRequest) {
     const targetModelId =
       model_id || product.variations?.[0]?.model_id || String(item_id);
 
-    // Cập nhật lên Sapo API
+    // Cập nhật lên Sapo API (không nuốt lỗi nếu Sapo từ chối)
     let sapoResponse: any = null;
     try {
       sapoResponse = await SapoService.updateVariantInventory(targetModelId, targetStock);
     } catch (sapoErr: any) {
-      console.warn(`[Sapo Inventory Update Warning] Variant ${targetModelId}:`, sapoErr.message);
+      console.error(`[Sapo Inventory Update Error] Variant ${targetModelId}:`, sapoErr);
+      const { displayMessage, rawError } = parseSapoErrorDetail(sapoErr, "Sapo từ chối cập nhật tồn kho");
+      return NextResponse.json(
+        {
+          success: false,
+          message: displayMessage,
+          sapo_detail: displayMessage,
+          error: rawError,
+        },
+        { status: 500 }
+      );
     }
 
     // Cập nhật trong MongoDB
@@ -243,7 +314,17 @@ export async function PATCH(request: NextRequest) {
       try {
         await SapoService.updateProduct(item_id, { name: name.trim() });
       } catch (err: any) {
-        console.warn(`[Sapo Product Name Update Warning]:`, err.message);
+        console.error(`[Sapo Product Name Update Error]:`, err);
+        const { displayMessage, rawError } = parseSapoErrorDetail(err, "Lỗi cập nhật tên sản phẩm lên Sapo");
+        return NextResponse.json(
+          {
+            success: false,
+            message: displayMessage,
+            sapo_detail: displayMessage,
+            error: rawError,
+          },
+          { status: 500 }
+        );
       }
     }
 
@@ -256,7 +337,17 @@ export async function PATCH(request: NextRequest) {
         if (parent_sku) variantUpdate.sku = parent_sku.trim();
         await SapoService.updateVariant(targetModelId, variantUpdate);
       } catch (err: any) {
-        console.warn(`[Sapo Variant Update Warning]:`, err.message);
+        console.error(`[Sapo Variant Update Error]:`, err);
+        const { displayMessage, rawError } = parseSapoErrorDetail(err, "Lỗi cập nhật biến thể sản phẩm lên Sapo", parent_sku);
+        return NextResponse.json(
+          {
+            success: false,
+            message: displayMessage,
+            sapo_detail: displayMessage,
+            error: rawError,
+          },
+          { status: 500 }
+        );
       }
     }
 
@@ -577,11 +668,13 @@ export async function POST(request: NextRequest) {
     });
   } catch (error: any) {
     console.error("[Sapo Create Product Error]:", error);
+    const { displayMessage, rawError } = parseSapoErrorDetail(error, "Lỗi tạo hàng hóa lên Sapo");
     return NextResponse.json(
       {
         success: false,
-        message: "Lỗi tạo hàng hóa lên Sapo",
-        error: error.message || String(error),
+        message: displayMessage,
+        sapo_detail: displayMessage,
+        error: rawError,
       },
       { status: 500 }
     );
@@ -605,11 +698,21 @@ export async function DELETE(request: NextRequest) {
       );
     }
 
-    // 1. Xóa trên Sapo
+    // 1. Xóa trên Sapo (báo lỗi ngay nếu Sapo từ chối, không tự ý xóa MongoDB)
     try {
       await SapoService.deleteProduct(item_id);
     } catch (err: any) {
-      console.warn(`[Sapo Delete Warning] Item ${item_id}:`, err.message);
+      console.error(`[Sapo Delete Product Error] Item ${item_id}:`, err);
+      const { displayMessage, rawError } = parseSapoErrorDetail(err, "Lỗi xóa hàng hóa trên Sapo");
+      return NextResponse.json(
+        {
+          success: false,
+          message: displayMessage,
+          sapo_detail: displayMessage,
+          error: rawError,
+        },
+        { status: 500 }
+      );
     }
 
     // 2. Xóa trong MongoDB
@@ -630,11 +733,13 @@ export async function DELETE(request: NextRequest) {
     });
   } catch (error: any) {
     console.error("[Sapo Delete Product Error]:", error);
+    const { displayMessage, rawError } = parseSapoErrorDetail(error, "Lỗi xóa hàng hóa");
     return NextResponse.json(
       {
         success: false,
-        message: "Lỗi xóa hàng hóa",
-        error: error.message || String(error),
+        message: displayMessage,
+        sapo_detail: displayMessage,
+        error: rawError,
       },
       { status: 500 }
     );

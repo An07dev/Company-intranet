@@ -34,11 +34,13 @@ export function StockAdjustModal({
   const [reason, setReason] = useState<string>(ADJUST_REASONS[0]);
   const [note, setNote] = useState<string>("");
   const [loading, setLoading] = useState<boolean>(false);
+  const [apiError, setApiError] = useState<string | null>(null);
 
   // Initialize or reset values when product changes
   useEffect(() => {
     if (!product) return;
 
+    setApiError(null);
     const variations = product.variations || [];
     if (variations.length > 0) {
       const firstVar = variations[0];
@@ -89,6 +91,7 @@ export function StockAdjustModal({
     }
 
     setLoading(true);
+    setApiError(null);
     try {
       const res = await fetch("/api/sapo/inventory", {
         method: "PUT",
@@ -103,16 +106,22 @@ export function StockAdjustModal({
 
       const json = await res.json();
       if (!res.ok || !json.success) {
-        throw new Error(json.message || "Không thể cập nhật tồn kho lên Sapo");
+        const errMsg = json.sapo_detail || json.message || json.error || "Không thể cập nhật tồn kho lên Sapo";
+        setApiError(errMsg);
+        toast.error(errMsg);
+        return;
       }
 
       toast.success(
         `Đã điều chỉnh tồn SKU ${skuDisplay} thành ${newStock} thành công trên Sapo!`
       );
+      setApiError(null);
       onSuccess();
       onClose();
     } catch (err: any) {
-      toast.error(err.message || "Lỗi khi cập nhật tồn kho");
+      const errMsg = err?.message || "Lỗi khi cập nhật tồn kho";
+      setApiError(errMsg);
+      toast.error(errMsg);
     } finally {
       setLoading(false);
     }
@@ -152,6 +161,18 @@ export function StockAdjustModal({
 
         {/* Form Body */}
         <form onSubmit={handleSubmit} className="overflow-y-auto p-4 sm:p-5 space-y-4 text-xs">
+          {apiError && (
+            <div className="p-3.5 rounded-2xl bg-rose-50 dark:bg-rose-950/50 border border-rose-200 dark:border-rose-900/60 text-rose-700 dark:text-rose-300 text-xs space-y-1.5 animate-in fade-in duration-150">
+              <div className="flex items-center gap-1.5 font-bold text-rose-800 dark:text-rose-200">
+                <span className="text-base">⚠️</span>
+                <span>Phản hồi lỗi từ Sapo:</span>
+              </div>
+              <div className="font-mono text-[11px] leading-relaxed break-words bg-rose-100/60 dark:bg-rose-900/40 p-2.5 rounded-xl text-rose-900 dark:text-rose-100 border border-rose-200/50">
+                {apiError}
+              </div>
+            </div>
+          )}
+
           {/* Thông tin hàng hóa */}
           <div className="flex items-start gap-3 p-3 rounded-2xl bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-200/80 dark:border-zinc-800">
             {product.image ? (

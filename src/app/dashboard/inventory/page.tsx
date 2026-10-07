@@ -217,7 +217,7 @@ export default function InventoryPage() {
       });
       const json = await res.json();
       if (!res.ok || !json.success) {
-        throw new Error(json.message || "Không thể xóa sản phẩm khỏi Sapo");
+        throw new Error(json.sapo_detail || json.message || json.error || "Không thể xóa sản phẩm khỏi Sapo");
       }
       toast.success(`Đã xóa SKU ${sku} khỏi hệ thống thành công!`);
       fetchInventory(true);
