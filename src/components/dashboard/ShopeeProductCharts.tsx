@@ -155,11 +155,11 @@ export function ShopeeProductCharts({
               </h3>
             </div>
             <span className="text-[11px] px-2.5 py-0.5 rounded-full bg-orange-100 dark:bg-orange-950 text-orange-700 dark:text-orange-300 font-semibold font-mono">
-              Tổng {totalSales30d} đã bán
+              Tổng {totalSales30d.toLocaleString("vi-VN")} đã bán
             </span>
           </div>
           <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-1">
-            Xếp hạng các mặt hàng có lượng bán cao nhất trong chu kỳ 30 ngày trên Shopee
+            Xếp hạng các mặt hàng có lượng bán cao nhất trong chu kỳ 30 ngày trên Shopee & Đa Kênh
           </p>
         </div>
 
@@ -214,7 +214,7 @@ export function ShopeeProductCharts({
                         {prod.name}
                       </h4>
                       <span className="text-xs font-bold font-mono text-orange-600 dark:text-orange-400 shrink-0">
-                        {prod.sales_30d} đã bán
+                        {prod.sales_30d.toLocaleString("vi-VN")} đã bán
                       </span>
                     </div>
 
@@ -224,7 +224,7 @@ export function ShopeeProductCharts({
                       </span>
                       <span className="font-mono text-[10px]">
                         {prod.stock > 0 ? (
-                          <span className="text-emerald-600 dark:text-emerald-400">Còn {prod.stock}</span>
+                          <span className="text-emerald-600 dark:text-emerald-400">Còn {prod.stock.toLocaleString("vi-VN")}</span>
                         ) : (
                           <span className="text-rose-500 font-semibold">Hết hàng</span>
                         )}
@@ -247,7 +247,7 @@ export function ShopeeProductCharts({
 
         {/* Footer info */}
         <div className="pt-3 border-t border-zinc-100 dark:border-zinc-800 flex items-center justify-between text-[11px] text-zinc-500">
-          <span>Dữ liệu bán cập nhật từ Kênh Người Bán Shopee</span>
+          <span>Dữ liệu thực tế cập nhật từ Kênh Bán Hàng Sapo &amp; Shopee</span>
           <Link
             href="/dashboard/shopee-products"
             className="text-orange-600 dark:text-orange-400 hover:underline font-medium"

@@ -355,7 +355,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      message: `Đồng bộ nhanh Sapo thành công! Đã cập nhật ${bulkOps.length} đơn hàng đang mở. Để đồng bộ trọn vẹn 14.380 đơn, vui lòng dùng tính năng Đồng bộ toàn diện trên giao diện.`,
+      message: `Đồng bộ nhanh Sapo thành công! Đã cập nhật ${bulkOps.length} đơn hàng đang mở. Để đồng bộ trọn vẹn toàn bộ đơn, vui lòng dùng tính năng Đồng bộ toàn diện trên giao diện.`,
       data: {
         syncedOrders: bulkOps.length,
       },

@@ -116,11 +116,11 @@ export default function MultiChannelOrdersPage() {
     isSyncing: false,
     currentStage: "",
     processed: 0,
-    total: 14380,
+    total: 0,
     percentage: 0,
     logs: [],
     isDone: false,
-    counts: { open: 953, cancelled: 2591, closed: 10836, total: 14380 },
+    counts: { open: 0, cancelled: 0, closed: 0, total: 0 },
   });
 
   // Dropdown lựa chọn đồng bộ Sapo & Menu thao tác phụ (Mobile)
@@ -314,11 +314,11 @@ export default function MultiChannelOrdersPage() {
       isSyncing: true,
       currentStage: "Khởi tạo kết nối Sapo Omnichannel...",
       processed: 0,
-      total: 14380,
+      total: stats?.totalOrders || 0,
       percentage: 0,
       logs: [`[${new Date().toLocaleTimeString("vi-VN")}] Bắt đầu kiểm tra Sapo Omnichannel...`],
       isDone: false,
-      counts: { open: 953, cancelled: 2591, closed: 10836, total: 14380 },
+      counts: { open: 0, cancelled: 0, closed: 0, total: stats?.totalOrders || 0 },
     });
 
     const addLog = (msg: string) => {
@@ -331,7 +331,7 @@ export default function MultiChannelOrdersPage() {
     setSyncingSapo(true);
 
     try {
-      // 1. Lấy thống kê số lượng đơn thực tế trên Sapo
+      // 1. Lấy thống kê số lượng đơn thực tế trên Sapo (động 100%)
       addLog("Đang truy vấn số lượng đơn hàng trên hệ thống Sapo...");
       const countRes = await fetch("/api/sapo/sync-all", {
         method: "POST",
@@ -342,21 +342,20 @@ export default function MultiChannelOrdersPage() {
       if (!countData.success) {
         throw new Error(countData.sapo_detail || countData.message || countData.error || "Không thể lấy số lượng đơn từ Sapo");
       }
-      let totalTarget = 14380;
-      let counts = { open: 953, cancelled: 2591, closed: 10836, total: 14380 };
+      let counts = { open: 0, cancelled: 0, closed: 0, total: 0 };
       if (countData.success && countData.data) {
         counts = countData.data;
-        totalTarget = counts.total || 14380;
-        setSyncModal((prev) => ({ ...prev, counts, total: totalTarget }));
-        addLog(`Phát hiện ${totalTarget.toLocaleString("vi-VN")} đơn hàng: Đang mở (${counts.open.toLocaleString("vi-VN")}), Đã hủy (${counts.cancelled.toLocaleString("vi-VN")}), Đã hoàn tất (${counts.closed.toLocaleString("vi-VN")})`);
       }
+      const totalTarget = counts.total || stats?.totalOrders || 1;
+      setSyncModal((prev) => ({ ...prev, counts, total: totalTarget }));
+      addLog(`Phát hiện ${totalTarget.toLocaleString("vi-VN")} đơn hàng trên Sapo: Đang mở (${counts.open.toLocaleString("vi-VN")}), Đã hủy (${counts.cancelled.toLocaleString("vi-VN")}), Đã hoàn tất (${counts.closed.toLocaleString("vi-VN")})`);
 
       // 2. Dọn dẹp đơn cũ & đồng bộ sản phẩm Sapo
       setSyncModal((prev) => ({
         ...prev,
-        currentStage: "Đang dọn dẹp đơn cũ & đồng bộ 432 sản phẩm Sapo...",
+        currentStage: "Đang dọn dẹp đơn rác cũ & nạp sản phẩm Sapo...",
       }));
-      addLog("Dọn dẹp các đơn rác Extension cũ và nạp sản phẩm Sapo...");
+      addLog("Dọn dẹp các đơn rác Extension cũ và cập nhật danh mục sản phẩm Sapo...");
       const prodRes = await fetch("/api/sapo/sync-all", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -371,97 +370,81 @@ export default function MultiChannelOrdersPage() {
 
       let cumulative = 0;
 
-      // 3. Đồng bộ đơn Đang mở (Open - 4 trang)
-      setSyncModal((prev) => ({
-        ...prev,
-        currentStage: "Đang đồng bộ đơn đang mở (Open - 4 trang)...",
-      }));
-      addLog("Đang đồng bộ nhóm đơn Đang mở (Open)...");
-      const openRes = await fetch("/api/sapo/sync-all", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ step: "orders", status: "open", pageStart: 1, pageEnd: 4 }),
-      });
-      const openData = await openRes.json();
-      if (!openData.success) {
-        addLog(`⚠️ Cảnh báo tải đơn đang mở: ${openData.sapo_detail || openData.message || openData.error}`);
-      }
-      cumulative += openData.syncedOrders || 0;
-      setSyncModal((prev) => ({
-        ...prev,
-        processed: cumulative,
-        percentage: Math.min(100, Math.round((cumulative / totalTarget) * 100)),
-      }));
-      addLog(`Đã lưu ${openData.syncedOrders || 0} đơn đang mở (Tích lũy: ${cumulative.toLocaleString("vi-VN")} đơn).`);
-
-      // 4. Đồng bộ đơn Đã hủy (Cancelled - 11 trang chia làm 2 đợt)
-      setSyncModal((prev) => ({
-        ...prev,
-        currentStage: "Đang đồng bộ đơn đã hủy (Cancelled: Đợt 1/2)...",
-      }));
-      addLog("Đang đồng bộ đơn Đã hủy: Đợt 1 (Trang 1-6)...");
-      const can1Res = await fetch("/api/sapo/sync-all", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ step: "orders", status: "cancelled", pageStart: 1, pageEnd: 6 }),
-      });
-      const can1Data = await can1Res.json();
-      if (!can1Data.success) {
-        addLog(`⚠️ Cảnh báo tải đơn đã hủy (Đợt 1): ${can1Data.sapo_detail || can1Data.message || can1Data.error}`);
-      }
-      cumulative += can1Data.syncedOrders || 0;
-      setSyncModal((prev) => ({
-        ...prev,
-        processed: cumulative,
-        percentage: Math.min(100, Math.round((cumulative / totalTarget) * 100)),
-      }));
-
-      setSyncModal((prev) => ({
-        ...prev,
-        currentStage: "Đang đồng bộ đơn đã hủy (Cancelled: Đợt 2/2)...",
-      }));
-      addLog("Đang đồng bộ đơn Đã hủy: Đợt 2 (Trang 7-11)...");
-      const can2Res = await fetch("/api/sapo/sync-all", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ step: "orders", status: "cancelled", pageStart: 7, pageEnd: 11 }),
-      });
-      const can2Data = await can2Res.json();
-      if (!can2Data.success) {
-        addLog(`⚠️ Cảnh báo tải đơn đã hủy (Đợt 2): ${can2Data.sapo_detail || can2Data.message || can2Data.error}`);
-      }
-      cumulative += can2Data.syncedOrders || 0;
-      setSyncModal((prev) => ({
-        ...prev,
-        processed: cumulative,
-        percentage: Math.min(100, Math.round((cumulative / totalTarget) * 100)),
-      }));
-      addLog(`Đã hoàn tất nhóm đơn đã hủy (${counts.cancelled.toLocaleString("vi-VN")} đơn). Tích lũy: ${cumulative.toLocaleString("vi-VN")} đơn.`);
-
-      // 5. Đồng bộ đơn Đã hoàn tất (Closed - 44 trang chia làm 6 đợt)
-      const closedBatches = [
-        { start: 1, end: 8, label: "Đợt 1/6 (Trang 1-8)" },
-        { start: 9, end: 16, label: "Đợt 2/6 (Trang 9-16)" },
-        { start: 17, end: 24, label: "Đợt 3/6 (Trang 17-24)" },
-        { start: 25, end: 32, label: "Đợt 4/6 (Trang 25-32)" },
-        { start: 33, end: 40, label: "Đợt 5/6 (Trang 33-40)" },
-        { start: 41, end: 44, label: "Đợt 6/6 (Trang 41-44)" },
-      ];
-
-      for (const batch of closedBatches) {
+      // 3. Đồng bộ đơn Đang mở (Open) - Tính toán số trang động
+      const openTotalPages = Math.ceil((counts.open || 1) / 250) || 1;
+      addLog(`Bắt đầu đồng bộ ${counts.open.toLocaleString("vi-VN")} đơn Đang mở (${openTotalPages} trang)...`);
+      for (let start = 1; start <= openTotalPages; start += 4) {
+        const end = Math.min(start + 3, openTotalPages);
         setSyncModal((prev) => ({
           ...prev,
-          currentStage: `Đang đồng bộ đơn hoàn tất: ${batch.label}...`,
+          currentStage: `Đang đồng bộ đơn đang mở (Trang ${start}-${end}/${openTotalPages})...`,
         }));
-        addLog(`Đang đồng bộ đơn hoàn tất (${batch.label})...`);
+        const openRes = await fetch("/api/sapo/sync-all", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ step: "orders", status: "open", pageStart: start, pageEnd: end }),
+        });
+        const openData = await openRes.json();
+        if (!openData.success) {
+          addLog(`⚠️ Cảnh báo tải đơn đang mở: ${openData.sapo_detail || openData.message || openData.error}`);
+        }
+        cumulative += openData.syncedOrders || 0;
+        setSyncModal((prev) => ({
+          ...prev,
+          processed: cumulative,
+          percentage: Math.min(100, Math.round((cumulative / totalTarget) * 100)),
+        }));
+        addLog(`Đã tải thêm ${openData.syncedOrders || 0} đơn đang mở. Tích lũy: ${cumulative.toLocaleString("vi-VN")} đơn.`);
+      }
+
+      // 4. Đồng bộ đơn Đã hủy (Cancelled) - Tính toán số trang động
+      const canTotalPages = Math.ceil((counts.cancelled || 1) / 250) || 1;
+      addLog(`Bắt đầu đồng bộ ${counts.cancelled.toLocaleString("vi-VN")} đơn Đã hủy (${canTotalPages} trang)...`);
+      for (let start = 1; start <= canTotalPages; start += 6) {
+        const end = Math.min(start + 5, canTotalPages);
+        setSyncModal((prev) => ({
+          ...prev,
+          currentStage: `Đang đồng bộ đơn đã hủy (Trang ${start}-${end}/${canTotalPages})...`,
+        }));
+        const canRes = await fetch("/api/sapo/sync-all", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ step: "orders", status: "cancelled", pageStart: start, pageEnd: end }),
+        });
+        const canData = await canRes.json();
+        if (!canData.success) {
+          addLog(`⚠️ Cảnh báo tải đơn đã hủy: ${canData.sapo_detail || canData.message || canData.error}`);
+        }
+        cumulative += canData.syncedOrders || 0;
+        setSyncModal((prev) => ({
+          ...prev,
+          processed: cumulative,
+          percentage: Math.min(100, Math.round((cumulative / totalTarget) * 100)),
+        }));
+        addLog(`Đã tải thêm ${canData.syncedOrders || 0} đơn đã hủy. Tích lũy: ${cumulative.toLocaleString("vi-VN")} đơn.`);
+      }
+
+      // 5. Đồng bộ đơn Đã hoàn tất (Closed) - Tính toán số trang động
+      const closedTotalPages = Math.ceil((counts.closed || 1) / 250) || 1;
+      const totalBatches = Math.ceil(closedTotalPages / 8) || 1;
+      let batchIdx = 1;
+      addLog(`Bắt đầu đồng bộ ${counts.closed.toLocaleString("vi-VN")} đơn Đã hoàn tất (${closedTotalPages} trang, ${totalBatches} đợt)...`);
+      for (let start = 1; start <= closedTotalPages; start += 8) {
+        const end = Math.min(start + 7, closedTotalPages);
+        const batchLabel = `Đợt ${batchIdx}/${totalBatches} (Trang ${start}-${end}/${closedTotalPages})`;
+        batchIdx++;
+        setSyncModal((prev) => ({
+          ...prev,
+          currentStage: `Đang đồng bộ đơn hoàn tất: ${batchLabel}...`,
+        }));
         const bRes = await fetch("/api/sapo/sync-all", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ step: "orders", status: "closed", pageStart: batch.start, pageEnd: batch.end }),
+          body: JSON.stringify({ step: "orders", status: "closed", pageStart: start, pageEnd: end }),
         });
         const bData = await bRes.json();
         if (!bData.success) {
-          addLog(`⚠️ Cảnh báo tải đơn hoàn tất (${batch.label}): ${bData.sapo_detail || bData.message || bData.error}`);
+          addLog(`⚠️ Cảnh báo tải đơn hoàn tất (${batchLabel}): ${bData.sapo_detail || bData.message || bData.error}`);
         }
         cumulative += bData.syncedOrders || 0;
         setSyncModal((prev) => ({
@@ -476,12 +459,12 @@ export default function MultiChannelOrdersPage() {
         ...prev,
         isSyncing: false,
         isDone: true,
-        currentStage: `Hoàn tất đồng bộ toàn bộ ${totalTarget.toLocaleString("vi-VN")} đơn hàng!`,
-        processed: totalTarget,
+        currentStage: `Hoàn tất đồng bộ toàn bộ ${cumulative.toLocaleString("vi-VN")} đơn hàng!`,
+        processed: cumulative,
         percentage: 100,
       }));
-      addLog(`🎉 TUYỆT VỜI! Đã đồng bộ trọn vẹn ${totalTarget.toLocaleString("vi-VN")} đơn hàng từ Sapo Omnichannel vào hệ thống!`);
-      toast.success(`Đã đồng bộ thành công ${totalTarget.toLocaleString("vi-VN")} đơn hàng Sapo!`);
+      addLog(`🎉 TUYỆT VỜI! Đã đồng bộ trọn vẹn ${cumulative.toLocaleString("vi-VN")} đơn hàng từ Sapo Omnichannel vào hệ thống!`);
+      toast.success(`Đã đồng bộ thành công ${cumulative.toLocaleString("vi-VN")} đơn hàng Sapo!`);
       await fetchOrders(true);
     } catch (err: any) {
       const errMsg = err?.message || String(err);
@@ -707,11 +690,11 @@ export default function MultiChannelOrdersPage() {
                           Đồng bộ toàn bộ đơn
                         </span>
                         <span className="text-[10px] font-medium bg-blue-100 dark:bg-blue-950 text-blue-700 dark:text-blue-300 px-1.5 py-0.5 rounded-full">
-                          14.380 đơn
+                          {stats?.totalOrders ? `${Number(stats.totalOrders).toLocaleString("vi-VN")} đơn` : "Toàn diện 100%"}
                         </span>
                       </div>
                       <p className="text-[11px] text-zinc-500 dark:text-zinc-400 mt-0.5">
-                        Kéo toàn bộ lịch sử đa kênh với thanh tiến trình trực quan
+                        Kéo trọn vẹn toàn bộ lịch sử đơn hàng từ Sapo Omnichannel
                       </p>
                     </div>
                   </button>
@@ -817,14 +800,14 @@ export default function MultiChannelOrdersPage() {
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between">
                       <span className="text-xs font-bold text-zinc-900 dark:text-white">
-                        Toàn bộ 14.380 đơn
+                        Đồng bộ toàn bộ đơn
                       </span>
                       <span className="text-[10px] font-medium bg-blue-100 dark:bg-blue-950 text-blue-700 dark:text-blue-300 px-1.5 py-0.2 rounded-full">
-                        Đầy đủ
+                        {stats?.totalOrders ? `${Number(stats.totalOrders).toLocaleString("vi-VN")} đơn` : "Toàn diện"}
                       </span>
                     </div>
                     <p className="text-[11px] text-zinc-500 truncate mt-0.5">
-                      Kéo toàn bộ lịch sử theo tiến trình
+                      Kéo toàn bộ toàn diện lịch sử theo tiến trình
                     </p>
                   </div>
                 </button>
@@ -1486,7 +1469,7 @@ export default function MultiChannelOrdersPage() {
         </div>
       )}
 
-      {/* Modal Tiến trình Đồng bộ Sapo Omnichannel (14.380 đơn) */}
+      {/* Modal Tiến trình Đồng bộ Toàn diện Sapo Omnichannel */}
       {syncModal.isOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-xs">
           <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl sm:rounded-3xl shadow-2xl max-w-xl w-full p-4 sm:p-6 animate-in fade-in zoom-in-95 duration-200">
@@ -1500,7 +1483,7 @@ export default function MultiChannelOrdersPage() {
                     Đồng bộ Toàn diện Sapo Omnichannel
                   </h3>
                   <p className="text-[11px] sm:text-xs text-zinc-500">
-                    Kéo toàn bộ 14.380 đơn hàng đa kênh (Shopee, TikTok, Lazada, POS, Web)
+                    Kéo toàn bộ đơn hàng đa kênh không giới hạn (Shopee, TikTok, Lazada, POS, Web, Zalo)
                   </p>
                 </div>
               </div>
