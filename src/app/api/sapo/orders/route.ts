@@ -64,6 +64,63 @@ function mapSapoOrder(o: any, now: string) {
 }
 
 /**
+ * Helper: Bóc tách lỗi chi tiết từ Sapo API (hỗ trợ array, object, error_description, 500 error)
+ */
+function parseSapoErrorDetail(
+  error: any,
+  fallbackMessage: string
+): { displayMessage: string; rawError: string } {
+  const rawError = error?.message || String(error);
+  let extractedJson: any = null;
+  const jsonMatch = rawError.match(/\{[\s\S]*\}/);
+  if (jsonMatch) {
+    try {
+      extractedJson = JSON.parse(jsonMatch[0]);
+    } catch {}
+  }
+
+  const data = extractedJson || error?.response || {};
+
+  // Case 1: errors là danh sách các lỗi [{ message, fields }]
+  if (data?.errors && Array.isArray(data.errors)) {
+    const list = data.errors.map((e: any) => {
+      if (typeof e === "string") return e;
+      const field = e.fields?.length ? `[${e.fields.join(", ")}] ` : "";
+      return `${field}${e.message || JSON.stringify(e)}`;
+    });
+    return { displayMessage: list.join(" • "), rawError };
+  }
+
+  // Case 2: errors là object { "phone": ["is invalid"], "email": ["must be valid email"] }
+  if (data?.errors && typeof data.errors === "object") {
+    const list = Object.entries(data.errors).map(([key, val]) => {
+      const valStr = Array.isArray(val) ? val.join(", ") : String(val);
+      return `Trường "${key}": ${valStr}`;
+    });
+    return { displayMessage: list.join(" • "), rawError };
+  }
+
+  // Case 3: error_description
+  if (data?.error_description) {
+    return { displayMessage: data.error_description, rawError };
+  }
+
+  // Case 4: Lỗi 500 từ Sapo
+  if (data?.error === "Internal server error" || rawError.includes("500") || rawError.includes("Internal Server Error")) {
+    return {
+      displayMessage: "Máy chủ Sapo phản hồi lỗi 500 (Internal Server Error). Vui lòng kiểm tra lại thông tin khách hàng, số điện thoại hoặc sản phẩm trong đơn.",
+      rawError,
+    };
+  }
+
+  if (data?.error) {
+    return { displayMessage: String(data.error), rawError };
+  }
+
+  return { displayMessage: rawError || fallbackMessage, rawError };
+}
+
+/**
  * POST /api/sapo/orders - Tạo đơn hàng mới trực tiếp lên Sapo Omnichannel
  */
 export async function POST(request: NextRequest) {
@@ -262,11 +319,13 @@ export async function POST(request: NextRequest) {
     });
   } catch (error: any) {
     console.error("[Sapo Create Order Error]:", error);
+    const { displayMessage, rawError } = parseSapoErrorDetail(error, "Lỗi khi tạo đơn hàng lên Sapo");
     return NextResponse.json(
       {
         success: false,
-        message: "Lỗi khi tạo đơn hàng lên Sapo",
-        error: error.message || String(error),
+        message: displayMessage,
+        sapo_detail: displayMessage,
+        error: rawError,
       },
       { status: 500 }
     );
@@ -317,7 +376,17 @@ export async function PUT(request: NextRequest) {
           await SapoService.updateOrder(sapoId, sapoUpdate);
         }
       } catch (err: any) {
-        console.warn(`[Sapo Sync Warning] Không thể cập nhật lên Sapo API cho đơn ${order_sn}:`, err.message);
+        console.error(`[Sapo Sync Order Error] Không thể cập nhật lên Sapo API cho đơn ${order_sn}:`, err);
+        const { displayMessage, rawError } = parseSapoErrorDetail(err, "Lỗi cập nhật đơn hàng lên Sapo");
+        return NextResponse.json(
+          {
+            success: false,
+            message: displayMessage,
+            sapo_detail: displayMessage,
+            error: rawError,
+          },
+          { status: 500 }
+        );
       }
     }
 
@@ -347,11 +416,13 @@ export async function PUT(request: NextRequest) {
     });
   } catch (error: any) {
     console.error("[Sapo Update Order Error]:", error);
+    const { displayMessage, rawError } = parseSapoErrorDetail(error, "Lỗi cập nhật đơn hàng");
     return NextResponse.json(
       {
         success: false,
-        message: "Lỗi cập nhật đơn hàng",
-        error: error.message || String(error),
+        message: displayMessage,
+        sapo_detail: displayMessage,
+        error: rawError,
       },
       { status: 500 }
     );
@@ -476,11 +547,13 @@ export async function PATCH(request: NextRequest) {
     });
   } catch (error: any) {
     console.error("[Sapo Order Action Error]:", error);
+    const { displayMessage, rawError } = parseSapoErrorDetail(error, "Lỗi thao tác trên Sapo");
     return NextResponse.json(
       {
         success: false,
-        message: `Lỗi thao tác trên Sapo: ${error.message || String(error)}`,
-        error: error.message || String(error),
+        message: displayMessage,
+        sapo_detail: displayMessage,
+        error: rawError,
       },
       { status: 400 }
     );
@@ -585,10 +658,13 @@ export async function GET(request: NextRequest) {
     });
   } catch (error: any) {
     console.error("[Sapo Get Order Status Error]:", error);
+    const { displayMessage, rawError } = parseSapoErrorDetail(error, "Lỗi kiểm tra trạng thái từ Sapo");
     return NextResponse.json(
       {
         success: false,
-        message: `Lỗi kiểm tra trạng thái từ Sapo: ${error.message || String(error)}`,
+        message: displayMessage,
+        sapo_detail: displayMessage,
+        error: rawError,
       },
       { status: 500 }
     );

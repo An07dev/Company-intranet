@@ -23,7 +23,8 @@ async function sapoGet(endpoint: string) {
     cache: "no-store",
   });
   if (!res.ok) {
-    throw new Error(`Sapo API lỗi [${res.status}]: ${res.statusText}`);
+    const errorText = await res.text();
+    throw new Error(`Sapo API lỗi [${res.status}]: ${res.statusText}${errorText ? ` - ${errorText}` : ""}`);
   }
   return res.json();
 }
@@ -361,11 +362,13 @@ export async function POST(request: NextRequest) {
     });
   } catch (error: any) {
     console.error("[Sapo Sync All Error]:", error);
+    const errText = error?.message || String(error);
     return NextResponse.json(
       {
         success: false,
-        message: "Lỗi đồng bộ từ Sapo",
-        error: error.message || String(error),
+        message: `Lỗi đồng bộ từ Sapo: ${errText}`,
+        sapo_detail: errText,
+        error: errText,
       },
       { status: 500 }
     );

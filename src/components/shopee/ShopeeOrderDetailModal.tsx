@@ -44,21 +44,34 @@ export function ShopeeOrderDetailModal({
   const [refreshingStatus, setRefreshingStatus] = useState(false);
   const [showCancelModal, setShowCancelModal] = useState(false);
   const [cancelReasonKey, setCancelReasonKey] = useState("customer");
+  const [actionError, setActionError] = useState<string | null>(null);
+  const [cancelError, setCancelError] = useState<string | null>(null);
+
+  React.useEffect(() => {
+    setActionError(null);
+    setCancelError(null);
+  }, [isOpen, order?.order_sn]);
 
   const handleRefreshFromSapo = async () => {
     if (!order) return;
     setRefreshingStatus(true);
+    setActionError(null);
     try {
       const res = await fetch(`/api/sapo/orders?order_sn=${encodeURIComponent(order.order_sn)}`);
       const data = await res.json();
       if (data.success) {
         toast.success(data.message || `Đã cập nhật trạng thái từ Sapo: ${data.order?.order_status}`);
+        setActionError(null);
         onOrderUpdated?.();
       } else {
-        toast.error(data.message || "Không thể đồng bộ trạng thái từ Sapo");
+        const errMsg = data.sapo_detail || data.message || data.error || "Không thể đồng bộ trạng thái từ Sapo";
+        setActionError(errMsg);
+        toast.error(errMsg);
       }
-    } catch {
-      toast.error("Không thể kết nối đến máy chủ");
+    } catch (err: any) {
+      const errMsg = "Không thể kết nối đến máy chủ: " + (err?.message || String(err));
+      setActionError(errMsg);
+      toast.error(errMsg);
     } finally {
       setRefreshingStatus(false);
     }
@@ -118,6 +131,7 @@ export function ShopeeOrderDetailModal({
 
   const handleConfirmCancel = async () => {
     setActionLoading(true);
+    setCancelError(null);
     try {
       const res = await fetch("/api/sapo/orders", {
         method: "PATCH",
@@ -132,13 +146,18 @@ export function ShopeeOrderDetailModal({
       if (data.success) {
         toast.success(data.message || "Đã hủy đơn hàng trên Sapo thành công!");
         setShowCancelModal(false);
+        setCancelError(null);
         onOrderUpdated?.();
         onClose();
       } else {
-        toast.error(data.message || "Lỗi khi hủy đơn hàng trên Sapo");
+        const errMsg = data.sapo_detail || data.message || data.error || "Lỗi khi hủy đơn hàng trên Sapo";
+        setCancelError(errMsg);
+        toast.error(errMsg);
       }
     } catch (err: any) {
-      toast.error("Không thể kết nối API Sapo: " + (err.message || String(err)));
+      const errMsg = "Không thể kết nối API Sapo: " + (err?.message || String(err));
+      setCancelError(errMsg);
+      toast.error(errMsg);
     } finally {
       setActionLoading(false);
     }
@@ -153,6 +172,7 @@ export function ShopeeOrderDetailModal({
     if (!confirmed) return;
 
     setActionLoading(true);
+    setActionError(null);
     try {
       const res = await fetch("/api/sapo/orders", {
         method: "PATCH",
@@ -165,13 +185,18 @@ export function ShopeeOrderDetailModal({
       const data = await res.json();
       if (data.success) {
         toast.success(data.message || "Thao tác trên Sapo thành công!");
+        setActionError(null);
         onOrderUpdated?.();
         onClose();
       } else {
-        toast.error(data.message || "Thao tác thất bại");
+        const errMsg = data.sapo_detail || data.message || data.error || "Thao tác thất bại trên Sapo";
+        setActionError(errMsg);
+        toast.error(errMsg);
       }
-    } catch {
-      toast.error("Không thể kết nối API Sapo");
+    } catch (err: any) {
+      const errMsg = "Không thể kết nối API Sapo: " + (err?.message || String(err));
+      setActionError(errMsg);
+      toast.error(errMsg);
     } finally {
       setActionLoading(false);
     }
@@ -255,6 +280,18 @@ export function ShopeeOrderDetailModal({
 
         {/* Modal Body */}
         <div className="p-4 sm:p-5 overflow-y-auto space-y-4">
+          {actionError && (
+            <div className="p-3.5 rounded-2xl bg-rose-50 dark:bg-rose-950/50 border border-rose-200 dark:border-rose-900/60 text-rose-700 dark:text-rose-300 text-xs space-y-1.5 animate-in fade-in duration-150">
+              <div className="flex items-center gap-1.5 font-bold text-rose-800 dark:text-rose-200">
+                <span className="text-base">⚠️</span>
+                <span>Phản hồi lỗi từ Sapo Omnichannel:</span>
+              </div>
+              <div className="font-mono text-[11px] leading-relaxed break-words bg-rose-100/60 dark:bg-rose-900/40 p-2.5 rounded-xl text-rose-900 dark:text-rose-100 border border-rose-200/50">
+                {actionError}
+              </div>
+            </div>
+          )}
+
           {/* Thông tin đơn hàng */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 bg-zinc-50/70 dark:bg-zinc-800/40 p-3.5 rounded-2xl border border-zinc-200/70 dark:border-zinc-800">
             <div>
@@ -384,7 +421,10 @@ export function ShopeeOrderDetailModal({
             {order.order_status !== "Đã hủy" && (
               <button
                 type="button"
-                onClick={() => setShowCancelModal(true)}
+                onClick={() => {
+                  setCancelError(null);
+                  setShowCancelModal(true);
+                }}
                 disabled={actionLoading}
                 className="px-3 py-1.5 rounded-xl border border-rose-200 dark:border-rose-900 bg-rose-50 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300 hover:bg-rose-100 font-semibold text-xs transition-colors flex items-center gap-1 cursor-pointer disabled:opacity-50"
                 title="Hủy đơn hàng trực tiếp trên hệ thống Sapo"
@@ -482,6 +522,18 @@ export function ShopeeOrderDetailModal({
                 </div>
               </div>
 
+              {cancelError && (
+                <div className="p-3 rounded-2xl bg-rose-50 dark:bg-rose-950/50 border border-rose-200 dark:border-rose-900/60 text-rose-700 dark:text-rose-300 text-xs space-y-1 animate-in fade-in duration-150">
+                  <div className="flex items-center gap-1.5 font-bold text-rose-800 dark:text-rose-200 text-xs">
+                    <span>⚠️</span>
+                    <span>Phản hồi lỗi từ Sapo:</span>
+                  </div>
+                  <div className="font-mono text-[11px] leading-relaxed break-words bg-rose-100/60 dark:bg-rose-900/40 p-2 rounded-xl text-rose-900 dark:text-rose-100">
+                    {cancelError}
+                  </div>
+                </div>
+              )}
+
               <div className="p-3 bg-amber-50/80 dark:bg-amber-950/40 border border-amber-200/80 dark:border-amber-900/60 rounded-2xl text-xs text-amber-900 dark:text-amber-200 leading-relaxed">
                 Lưu ý: Thao tác này sẽ gửi yêu cầu hủy trực tiếp đến máy chủ Sapo. Khi đơn hủy thành công, số lượng tồn kho của các sản phẩm sẽ được tự động hoàn lại theo quy tắc của Sapo và không thể hoàn tác.
               </div>
@@ -507,7 +559,10 @@ export function ShopeeOrderDetailModal({
               <div className="flex items-center justify-end gap-2 pt-2 border-t border-zinc-100 dark:border-zinc-800">
                 <button
                   type="button"
-                  onClick={() => setShowCancelModal(false)}
+                  onClick={() => {
+                    setCancelError(null);
+                    setShowCancelModal(false);
+                  }}
                   disabled={actionLoading}
                   className="px-3.5 py-2 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-700 font-semibold text-xs transition-colors cursor-pointer"
                 >

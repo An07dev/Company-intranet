@@ -292,10 +292,11 @@ export default function MultiChannelOrdersPage() {
         toast.success(data.message || "Đã đồng bộ 200 đơn hàng mới nhất thành công!");
         await fetchOrders(true);
       } else {
-        toast.error(data.message || "Lỗi khi đồng bộ đơn mới nhất");
+        const errMsg = data.sapo_detail || data.message || data.error || "Lỗi khi đồng bộ đơn mới nhất";
+        toast.error(errMsg);
       }
-    } catch {
-      toast.error("Không thể kết nối đến máy chủ đồng bộ");
+    } catch (err: any) {
+      toast.error("Không thể kết nối đến máy chủ đồng bộ: " + (err?.message || ""));
     } finally {
       setSyncingSapo(false);
     }
@@ -333,6 +334,9 @@ export default function MultiChannelOrdersPage() {
         body: JSON.stringify({ step: "count" }),
       });
       const countData = await countRes.json();
+      if (!countData.success) {
+        throw new Error(countData.sapo_detail || countData.message || countData.error || "Không thể lấy số lượng đơn từ Sapo");
+      }
       let totalTarget = 14380;
       let counts = { open: 953, cancelled: 2591, closed: 10836, total: 14380 };
       if (countData.success && countData.data) {
@@ -356,6 +360,8 @@ export default function MultiChannelOrdersPage() {
       const prodData = await prodRes.json();
       if (prodData.success) {
         addLog(`Đã dọn dẹp ${prodData.data?.deletedExtensionOrders || 0} đơn extension và cập nhật ${prodData.data?.syncedProducts || 0} sản phẩm Sapo.`);
+      } else {
+        addLog(`⚠️ Cảnh báo nạp sản phẩm: ${prodData.sapo_detail || prodData.message || prodData.error}`);
       }
 
       let cumulative = 0;
@@ -372,6 +378,9 @@ export default function MultiChannelOrdersPage() {
         body: JSON.stringify({ step: "orders", status: "open", pageStart: 1, pageEnd: 4 }),
       });
       const openData = await openRes.json();
+      if (!openData.success) {
+        addLog(`⚠️ Cảnh báo tải đơn đang mở: ${openData.sapo_detail || openData.message || openData.error}`);
+      }
       cumulative += openData.syncedOrders || 0;
       setSyncModal((prev) => ({
         ...prev,
@@ -392,6 +401,9 @@ export default function MultiChannelOrdersPage() {
         body: JSON.stringify({ step: "orders", status: "cancelled", pageStart: 1, pageEnd: 6 }),
       });
       const can1Data = await can1Res.json();
+      if (!can1Data.success) {
+        addLog(`⚠️ Cảnh báo tải đơn đã hủy (Đợt 1): ${can1Data.sapo_detail || can1Data.message || can1Data.error}`);
+      }
       cumulative += can1Data.syncedOrders || 0;
       setSyncModal((prev) => ({
         ...prev,
@@ -410,6 +422,9 @@ export default function MultiChannelOrdersPage() {
         body: JSON.stringify({ step: "orders", status: "cancelled", pageStart: 7, pageEnd: 11 }),
       });
       const can2Data = await can2Res.json();
+      if (!can2Data.success) {
+        addLog(`⚠️ Cảnh báo tải đơn đã hủy (Đợt 2): ${can2Data.sapo_detail || can2Data.message || can2Data.error}`);
+      }
       cumulative += can2Data.syncedOrders || 0;
       setSyncModal((prev) => ({
         ...prev,
@@ -440,6 +455,9 @@ export default function MultiChannelOrdersPage() {
           body: JSON.stringify({ step: "orders", status: "closed", pageStart: batch.start, pageEnd: batch.end }),
         });
         const bData = await bRes.json();
+        if (!bData.success) {
+          addLog(`⚠️ Cảnh báo tải đơn hoàn tất (${batch.label}): ${bData.sapo_detail || bData.message || bData.error}`);
+        }
         cumulative += bData.syncedOrders || 0;
         setSyncModal((prev) => ({
           ...prev,
@@ -461,13 +479,14 @@ export default function MultiChannelOrdersPage() {
       toast.success(`Đã đồng bộ thành công ${totalTarget.toLocaleString("vi-VN")} đơn hàng Sapo!`);
       await fetchOrders(true);
     } catch (err: any) {
-      addLog(`❌ Lỗi: ${err.message || String(err)}`);
+      const errMsg = err?.message || String(err);
+      addLog(`❌ Lỗi: ${errMsg}`);
       setSyncModal((prev) => ({
         ...prev,
         isSyncing: false,
-        currentStage: "Gặp sự cố khi đồng bộ đơn hàng",
+        currentStage: `Gặp sự cố khi đồng bộ: ${errMsg}`,
       }));
-      toast.error("Quá trình đồng bộ Sapo gặp lỗi");
+      toast.error(`Quá trình đồng bộ Sapo gặp lỗi: ${errMsg}`);
     } finally {
       setSyncingSapo(false);
     }

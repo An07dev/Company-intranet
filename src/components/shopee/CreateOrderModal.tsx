@@ -45,6 +45,7 @@ export function CreateOrderModal({ isOpen, onClose, onOrderCreated }: CreateOrde
   const [note, setNote] = useState("");
   const [tags, setTags] = useState("internal_website");
   const [customerList, setCustomerList] = useState<any[]>([]);
+  const [apiError, setApiError] = useState<string | null>(null);
 
   const handlePaymentMethodChange = (val: string) => {
     setPaymentMethod(val);
@@ -56,7 +57,11 @@ export function CreateOrderModal({ isOpen, onClose, onOrderCreated }: CreateOrde
   };
 
   React.useEffect(() => {
-    if (!isOpen) return;
+    if (!isOpen) {
+      setApiError(null);
+      return;
+    }
+    setApiError(null);
     fetch("/api/sapo/customers?limit=100")
       .then((res) => res.json())
       .then((json) => {
@@ -142,46 +147,52 @@ export function CreateOrderModal({ isOpen, onClose, onOrderCreated }: CreateOrde
         ? (customSource.trim() || "Khác")
         : sourceSelect;
 
+    const payload = {
+      source_name: finalSource,
+      shop_username: finalSource,
+      buyer_name: buyerName.trim(),
+      buyer_phone: buyerPhone.trim(),
+      buyer_email: buyerEmail.trim(),
+      buyer_address: buyerAddress.trim(),
+      items: items.map((it) => ({
+        product_name: it.product_name.trim(),
+        price: Number(it.price) || 0,
+        quantity: Number(it.quantity) || 1,
+      })),
+      payment_method: paymentMethod,
+      payment_status: paymentStatus,
+      note: note.trim(),
+      tags: tags.trim(),
+    };
+
     setLoading(true);
+    setApiError(null);
     try {
-      const payload = {
-        source_name: finalSource,
-        shop_username: finalSource,
-        buyer_name: buyerName.trim(),
-        buyer_phone: buyerPhone.trim(),
-        buyer_email: buyerEmail.trim(),
-        buyer_address: buyerAddress.trim(),
-        items: items.map((it) => ({
-          product_name: it.product_name.trim(),
-          price: Number(it.price) || 0,
-          quantity: Number(it.quantity) || 1,
-        })),
-        payment_method: paymentMethod,
-        payment_status: paymentStatus,
-        note: note.trim(),
-        tags: tags.trim(),
-      };
+        const res = await fetch("/api/sapo/orders", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
 
-      const res = await fetch("/api/sapo/orders", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
-
-      const data = await res.json();
-      if (data.success) {
-        toast.success(data.message || "Tạo đơn hàng Sapo thành công!");
-        onOrderCreated?.();
-        onClose();
-      } else {
-        toast.error(data.message || "Không thể tạo đơn hàng");
+        const data = await res.json();
+        if (data.success) {
+          toast.success(data.message || "Tạo đơn hàng Sapo thành công!");
+          setApiError(null);
+          onOrderCreated?.();
+          onClose();
+        } else {
+          const errMsg = data.sapo_detail || data.message || data.error || "Không thể tạo đơn hàng trên Sapo";
+          setApiError(errMsg);
+          toast.error(errMsg);
+        }
+      } catch (err: any) {
+        const errMsg = err?.message || "Lỗi kết nối khi tạo đơn hàng lên Sapo";
+        setApiError(errMsg);
+        toast.error(errMsg);
+      } finally {
+        setLoading(false);
       }
-    } catch (err: any) {
-      toast.error("Lỗi kết nối khi tạo đơn hàng lên Sapo");
-    } finally {
-      setLoading(false);
-    }
-  };
+    };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-200">
@@ -217,6 +228,21 @@ export function CreateOrderModal({ isOpen, onClose, onOrderCreated }: CreateOrde
 
         {/* Form Body */}
         <form onSubmit={handleSubmit} className="overflow-y-auto p-4 sm:p-5 space-y-4 text-xs">
+          {apiError && (
+            <div className="p-3.5 rounded-2xl bg-rose-50 dark:bg-rose-950/50 border border-rose-200 dark:border-rose-900/60 text-rose-700 dark:text-rose-300 text-xs space-y-1.5 animate-in fade-in duration-150">
+              <div className="flex items-center gap-1.5 font-bold text-rose-800 dark:text-rose-200">
+                <span className="text-base">⚠️</span>
+                <span>Phản hồi lỗi từ Sapo Omnichannel:</span>
+              </div>
+              <div className="font-mono text-[11px] leading-relaxed break-words bg-rose-100/60 dark:bg-rose-900/40 p-2.5 rounded-xl text-rose-900 dark:text-rose-100 border border-rose-200/50">
+                {apiError}
+              </div>
+              <div className="text-[11px] text-rose-600 dark:text-rose-400">
+                💡 <em>Gợi ý:</em> Vui lòng kiểm tra lại thông tin khách hàng, số điện thoại hoặc sản phẩm trong đơn hàng.
+              </div>
+            </div>
+          )}
+
           {/* 1. Nguồn đơn hàng & Khách hàng */}
           <div className="bg-zinc-50 dark:bg-zinc-800/40 p-3.5 rounded-2xl border border-zinc-200/60 dark:border-zinc-800 space-y-3">
             <div className="font-semibold text-zinc-800 dark:text-zinc-200 flex items-center gap-1.5">
