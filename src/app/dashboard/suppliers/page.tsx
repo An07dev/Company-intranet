@@ -43,14 +43,17 @@ export default function SuppliersPage() {
   const [isEditing, setIsEditing] = useState(false);
   const [saving, setSaving] = useState(false);
   const [editForm, setEditForm] = useState<Partial<Supplier>>({});
+  const [editError, setEditError] = useState<string | null>(null);
 
   // Modal Create
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [creating, setCreating] = useState(false);
+  const [createError, setCreateError] = useState<string | null>(null);
 
   // Modal Delete
   const [supplierToDelete, setSupplierToDelete] = useState<Supplier | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
   const [createForm, setCreateForm] = useState({
     name: "",
     code: "",
@@ -88,6 +91,7 @@ export default function SuppliersPage() {
   const handleOpenDetail = (s: Supplier) => {
     setSelectedSupplier(s);
     setIsEditing(false);
+    setEditError(null);
     setEditForm({
       name: s.name || "",
       code: s.code || "",
@@ -106,6 +110,7 @@ export default function SuppliersPage() {
   const handleSaveEdit = async () => {
     if (!selectedSupplier) return;
     setSaving(true);
+    setEditError(null);
     try {
       const res = await fetch("/api/sapo/suppliers", {
         method: "PUT",
@@ -124,11 +129,16 @@ export default function SuppliersPage() {
         );
         setSelectedSupplier((prev) => (prev ? { ...prev, ...editForm } : null));
         setIsEditing(false);
+        setEditError(null);
       } else {
-        toast.error(data.message || "Lỗi cập nhật nhà cung cấp");
+        const errMsg = data.sapo_detail || data.message || data.error || "Lỗi cập nhật nhà cung cấp lên Sapo";
+        setEditError(errMsg);
+        toast.error(errMsg);
       }
-    } catch {
-      toast.error("Không thể kết nối đến máy chủ Sapo");
+    } catch (err: any) {
+      const errMsg = err?.message || "Không thể kết nối đến máy chủ Sapo";
+      setEditError(errMsg);
+      toast.error(errMsg);
     } finally {
       setSaving(false);
     }
@@ -141,6 +151,7 @@ export default function SuppliersPage() {
       return;
     }
     setCreating(true);
+    setCreateError(null);
     try {
       const res = await fetch("/api/sapo/suppliers", {
         method: "POST",
@@ -151,6 +162,7 @@ export default function SuppliersPage() {
       if (data.success) {
         toast.success("Đã tạo nhà cung cấp mới trên Sapo thành công!");
         setIsCreateOpen(false);
+        setCreateError(null);
         setCreateForm({
           name: "",
           code: "",
@@ -165,10 +177,14 @@ export default function SuppliersPage() {
         });
         await fetchSuppliers();
       } else {
-        toast.error(data.message || "Lỗi tạo nhà cung cấp");
+        const errMsg = data.sapo_detail || data.message || data.error || "Lỗi tạo nhà cung cấp trên Sapo";
+        setCreateError(errMsg);
+        toast.error(errMsg);
       }
-    } catch {
-      toast.error("Không thể kết nối đến máy chủ");
+    } catch (err: any) {
+      const errMsg = err?.message || "Không thể kết nối đến máy chủ";
+      setCreateError(errMsg);
+      toast.error(errMsg);
     } finally {
       setCreating(false);
     }
@@ -177,6 +193,7 @@ export default function SuppliersPage() {
   const handleConfirmDelete = async () => {
     if (!supplierToDelete) return;
     setIsDeleting(true);
+    setDeleteError(null);
     try {
       const res = await fetch(`/api/sapo/suppliers?id=${supplierToDelete.id}`, {
         method: "DELETE",
@@ -189,11 +206,16 @@ export default function SuppliersPage() {
           setSelectedSupplier(null);
         }
         setSupplierToDelete(null);
+        setDeleteError(null);
       } else {
-        toast.error(data.message || "Lỗi xóa nhà cung cấp trên Sapo");
+        const errMsg = data.sapo_detail || data.message || data.error || "Lỗi xóa nhà cung cấp trên Sapo";
+        setDeleteError(errMsg);
+        toast.error(errMsg);
       }
-    } catch {
-      toast.error("Không thể kết nối đến máy chủ để xóa nhà cung cấp");
+    } catch (err: any) {
+      const errMsg = err?.message || "Không thể kết nối đến máy chủ để xóa nhà cung cấp";
+      setDeleteError(errMsg);
+      toast.error(errMsg);
     } finally {
       setIsDeleting(false);
     }
@@ -824,6 +846,18 @@ export default function SuppliersPage() {
             ) : (
               /* Edit Form Mode */
               <div className="space-y-3.5 text-xs">
+                {editError && (
+                  <div className="p-3.5 rounded-2xl bg-rose-50 dark:bg-rose-950/50 border border-rose-200 dark:border-rose-900/60 text-rose-700 dark:text-rose-300 text-xs space-y-1.5 animate-in fade-in duration-150">
+                    <div className="flex items-center gap-1.5 font-bold text-rose-800 dark:text-rose-200">
+                      <span className="text-base">⚠️</span>
+                      <span>Lỗi cập nhật từ Sapo:</span>
+                    </div>
+                    <div className="font-mono text-[11px] leading-relaxed break-words bg-rose-100/60 dark:bg-rose-900/40 p-2.5 rounded-xl text-rose-900 dark:text-rose-100 border border-rose-200/50">
+                      {editError}
+                    </div>
+                  </div>
+                )}
+
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <label className="block text-zinc-500 font-medium mb-1">Tên nhà cung cấp *</label>
@@ -998,6 +1032,21 @@ export default function SuppliersPage() {
             </div>
 
             <form onSubmit={handleCreateSupplier} className="space-y-3.5 text-xs">
+              {createError && (
+                <div className="p-3.5 rounded-2xl bg-rose-50 dark:bg-rose-950/50 border border-rose-200 dark:border-rose-900/60 text-rose-700 dark:text-rose-300 text-xs space-y-2 animate-in fade-in duration-150">
+                  <div className="flex items-center gap-1.5 font-bold text-rose-800 dark:text-rose-200">
+                    <span className="text-base">⚠️</span>
+                    <span>Phản hồi lỗi từ hệ thống Sapo:</span>
+                  </div>
+                  <div className="font-mono text-[11px] leading-relaxed break-words bg-rose-100/60 dark:bg-rose-900/40 p-2.5 rounded-xl text-rose-900 dark:text-rose-100 border border-rose-200/50">
+                    {createError}
+                  </div>
+                  <div className="text-[11px] text-rose-600 dark:text-rose-400">
+                    💡 <em>Mẹo khắc phục:</em> Nếu lỗi do trùng mã, bạn chỉ cần <strong>xóa trắng ô Mã NCC</strong> để Sapo tự động sinh mã mới, hoặc kiểm tra lại định dạng email và SĐT.
+                  </div>
+                </div>
+              )}
+
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-zinc-500 font-medium mb-1">Tên nhà cung cấp *</label>
@@ -1156,6 +1205,18 @@ export default function SuppliersPage() {
                 </div>
               )}
             </div>
+
+            {deleteError && (
+              <div className="p-3.5 rounded-2xl bg-rose-50 dark:bg-rose-950/50 border border-rose-200 dark:border-rose-900/60 text-rose-700 dark:text-rose-300 text-xs space-y-1.5 animate-in fade-in duration-150">
+                <div className="flex items-center gap-1.5 font-bold text-rose-800 dark:text-rose-200">
+                  <span className="text-base">⚠️</span>
+                  <span>Không thể xóa trên Sapo:</span>
+                </div>
+                <div className="font-mono text-[11px] leading-relaxed break-words bg-rose-100/60 dark:bg-rose-900/40 p-2.5 rounded-xl text-rose-900 dark:text-rose-100 border border-rose-200/50">
+                  {deleteError}
+                </div>
+              </div>
+            )}
 
             <p className="text-xs text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/40 p-3 rounded-xl border border-rose-200 dark:border-rose-900/40">
               ⚠️ <strong>Cảnh báo:</strong> Thao tác này sẽ gỡ bỏ nhà cung cấp khỏi danh sách và đồng bộ trạng thái <em>Đã xóa (deleted)</em> sang Sapo. Bạn có chắc chắn muốn xóa?

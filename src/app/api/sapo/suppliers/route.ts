@@ -36,6 +36,64 @@ export async function GET(request: NextRequest) {
   }
 }
 
+function parseSapoErrorDetail(
+  error: any,
+  fallbackMessage: string,
+  attemptedCode?: string
+): { displayMessage: string; rawError: string } {
+  const rawError = error?.message || String(error);
+  let extractedJson: any = null;
+  const jsonMatch = rawError.match(/\{[\s\S]*\}/);
+  if (jsonMatch) {
+    try {
+      extractedJson = JSON.parse(jsonMatch[0]);
+    } catch {}
+  }
+
+  const data = extractedJson || error?.response || {};
+
+  // Case 1: errors là danh sách các lỗi [{ message, fields }]
+  if (data?.errors && Array.isArray(data.errors)) {
+    const list = data.errors.map((e: any) => {
+      if (typeof e === "string") return e;
+      const field = e.fields?.length ? `[${e.fields.join(", ")}] ` : "";
+      return `${field}${e.message || JSON.stringify(e)}`;
+    });
+    return { displayMessage: list.join(" • "), rawError };
+  }
+
+  // Case 2: errors là object { "field_name": ["lỗi 1", "lỗi 2"] }
+  if (data?.errors && typeof data.errors === "object") {
+    const list = Object.entries(data.errors).map(([key, val]) => {
+      const valStr = Array.isArray(val) ? val.join(", ") : String(val);
+      return `Trường "${key}": ${valStr}`;
+    });
+    return { displayMessage: list.join(" • "), rawError };
+  }
+
+  // Case 3: error_description
+  if (data?.error_description) {
+    return { displayMessage: data.error_description, rawError };
+  }
+
+  // Case 4: Lỗi 500 từ Sapo (thường là trùng mã NCC do DB unique constraint)
+  if (data?.error === "Internal server error" || rawError.includes("500") || rawError.includes("Internal Server Error")) {
+    const codeHint = attemptedCode
+      ? `Mã nhà cung cấp "${attemptedCode}" đã tồn tại trong cơ sở dữ liệu Sapo (kể cả những nhà cung cấp đã từng bị xóa). Vui lòng đổi mã khác hoặc để trống ô Mã NCC để Sapo tự động sinh mã mới.`
+      : "Máy chủ Sapo phản hồi lỗi 500 (Internal Server Error) do dữ liệu bị trùng lặp hoặc không hợp lệ. Vui lòng để trống ô Mã NCC để hệ thống tự sinh mã.";
+    return {
+      displayMessage: codeHint,
+      rawError,
+    };
+  }
+
+  if (data?.error) {
+    return { displayMessage: String(data.error), rawError };
+  }
+
+  return { displayMessage: rawError || fallbackMessage, rawError };
+}
+
 export async function PUT(request: NextRequest) {
   try {
     const body = await request.json();
@@ -68,11 +126,13 @@ export async function PUT(request: NextRequest) {
     });
   } catch (error: any) {
     console.error("[Sapo Update Supplier Error]:", error);
+    const { displayMessage, rawError } = parseSapoErrorDetail(error, "Lỗi cập nhật nhà cung cấp lên Sapo");
     return NextResponse.json(
       {
         success: false,
-        message: "Lỗi cập nhật nhà cung cấp lên Sapo",
-        error: error.message || String(error),
+        message: displayMessage,
+        sapo_detail: displayMessage,
+        error: rawError,
       },
       { status: 500 }
     );
@@ -136,26 +196,13 @@ export async function POST(request: NextRequest) {
     });
   } catch (error: any) {
     console.error("[Sapo Create Supplier Error]:", error);
-
-    const errorMsg = error?.message || String(error);
-    let friendlyMessage = "Lỗi tạo nhà cung cấp mới trên Sapo";
-
-    // Xử lý lỗi Sapo trả về 500 khi trùng mã nhà cung cấp (kể cả với nhà cung cấp đã bị xóa)
-    if (errorMsg.includes("500") || errorMsg.includes("Internal Server Error") || errorMsg.includes("Internal server error")) {
-      if (attemptedCode) {
-        friendlyMessage = `Mã nhà cung cấp "${attemptedCode}" đã tồn tại hoặc đã từng được sử dụng trên Sapo (kể cả những nhà cung cấp đã từng bị xóa). Vui lòng đổi mã khác hoặc để trống để Sapo tự động tạo mã mới.`;
-      } else {
-        friendlyMessage = "Máy chủ Sapo gặp lỗi khi xử lý dữ liệu. Vui lòng thử lại sau giây lát hoặc để trống ô Mã NCC.";
-      }
-    } else if (errorMsg.includes("must not start with SUP")) {
-      friendlyMessage = "Mã nhà cung cấp không được bắt đầu bằng chữ 'SUP'. Vui lòng chọn mã khác hoặc để trống.";
-    }
-
+    const { displayMessage, rawError } = parseSapoErrorDetail(error, "Lỗi tạo nhà cung cấp mới trên Sapo", attemptedCode);
     return NextResponse.json(
       {
         success: false,
-        message: friendlyMessage,
-        error: errorMsg,
+        message: displayMessage,
+        sapo_detail: displayMessage,
+        error: rawError,
       },
       { status: 500 }
     );
@@ -202,14 +249,17 @@ export async function DELETE(request: NextRequest) {
     });
   } catch (error: any) {
     console.error("[Sapo Delete Supplier Error]:", error);
+    const { displayMessage, rawError } = parseSapoErrorDetail(error, "Lỗi xóa nhà cung cấp trên Sapo");
     return NextResponse.json(
       {
         success: false,
-        message: "Lỗi xóa nhà cung cấp trên Sapo",
-        error: error.message || String(error),
+        message: displayMessage,
+        sapo_detail: displayMessage,
+        error: rawError,
       },
       { status: 500 }
     );
   }
 }
+
 
