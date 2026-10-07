@@ -52,8 +52,28 @@ export function ShopeeOrderDetailModal({
 
   // Action State (Cancel/Close/Open)
   const [actionLoading, setActionLoading] = useState(false);
+  const [refreshingStatus, setRefreshingStatus] = useState(false);
   const [showCancelModal, setShowCancelModal] = useState(false);
   const [cancelReasonKey, setCancelReasonKey] = useState("customer");
+
+  const handleRefreshFromSapo = async () => {
+    if (!order) return;
+    setRefreshingStatus(true);
+    try {
+      const res = await fetch(`/api/sapo/orders?order_sn=${encodeURIComponent(order.order_sn)}`);
+      const data = await res.json();
+      if (data.success) {
+        toast.success(data.message || `Đã cập nhật trạng thái từ Sapo: ${data.order?.order_status}`);
+        onOrderUpdated?.();
+      } else {
+        toast.error(data.message || "Không thể đồng bộ trạng thái từ Sapo");
+      }
+    } catch {
+      toast.error("Không thể kết nối đến máy chủ");
+    } finally {
+      setRefreshingStatus(false);
+    }
+  };
 
   if (!isOpen || !order) return null;
 
@@ -253,8 +273,29 @@ export function ShopeeOrderDetailModal({
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5">
             <ShopeeStatusBadge status={order.order_status} size="md" />
+            <button
+              type="button"
+              onClick={handleRefreshFromSapo}
+              disabled={refreshingStatus}
+              className="p-1.5 rounded-lg text-zinc-400 hover:text-emerald-600 dark:hover:text-emerald-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors disabled:opacity-50 cursor-pointer"
+              title="Làm mới trạng thái thời gian thực từ Sapo Omnichannel"
+            >
+              <svg
+                className={`w-4 h-4 ${refreshingStatus ? "animate-spin text-emerald-600" : ""}`}
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                />
+              </svg>
+            </button>
             <button
               type="button"
               onClick={onClose}
@@ -544,6 +585,17 @@ export function ShopeeOrderDetailModal({
                 <span>Mở lại đơn</span>
               </button>
             )}
+
+            <button
+              type="button"
+              onClick={handleRefreshFromSapo}
+              disabled={refreshingStatus}
+              className="px-3 py-1.5 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-zinc-700 dark:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-700/60 font-semibold text-xs transition-colors flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+              title="Kiểm tra và cập nhật trạng thái thời gian thực từ Sapo Omnichannel"
+            >
+              <span className={refreshingStatus ? "animate-spin" : ""}>🔄</span>
+              <span>{refreshingStatus ? "Đang đồng bộ..." : "Làm mới từ Sapo"}</span>
+            </button>
 
             <button
               type="button"

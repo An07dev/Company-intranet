@@ -26,7 +26,7 @@ function mapSapoOrder(o: any, now: string) {
     "Khách lẻ";
 
   let orderStatus = "Chờ xử lý";
-  if (o.cancelled_on || o.status === "cancelled" || o.financial_status === "voided") {
+  if (o.cancelled_on || o.cancel_reason || o.status === "cancelled" || o.financial_status === "voided") {
     orderStatus = "Đã hủy";
   } else if (o.fulfillment_status === "fulfilled" || o.status === "closed") {
     orderStatus = "Đã giao";
@@ -441,6 +441,114 @@ export async function PATCH(request: NextRequest) {
         error: error.message || String(error),
       },
       { status: 400 }
+    );
+  }
+}
+
+/**
+ * GET /api/sapo/orders?order_sn=...
+ * Kiểm tra và làm mới trạng thái thời gian thực của đơn hàng từ Sapo Admin về hệ thống
+ */
+export async function GET(request: NextRequest) {
+  try {
+    await connectToDatabase();
+    const { searchParams } = new URL(request.url);
+    const orderSn = searchParams.get("order_sn");
+
+    if (!orderSn) {
+      return NextResponse.json(
+        { success: false, message: "Thiếu mã đơn hàng order_sn" },
+        { status: 400 }
+      );
+    }
+
+    const order = await MongoShopeeOrderModel.findOne({ order_sn: orderSn });
+    if (!order) {
+      return NextResponse.json(
+        { success: false, message: "Không tìm thấy đơn hàng trong hệ thống" },
+        { status: 404 }
+      );
+    }
+
+    let sapoId: number | string | null = null;
+    if (order.raw_text) {
+      try {
+        const raw = JSON.parse(order.raw_text);
+        if (raw.id) sapoId = raw.id;
+      } catch {}
+    }
+
+    if (!sapoId && order.id && /^\d+$/.test(String(order.id)) && String(order.id).length >= 7) {
+      sapoId = order.id;
+    }
+
+    let sapoOrder: any = null;
+    if (sapoId) {
+      try {
+        const res = await SapoService.getOrderById(sapoId);
+        sapoOrder = res.order;
+      } catch (err: any) {
+        console.warn(`[Sapo Sync Warning] Không lấy được theo ID ${sapoId}:`, err.message);
+      }
+    }
+
+    if (!sapoOrder) {
+      const cleanSn = String(orderSn).replace(/^#/, "").trim();
+      const searchRes = await SapoService.getOrders({ query: cleanSn, limit: 5 });
+      sapoOrder =
+        searchRes.orders?.find(
+          (o: any) =>
+            String(o.order_number) === cleanSn ||
+            String(o.name).replace(/^#/, "") === cleanSn ||
+            String(o.id) === cleanSn
+        ) || searchRes.orders?.[0];
+    }
+
+    if (!sapoOrder) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: `Không tìm thấy thông tin đơn #${orderSn} trên Sapo Omnichannel`,
+        },
+        { status: 404 }
+      );
+    }
+
+    const now = new Date().toISOString();
+    const mapped = mapSapoOrder(sapoOrder, now);
+
+    // Cập nhật lại vào MongoDB
+    await MongoShopeeOrderModel.updateOne(
+      { order_sn: orderSn },
+      {
+        $set: {
+          order_status: mapped.order_status,
+          status_description: mapped.status_description,
+          shipping_carrier: mapped.shipping_carrier || order.shipping_carrier,
+          tracking_number: mapped.tracking_number || order.tracking_number,
+          raw_text: JSON.stringify(sapoOrder),
+          synced_at: now,
+          updatedAt: now,
+        },
+      }
+    );
+
+    const updatedDoc = await MongoShopeeOrderModel.findOne({ order_sn: orderSn });
+
+    return NextResponse.json({
+      success: true,
+      message: `Đã làm mới trạng thái đơn #${orderSn} từ Sapo: ${mapped.order_status}`,
+      order: updatedDoc,
+      sapo_order: sapoOrder,
+    });
+  } catch (error: any) {
+    console.error("[Sapo Get Order Status Error]:", error);
+    return NextResponse.json(
+      {
+        success: false,
+        message: `Lỗi kiểm tra trạng thái từ Sapo: ${error.message || String(error)}`,
+      },
+      { status: 500 }
     );
   }
 }

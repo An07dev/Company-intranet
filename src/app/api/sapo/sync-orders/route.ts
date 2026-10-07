@@ -26,8 +26,8 @@ export async function POST(request: NextRequest) {
       if (body && body.limit) limit = Math.min(250, Number(body.limit));
     } catch {}
 
-    // Lấy song song đơn hàng mở và đơn đã hoàn tất từ Sapo
-    const [openRes, closedRes] = await Promise.all([
+    // Lấy song song đơn hàng mở, đơn đã đóng và đơn đã hủy từ Sapo
+    const [openRes, closedRes, cancelledRes] = await Promise.all([
       fetch(`https://${SAPO_DOMAIN}/admin/orders.json?status=open&limit=${limit}`, {
         headers,
         cache: "no-store",
@@ -36,15 +36,34 @@ export async function POST(request: NextRequest) {
         headers,
         cache: "no-store",
       }),
+      fetch(`https://${SAPO_DOMAIN}/admin/orders.json?status=cancelled&limit=${limit}`, {
+        headers,
+        cache: "no-store",
+      }),
     ]);
 
-    if (!openRes.ok && !closedRes.ok) {
-      throw new Error(`Sapo API lỗi kết nối: ${openRes.status} / ${closedRes.status}`);
+    if (!openRes.ok && !closedRes.ok && !cancelledRes.ok) {
+      throw new Error(`Sapo API lỗi kết nối: ${openRes.status} / ${closedRes.status} / ${cancelledRes.status}`);
     }
 
     const openOrders = openRes.ok ? (await openRes.json()).orders || [] : [];
     const closedOrders = closedRes.ok ? (await closedRes.json()).orders || [] : [];
-    const rawOrders = [...openOrders, ...closedOrders];
+    const cancelledOrders = cancelledRes.ok ? (await cancelledRes.json()).orders || [] : [];
+    const combinedOrders = [...openOrders, ...closedOrders, ...cancelledOrders];
+
+    // Chống trùng lặp và ưu tiên bản ghi có trạng thái hủy
+    const seenMap = new Map<string, any>();
+    for (const o of combinedOrders) {
+      const key = String(o.order_number || o.name || o.id);
+      if (!seenMap.has(key)) {
+        seenMap.set(key, o);
+      } else {
+        if (o.cancelled_on || o.cancel_reason || o.status === "cancelled") {
+          seenMap.set(key, o);
+        }
+      }
+    }
+    const rawOrders = Array.from(seenMap.values());
 
     const now = new Date().toISOString();
     const mappedOrders: ShopeeOrder[] = [];
@@ -70,9 +89,9 @@ export async function POST(request: NextRequest) {
         "Khách lẻ";
 
       let orderStatus = "Chờ xử lý";
-      if (o.cancelled_on || o.status === "cancelled" || o.financial_status === "voided") {
+      if (o.cancelled_on || o.cancel_reason || o.status === "cancelled" || o.financial_status === "voided") {
         orderStatus = "Đã hủy";
-      } else if (o.fulfillment_status === "fulfilled") {
+      } else if (o.fulfillment_status === "fulfilled" || o.status === "closed") {
         orderStatus = "Đã giao";
       } else if (o.fulfillment_status === "partial") {
         orderStatus = "Đang giao";

@@ -49,7 +49,9 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    console.log("=== [Sapo Webhook] Nhận dữ liệu đơn hàng mới ===");
+    const topic = (request.headers.get("x-sapo-topic") || "").toLowerCase();
+
+    console.log(`=== [Sapo Webhook] Nhận sự kiện (${topic || "unknown"}) ===`);
     console.log("Mã đơn Sapo ID:", orderData.id);
     console.log("Số hiệu đơn:", orderData.order_number || orderData.name);
     console.log("Kênh phát sinh (source_name):", orderData.source_name || orderData.channel);
@@ -74,13 +76,22 @@ export async function POST(request: NextRequest) {
       "Khách Sapo";
 
     // Phân loại trạng thái đơn
+    const isCancelled =
+      topic.includes("cancelled") ||
+      Boolean(orderData.cancelled_on) ||
+      Boolean(orderData.cancel_reason) ||
+      orderData.status === "cancelled" ||
+      orderData.financial_status === "voided";
+
     let orderStatus = "Chờ xử lý";
-    if (orderData.cancelled_on || orderData.status === "cancelled" || orderData.financial_status === "voided") {
+    if (isCancelled) {
       orderStatus = "Đã hủy";
-    } else if (orderData.fulfillment_status === "fulfilled") {
-      orderStatus = "Đã giao hàng";
+    } else if (orderData.fulfillment_status === "fulfilled" || orderData.status === "closed") {
+      orderStatus = "Đã giao";
     } else if (orderData.fulfillment_status === "partial") {
-      orderStatus = "Đang giao hàng";
+      orderStatus = "Đang giao";
+    } else if (orderData.financial_status === "paid") {
+      orderStatus = "Đã thanh toán";
     }
 
     // Danh sách sản phẩm trong đơn
@@ -94,6 +105,10 @@ export async function POST(request: NextRequest) {
 
     const now = new Date().toISOString();
 
+    const statusDesc = isCancelled
+      ? `Đã hủy trên Sapo | Lý do: ${orderData.cancel_reason || "Khác"} | Thời điểm: ${orderData.cancelled_on || now}`
+      : `Financial: ${orderData.financial_status || "N/A"} | Fulfillment: ${orderData.fulfillment_status || "N/A"} | Kênh: ${shopSource}`;
+
     const mappedOrder: ShopeeOrder = {
       order_sn: orderSn,
       shop_username: `sapo_${shopSource}`,
@@ -101,7 +116,7 @@ export async function POST(request: NextRequest) {
       total_amount: Number(orderData.total_price) || 0,
       payment_method: orderData.gateway || "Chưa rõ",
       order_status: orderStatus,
-      status_description: `Financial: ${orderData.financial_status || "N/A"} | Fulfillment: ${orderData.fulfillment_status || "N/A"} | Kênh: ${shopSource}`,
+      status_description: statusDesc,
       shipping_carrier: orderData.fulfillments?.[0]?.tracking_company || "",
       tracking_number: orderData.fulfillments?.[0]?.tracking_number || "",
       items,
@@ -114,22 +129,31 @@ export async function POST(request: NextRequest) {
     // Lưu / Cập nhật vào MongoDB thông qua OrderModel
     try {
       const syncResult = await OrderModel.upsertOrders([mappedOrder], mappedOrder.shop_username);
-      console.log(`[Sapo Webhook] Đã lưu thành công đơn #${orderSn} vào Database (Thêm mới: ${syncResult.inserted}, Cập nhật: ${syncResult.updated})`);
+      console.log(`[Sapo Webhook] Đã lưu thành công đơn #${orderSn} vào Database (Thêm mới: ${syncResult.inserted}, Cập nhật: ${syncResult.updated}, Trạng thái: ${orderStatus})`);
+
+      const logMsg = isCancelled
+        ? `[Sapo Webhook] Hủy đơn hàng #${orderSn} trên hệ thống (Lý do: ${orderData.cancel_reason || "Khác"})`
+        : topic.includes("updated")
+        ? `[Sapo Webhook] Cập nhật đơn hàng #${orderSn} từ Sapo -> Trạng thái: ${orderStatus}`
+        : `[Sapo Webhook] Nhận đơn hàng mới #${orderSn} từ sàn ${shopSource.toUpperCase()}`;
 
       // Ghi lại nhật ký đồng bộ để hiển thị trên trang Nhật ký Webhook
       await LogModel.createLog({
         level: "success",
-        type: "order_sync",
+        type: isCancelled ? "order_cancel" : "order_sync",
         source: "sapo_webhook",
         shop_username: mappedOrder.shop_username,
-        message: `[Sapo Webhook] Nhận đơn hàng mới #${orderSn} từ sàn ${shopSource.toUpperCase()}`,
+        message: logMsg,
         details: {
           order_id: orderData.id,
           order_number: orderSn,
+          topic: topic || (isCancelled ? "orders/cancelled" : "orders/create"),
           source_name: shopSource,
           total_price: mappedOrder.total_amount,
           buyer: buyerName,
-          items_count: items.length,
+          order_status: orderStatus,
+          cancel_reason: orderData.cancel_reason,
+          cancelled_on: orderData.cancelled_on,
           fulfillment_status: orderData.fulfillment_status,
           financial_status: orderData.financial_status,
         },

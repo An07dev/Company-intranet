@@ -67,6 +67,9 @@ export class OrderModel {
         if (cleanItems.length > 0) {
           existing.items = cleanItems;
         }
+        if (order.raw_text) {
+          existing.raw_text = order.raw_text;
+        }
         existing.synced_at = now;
         existing.updatedAt = now;
         await existing.save();
