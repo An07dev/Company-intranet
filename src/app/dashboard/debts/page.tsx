@@ -304,53 +304,47 @@ export default function DebtsManagementPage() {
   };
 
   return (
-    <div className="p-3 sm:p-6 lg:p-8 space-y-5 max-w-7xl mx-auto">
-      {/* Sapo Header / Breadcrumb */}
-      <div className="flex items-start justify-between flex-wrap gap-4 pb-2">
-        <div>
-          <div className="text-[11px] font-medium text-zinc-500 dark:text-zinc-400 mb-1 flex items-center gap-1.5">
-            <span>Sapo Apps</span>
-            <span>/</span>
-            <span>Quản lý công nợ</span>
-            <span>/</span>
-            <span className="text-zinc-900 dark:text-white font-semibold">Công nợ khách hàng</span>
+    <div className="p-3 sm:p-5 lg:p-6 space-y-3.5 max-w-7xl mx-auto">
+      {/* Clean Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pb-1">
+        <div className="flex items-center gap-2.5">
+          <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-rose-50 dark:bg-rose-950/60 border border-rose-200 dark:border-rose-900/60 text-rose-600 flex items-center justify-center text-base sm:text-lg shrink-0">
+            📊
           </div>
-
-          <div className="flex items-center gap-2">
-            <span className="p-2 rounded-2xl bg-rose-50 dark:bg-rose-950/60 border border-rose-200 dark:border-rose-900 text-rose-600 text-lg">
-              📊
-            </span>
-            <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-zinc-900 dark:text-white">
-              Công nợ khách hàng
+          <div>
+            <h1 className="text-base sm:text-xl font-bold tracking-tight text-zinc-900 dark:text-white flex items-center gap-2">
+              <span>Công nợ khách hàng</span>
+              {summary && (
+                <span className="text-[11px] px-2 py-0.5 rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 font-medium font-mono">
+                  {summary.totalDebtors || 0} khách
+                </span>
+              )}
             </h1>
           </div>
-          <p className="text-xs sm:text-sm text-zinc-500 dark:text-zinc-400 mt-1 pl-11">
-            Đồng bộ chuẩn xác theo phương trình kế toán Sapo Quản lý Công nợ | Cập nhật thời gian thực
-          </p>
         </div>
 
         {/* Date Selector & Action Buttons */}
-        <div className="flex items-center gap-2.5 flex-wrap">
-          {/* Dropdown Bộ lọc thời gian chuẩn Sapo */}
-          <div className="relative">
+        <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap">
+          {/* Dropdown Bộ lọc thời gian */}
+          <div className="relative flex-1 sm:flex-initial">
             <select
               value={datePreset}
               onChange={(e) => setDatePreset(e.target.value as DateRangePreset)}
-              className="px-3.5 py-2 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-zinc-800 dark:text-zinc-200 font-semibold text-xs shadow-xs cursor-pointer focus:outline-hidden focus:ring-2 focus:ring-rose-500"
+              className="w-full sm:w-auto px-3 py-1.5 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-zinc-800 dark:text-zinc-200 font-medium text-xs shadow-2xs cursor-pointer focus:outline-hidden focus:ring-2 focus:ring-rose-500"
             >
-              <option value="30_days">30 ngày qua (Mặc định Sapo)</option>
+              <option value="30_days">30 ngày qua</option>
               <option value="7_days">7 ngày qua</option>
               <option value="today">Hôm nay</option>
               <option value="yesterday">Hôm qua</option>
               <option value="this_month">Tháng này</option>
               <option value="last_month">Tháng trước</option>
-              <option value="custom">Tuỳ chọn ngày...</option>
+              <option value="custom">Tuỳ chọn...</option>
             </select>
           </div>
 
           {/* Custom Date Pickers if selected */}
           {datePreset === "custom" && (
-            <div className="flex items-center gap-1.5 bg-white dark:bg-zinc-800 p-1 rounded-xl border border-zinc-200 dark:border-zinc-700">
+            <div className="flex items-center gap-1 bg-white dark:bg-zinc-800 p-1 rounded-xl border border-zinc-200 dark:border-zinc-700">
               <input
                 type="date"
                 value={customStartDate}
@@ -370,25 +364,27 @@ export default function DebtsManagementPage() {
           <button
             type="button"
             onClick={handleExportCSV}
-            className="px-3.5 py-2 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-zinc-700 dark:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-700/60 font-semibold text-xs transition-colors flex items-center gap-1.5 cursor-pointer shadow-xs"
+            className="px-3 py-1.5 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-zinc-700 dark:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-700/60 font-medium text-xs transition-colors flex items-center gap-1.5 cursor-pointer shadow-2xs shrink-0"
+            title="Xuất file CSV"
           >
             <span>📥</span>
-            <span>Xuất Excel</span>
+            <span className="hidden sm:inline">Xuất Excel</span>
           </button>
 
           <button
             type="button"
             onClick={handleRefreshAll}
             disabled={refreshing}
-            className="px-4 py-2 rounded-xl bg-zinc-900 hover:bg-zinc-800 dark:bg-zinc-100 dark:hover:bg-white text-white dark:text-zinc-900 font-semibold text-xs transition-colors flex items-center gap-1.5 cursor-pointer disabled:opacity-50 shadow-xs"
+            className="px-3.5 py-1.5 rounded-xl bg-zinc-900 hover:bg-zinc-800 dark:bg-zinc-100 dark:hover:bg-white text-white dark:text-zinc-900 font-semibold text-xs transition-colors flex items-center gap-1.5 cursor-pointer disabled:opacity-50 shadow-2xs shrink-0"
+            title="Đồng bộ lại từ Sapo"
           >
             <span className={refreshing ? "animate-spin" : ""}>🔄</span>
-            <span>{refreshing ? "Đang đồng bộ..." : "Đồng bộ từ Sapo"}</span>
+            <span className="hidden sm:inline">{refreshing ? "Đang đồng bộ..." : "Đồng bộ Sapo"}</span>
           </button>
         </div>
       </div>
 
-      {/* Sapo Equation Banner: Nợ đầu kỳ + Nợ tăng trong kỳ - Nợ giảm trong kỳ = Nợ cuối kỳ */}
+      {/* Sapo Equation KPI Cards */}
       <DebtStatsCards
         summary={summary}
         loading={loadingSummary}
@@ -396,40 +392,38 @@ export default function DebtsManagementPage() {
       />
 
       {/* Tabs Switcher */}
-      <div className="flex items-center justify-between border-b border-zinc-200 dark:border-zinc-800 pt-2 flex-wrap gap-2">
-        <div className="flex items-center gap-2">
-          <button
-            type="button"
-            onClick={() => setActiveTab("customers")}
-            className={`px-4 py-2.5 font-bold text-xs sm:text-sm border-b-2 transition-colors flex items-center gap-2 cursor-pointer ${
-              activeTab === "customers"
-                ? "border-rose-600 text-rose-600 dark:text-rose-400"
-                : "border-transparent text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-300"
-            }`}
-          >
-            <span>👥</span>
-            <span>Công nợ khách hàng (Sapo)</span>
-            <span className="text-[11px] px-2 py-0.5 rounded-full bg-zinc-100 dark:bg-zinc-800 font-mono">
-              {summary?.totalDebtors || customerTotalCount || 0}
-            </span>
-          </button>
+      <div className="flex items-center border-b border-zinc-200 dark:border-zinc-800">
+        <button
+          type="button"
+          onClick={() => setActiveTab("customers")}
+          className={`px-3.5 py-2 font-bold text-xs sm:text-sm border-b-2 transition-colors flex items-center gap-1.5 cursor-pointer ${
+            activeTab === "customers"
+              ? "border-rose-600 text-rose-600 dark:text-rose-400"
+              : "border-transparent text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-300"
+          }`}
+        >
+          <span>👥</span>
+          <span>Khách hàng nợ</span>
+          <span className="text-[10px] sm:text-[11px] px-1.5 py-0.5 rounded-full bg-zinc-100 dark:bg-zinc-800 font-mono">
+            {summary?.totalDebtors || customerTotalCount || 0}
+          </span>
+        </button>
 
-          <button
-            type="button"
-            onClick={() => setActiveTab("orders")}
-            className={`px-4 py-2.5 font-bold text-xs sm:text-sm border-b-2 transition-colors flex items-center gap-2 cursor-pointer ${
-              activeTab === "orders"
-                ? "border-rose-600 text-rose-600 dark:text-rose-400"
-                : "border-transparent text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-300"
-            }`}
-          >
-            <span>📋</span>
-            <span>Danh sách Đơn hàng nợ</span>
-            <span className="text-[11px] px-2 py-0.5 rounded-full bg-zinc-100 dark:bg-zinc-800 font-mono">
-              {summary?.totalDebtOrders || orderTotalCount || 0}
-            </span>
-          </button>
-        </div>
+        <button
+          type="button"
+          onClick={() => setActiveTab("orders")}
+          className={`px-3.5 py-2 font-bold text-xs sm:text-sm border-b-2 transition-colors flex items-center gap-1.5 cursor-pointer ${
+            activeTab === "orders"
+              ? "border-rose-600 text-rose-600 dark:text-rose-400"
+              : "border-transparent text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-300"
+          }`}
+        >
+          <span>📋</span>
+          <span>Đơn hàng nợ</span>
+          <span className="text-[10px] sm:text-[11px] px-1.5 py-0.5 rounded-full bg-zinc-100 dark:bg-zinc-800 font-mono">
+            {summary?.totalDebtOrders || orderTotalCount || 0}
+          </span>
+        </button>
       </div>
 
       {/* Tab Content */}

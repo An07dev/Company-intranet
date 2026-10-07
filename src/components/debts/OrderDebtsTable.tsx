@@ -54,7 +54,6 @@ export function OrderDebtsTable({
   totalCount,
   onPageChange,
   onCollectDebt,
-  onViewOrderDetail,
 }: OrderDebtsTableProps) {
   const { toast } = useToast();
   const [copiedSn, setCopiedSn] = useState<string | null>(null);
@@ -109,34 +108,30 @@ export function OrderDebtsTable({
   };
 
   return (
-    <div className="bg-white dark:bg-zinc-900 border border-zinc-200/80 dark:border-zinc-800 rounded-3xl shadow-xs overflow-hidden">
+    <div className="bg-white dark:bg-zinc-900 border border-zinc-200/80 dark:border-zinc-800 rounded-2xl sm:rounded-3xl shadow-2xs overflow-hidden">
       {/* Header & Filters */}
-      <div className="p-4 sm:p-5 border-b border-zinc-200/80 dark:border-zinc-800 space-y-3">
-        <div className="flex items-center justify-between gap-3 flex-wrap">
-          <div>
-            <h3 className="font-bold text-sm sm:text-base text-zinc-900 dark:text-white flex items-center gap-2">
-              <span>📋</span>
-              <span>Danh sách Đơn hàng còn nợ</span>
-              <span className="text-xs px-2.5 py-0.5 rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 font-mono font-medium">
-                {totalCount.toLocaleString("vi-VN")} đơn nợ
-              </span>
-            </h3>
-            <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">
-              Theo dõi chi tiết từng đơn hàng chưa thanh toán, tuổi nợ và thực hiện thu nợ đồng bộ Sapo
-            </p>
+      <div className="p-3 sm:p-4 border-b border-zinc-200/80 dark:border-zinc-800 space-y-2.5">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5">
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-bold text-zinc-900 dark:text-white">
+              Đơn hàng còn nợ
+            </span>
+            <span className="text-[11px] px-2 py-0.5 rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 font-mono font-medium">
+              {totalCount.toLocaleString("vi-VN")} đơn
+            </span>
           </div>
 
           {/* Search input */}
-          <div className="relative w-full sm:w-72">
+          <div className="relative w-full sm:w-64">
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => onSearchChange(e.target.value)}
-              placeholder="Tìm mã đơn, tên, SĐT khách..."
-              className="w-full text-xs pl-8 pr-3 py-2 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800 text-zinc-900 dark:text-white focus:outline-hidden focus:ring-2 focus:ring-rose-500"
+              placeholder="Tìm mã đơn, tên, SĐT..."
+              className="w-full text-xs pl-8 pr-3 py-1.5 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800 text-zinc-900 dark:text-white focus:outline-hidden focus:ring-2 focus:ring-rose-500"
             />
             <svg
-              className="w-4 h-4 text-zinc-400 absolute left-2.5 top-2.5"
+              className="w-3.5 h-3.5 text-zinc-400 absolute left-2.5 top-2.5"
               fill="none"
               viewBox="0 0 24 24"
               stroke="currentColor"
@@ -147,72 +142,154 @@ export function OrderDebtsTable({
         </div>
 
         {/* Filters bar */}
-        <div className="flex items-center gap-2 flex-wrap pt-1 text-xs">
-          <span className="text-zinc-500 font-medium">Lọc theo:</span>
-
+        <div className="flex items-center gap-2 flex-wrap text-xs">
           {/* Trạng thái thanh toán */}
           <select
             value={selectedStatus}
             onChange={(e) => onStatusChange(e.target.value)}
-            className="px-2.5 py-1.5 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800 text-zinc-800 dark:text-zinc-200 font-medium focus:outline-hidden"
+            className="px-2.5 py-1 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800 text-zinc-800 dark:text-zinc-200 text-xs font-medium focus:outline-hidden"
           >
-            <option value="all">Tất cả trạng thái nợ</option>
-            <option value="pending">Chưa thanh toán (Nợ 100%)</option>
-            <option value="partially_paid">Thanh toán 1 phần</option>
+            <option value="all">Tất cả nợ</option>
+            <option value="pending">Nợ 100%</option>
+            <option value="partially_paid">Nợ 1 phần</option>
           </select>
 
           {/* Kênh bán hàng */}
           <select
             value={selectedChannel}
             onChange={(e) => onChannelChange(e.target.value)}
-            className="px-2.5 py-1.5 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800 text-zinc-800 dark:text-zinc-200 font-medium focus:outline-hidden"
+            className="px-2.5 py-1 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800 text-zinc-800 dark:text-zinc-200 text-xs font-medium focus:outline-hidden"
           >
-            <option value="all">Tất cả kênh bán</option>
-            <option value="sapo_zalo">Kênh Zalo Chat</option>
-            <option value="sapo_shopee">Kênh Shopee</option>
-            <option value="sapo_facebook">Kênh Facebook</option>
+            <option value="all">Tất cả kênh</option>
+            <option value="sapo_zalo">Zalo Chat</option>
+            <option value="sapo_shopee">Shopee</option>
+            <option value="sapo_facebook">Facebook</option>
             <option value="sapo_pos">Tại quầy (POS)</option>
-            <option value="sapo_tiktok">Kênh TikTok Shop</option>
+            <option value="sapo_tiktok">TikTok Shop</option>
             <option value="sapo_web">Website / Khác</option>
           </select>
         </div>
       </div>
 
-      {/* Table */}
-      <div className="overflow-x-auto">
+      {/* 1. MOBILE CARD VIEW (< md screens) */}
+      <div className="block md:hidden divide-y divide-zinc-100 dark:divide-zinc-800">
+        {loading ? (
+          Array.from({ length: 4 }).map((_, i) => (
+            <div key={i} className="p-3.5 space-y-2 animate-pulse">
+              <div className="h-4 bg-zinc-200 dark:bg-zinc-800 rounded w-28"></div>
+              <div className="h-3 bg-zinc-200 dark:bg-zinc-800 rounded w-40"></div>
+              <div className="h-4 bg-zinc-200 dark:bg-zinc-800 rounded w-24"></div>
+            </div>
+          ))
+        ) : orders.length === 0 ? (
+          <div className="py-10 text-center text-zinc-500">
+            <p className="font-semibold text-xs">Không có đơn nợ nào phù hợp</p>
+          </div>
+        ) : (
+          orders.map((o) => {
+            const badge = getChannelBadge(o.shop_username);
+            const isCopied = copiedSn === o.order_sn;
+
+            return (
+              <div key={o.order_sn} className="p-3.5 hover:bg-zinc-50 dark:hover:bg-zinc-800/40 transition-colors">
+                <div className="flex items-start justify-between gap-2 mb-1.5">
+                  <div className="flex items-center gap-1.5">
+                    <span className="font-mono font-bold text-xs text-zinc-900 dark:text-zinc-100">
+                      #{o.order_sn}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={(e) => handleCopySn(o.order_sn, e)}
+                      className="text-zinc-400 p-0.5 text-xs"
+                    >
+                      {isCopied ? "✓" : "📋"}
+                    </button>
+                    <span className={`px-1.5 py-0.2 rounded text-[10px] font-semibold border ${badge.class}`}>
+                      {badge.label}
+                    </span>
+                  </div>
+
+                  <span
+                    className={`px-1.5 py-0.2 rounded-full text-[10px] font-bold ${
+                      o.days_overdue >= 60
+                        ? "bg-rose-100 text-rose-700 dark:bg-rose-950 dark:text-rose-300"
+                        : o.days_overdue >= 30
+                        ? "bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300"
+                        : "bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400"
+                    }`}
+                  >
+                    {o.days_overdue} ngày
+                  </span>
+                </div>
+
+                <div className="text-xs font-semibold text-zinc-800 dark:text-zinc-200">
+                  {o.customer_name}
+                  {o.customer_phone && (
+                    <span className="ml-1.5 font-mono text-[11px] text-zinc-500 font-normal">
+                      {o.customer_phone}
+                    </span>
+                  )}
+                </div>
+
+                <div className="flex items-center justify-between mt-2 pt-2 border-t border-zinc-100 dark:border-zinc-800 text-xs">
+                  <div className="space-y-0.5">
+                    <div className="text-[10px] text-zinc-400">
+                      Tổng: {formatVND(o.total_amount)}
+                    </div>
+                    <div className="font-mono font-bold text-rose-600 dark:text-rose-400">
+                      Nợ: {formatVND(o.unpaid_amount)}
+                    </div>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => onCollectDebt(o)}
+                    className="px-3 py-1 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-semibold text-xs transition-colors flex items-center gap-1 shadow-2xs shadow-rose-600/30"
+                  >
+                    <span>💳</span>
+                    <span>Thu nợ</span>
+                  </button>
+                </div>
+              </div>
+            );
+          })
+        )}
+      </div>
+
+      {/* 2. DESKTOP TABLE VIEW (>= md screens) */}
+      <div className="hidden md:block overflow-x-auto">
         <table className="w-full text-left text-xs border-collapse">
           <thead>
             <tr className="border-b border-zinc-200/80 dark:border-zinc-800 bg-zinc-50/75 dark:bg-zinc-800/40 text-zinc-500 dark:text-zinc-400">
-              <th className="py-3 px-4 font-semibold">Mã đơn & Kênh</th>
-              <th className="py-3 px-4 font-semibold">Khách hàng</th>
-              <th className="py-3 px-4 font-semibold text-right">Tổng tiền</th>
-              <th className="py-3 px-4 font-semibold text-right">Đã thanh toán</th>
-              <th className="py-3 px-4 font-semibold text-right">Còn nợ lại</th>
-              <th className="py-3 px-4 font-semibold text-center">Tuổi nợ</th>
-              <th className="py-3 px-4 font-semibold">Ngày tạo đơn</th>
-              <th className="py-3 px-4 font-semibold text-right">Thao tác</th>
+              <th className="py-2.5 px-4 font-semibold">Mã đơn & Kênh</th>
+              <th className="py-2.5 px-4 font-semibold">Khách hàng</th>
+              <th className="py-2.5 px-4 font-semibold text-right">Tổng tiền</th>
+              <th className="py-2.5 px-4 font-semibold text-right">Đã thanh toán</th>
+              <th className="py-2.5 px-4 font-semibold text-right">Còn nợ lại</th>
+              <th className="py-2.5 px-4 font-semibold text-center">Tuổi nợ</th>
+              <th className="py-2.5 px-4 font-semibold">Ngày tạo đơn</th>
+              <th className="py-2.5 px-4 font-semibold text-right">Thao tác</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800/60">
             {loading ? (
               Array.from({ length: 5 }).map((_, i) => (
                 <tr key={i} className="animate-pulse">
-                  <td className="py-3.5 px-4"><div className="h-4 bg-zinc-200 dark:bg-zinc-800 rounded w-28 mb-1"></div></td>
-                  <td className="py-3.5 px-4"><div className="h-4 bg-zinc-200 dark:bg-zinc-800 rounded w-32"></div></td>
-                  <td className="py-3.5 px-4 text-right"><div className="h-4 bg-zinc-200 dark:bg-zinc-800 rounded w-20 ml-auto"></div></td>
-                  <td className="py-3.5 px-4 text-right"><div className="h-4 bg-zinc-200 dark:bg-zinc-800 rounded w-16 ml-auto"></div></td>
-                  <td className="py-3.5 px-4 text-right"><div className="h-4 bg-zinc-200 dark:bg-zinc-800 rounded w-20 ml-auto"></div></td>
-                  <td className="py-3.5 px-4 text-center"><div className="h-4 bg-zinc-200 dark:bg-zinc-800 rounded w-16 mx-auto"></div></td>
-                  <td className="py-3.5 px-4"><div className="h-4 bg-zinc-200 dark:bg-zinc-800 rounded w-24"></div></td>
-                  <td className="py-3.5 px-4 text-right"><div className="h-6 bg-zinc-200 dark:bg-zinc-800 rounded w-20 ml-auto"></div></td>
+                  <td className="py-3 px-4"><div className="h-4 bg-zinc-200 dark:bg-zinc-800 rounded w-28 mb-1"></div></td>
+                  <td className="py-3 px-4"><div className="h-4 bg-zinc-200 dark:bg-zinc-800 rounded w-32"></div></td>
+                  <td className="py-3 px-4 text-right"><div className="h-4 bg-zinc-200 dark:bg-zinc-800 rounded w-20 ml-auto"></div></td>
+                  <td className="py-3 px-4 text-right"><div className="h-4 bg-zinc-200 dark:bg-zinc-800 rounded w-16 ml-auto"></div></td>
+                  <td className="py-3 px-4 text-right"><div className="h-4 bg-zinc-200 dark:bg-zinc-800 rounded w-20 ml-auto"></div></td>
+                  <td className="py-3 px-4 text-center"><div className="h-4 bg-zinc-200 dark:bg-zinc-800 rounded w-16 mx-auto"></div></td>
+                  <td className="py-3 px-4"><div className="h-4 bg-zinc-200 dark:bg-zinc-800 rounded w-24"></div></td>
+                  <td className="py-3 px-4 text-right"><div className="h-6 bg-zinc-200 dark:bg-zinc-800 rounded w-20 ml-auto"></div></td>
                 </tr>
               ))
             ) : orders.length === 0 ? (
               <tr>
-                <td colSpan={8} className="py-12 text-center text-zinc-500">
-                  <div className="text-3xl mb-2">🎉</div>
-                  <p className="font-semibold text-sm">Không có đơn nợ nào phù hợp</p>
-                  <p className="text-xs text-zinc-400 mt-1">Các đơn hàng trong điều kiện lọc đều đã thanh toán đủ</p>
+                <td colSpan={8} className="py-10 text-center text-zinc-500">
+                  <p className="font-semibold text-xs">Không có đơn nợ nào phù hợp</p>
+                  <p className="text-[11px] text-zinc-400 mt-0.5">Các đơn hàng trong điều kiện lọc đều đã thanh toán đủ</p>
                 </td>
               </tr>
             ) : (
@@ -226,7 +303,7 @@ export function OrderDebtsTable({
                     className="hover:bg-zinc-50/80 dark:hover:bg-zinc-800/40 transition-colors"
                   >
                     {/* Mã đơn & Kênh */}
-                    <td className="py-3.5 px-4">
+                    <td className="py-2.5 px-4">
                       <div className="flex items-center gap-1.5">
                         <span className="font-mono font-bold text-zinc-900 dark:text-zinc-100">
                           #{o.order_sn}
@@ -240,8 +317,8 @@ export function OrderDebtsTable({
                           {isCopied ? "✓" : "📋"}
                         </button>
                       </div>
-                      <div className="mt-1 flex items-center gap-1.5">
-                        <span className={`px-2 py-0.5 rounded-md text-[10px] font-semibold border ${badge.class}`}>
+                      <div className="mt-0.5 flex items-center gap-1.5">
+                        <span className={`px-1.5 py-0.2 rounded text-[10px] font-semibold border ${badge.class}`}>
                           {badge.label}
                         </span>
                         <span className="text-[10px] text-zinc-400">
@@ -251,12 +328,12 @@ export function OrderDebtsTable({
                     </td>
 
                     {/* Khách hàng */}
-                    <td className="py-3.5 px-4">
-                      <div className="font-semibold text-zinc-900 dark:text-zinc-100">
+                    <td className="py-2.5 px-4">
+                      <div className="font-semibold text-zinc-900 dark:text-zinc-100 truncate max-w-[180px]">
                         {o.customer_name}
                       </div>
                       {o.customer_phone ? (
-                        <div className="text-[11px] font-mono text-zinc-500 mt-0.5">
+                        <div className="text-[11px] font-mono text-zinc-500">
                           {o.customer_phone}
                         </div>
                       ) : (
@@ -265,27 +342,27 @@ export function OrderDebtsTable({
                     </td>
 
                     {/* Tổng tiền */}
-                    <td className="py-3.5 px-4 text-right font-mono font-semibold text-zinc-800 dark:text-zinc-200">
+                    <td className="py-2.5 px-4 text-right font-mono font-semibold text-zinc-800 dark:text-zinc-200">
                       {formatVND(o.total_amount)}
                     </td>
 
                     {/* Đã thanh toán */}
-                    <td className="py-3.5 px-4 text-right font-mono text-emerald-600 dark:text-emerald-400">
+                    <td className="py-2.5 px-4 text-right font-mono text-emerald-600 dark:text-emerald-400">
                       {formatVND(o.total_received)}
                     </td>
 
                     {/* Còn nợ lại */}
-                    <td className="py-3.5 px-4 text-right">
-                      <span className="font-mono font-bold text-sm text-rose-600 dark:text-rose-400">
+                    <td className="py-2.5 px-4 text-right">
+                      <span className="font-mono font-bold text-xs text-rose-600 dark:text-rose-400">
                         {formatVND(o.unpaid_amount)}
                       </span>
-                      <div className="text-[10px] text-zinc-400 mt-0.5">
+                      <div className="text-[10px] text-zinc-400">
                         {o.financial_status === "partially_paid" ? "Đã trả một phần" : "Chưa trả"}
                       </div>
                     </td>
 
                     {/* Tuổi nợ */}
-                    <td className="py-3.5 px-4 text-center">
+                    <td className="py-2.5 px-4 text-center">
                       <span
                         className={`inline-block px-2 py-0.5 rounded-full text-[10px] font-bold ${
                           o.days_overdue >= 60
@@ -300,16 +377,16 @@ export function OrderDebtsTable({
                     </td>
 
                     {/* Ngày tạo */}
-                    <td className="py-3.5 px-4 text-zinc-500 dark:text-zinc-400 text-[11px]">
+                    <td className="py-2.5 px-4 text-zinc-500 dark:text-zinc-400 text-[11px]">
                       {formatDateTime(o.created_at)}
                     </td>
 
                     {/* Thao tác */}
-                    <td className="py-3.5 px-4 text-right">
+                    <td className="py-2.5 px-4 text-right">
                       <button
                         type="button"
                         onClick={() => onCollectDebt(o)}
-                        className="px-3 py-1.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-semibold text-xs transition-colors flex items-center gap-1 ml-auto cursor-pointer shadow-xs shadow-rose-600/30"
+                        className="px-2.5 py-1 rounded-lg bg-rose-600 hover:bg-rose-700 text-white font-semibold text-xs transition-colors flex items-center gap-1 ml-auto cursor-pointer shadow-2xs shadow-rose-600/30"
                       >
                         <span>💳</span>
                         <span>Thu nợ</span>
@@ -325,26 +402,26 @@ export function OrderDebtsTable({
 
       {/* Pagination */}
       {totalPages > 1 && (
-        <div className="p-3 sm:p-4 border-t border-zinc-200/80 dark:border-zinc-800 flex items-center justify-between text-xs text-zinc-500">
-          <div>
-            Trang {page} / {totalPages} (Tổng {totalCount} đơn nợ)
+        <div className="p-3 border-t border-zinc-200/80 dark:border-zinc-800 flex items-center justify-between text-xs text-zinc-500">
+          <div className="text-[11px] sm:text-xs">
+            Trang {page} / {totalPages}
           </div>
           <div className="flex items-center gap-1">
             <button
               type="button"
               onClick={() => onPageChange(page - 1)}
               disabled={page <= 1}
-              className="px-3 py-1 rounded-lg border border-zinc-200 dark:border-zinc-700 disabled:opacity-40 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
+              className="px-2.5 py-1 rounded-lg border border-zinc-200 dark:border-zinc-700 disabled:opacity-40 hover:bg-zinc-100 dark:hover:bg-zinc-800 text-xs transition-colors"
             >
-              ← Trước
+              Trước
             </button>
             <button
               type="button"
               onClick={() => onPageChange(page + 1)}
               disabled={page >= totalPages}
-              className="px-3 py-1 rounded-lg border border-zinc-200 dark:border-zinc-700 disabled:opacity-40 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
+              className="px-2.5 py-1 rounded-lg border border-zinc-200 dark:border-zinc-700 disabled:opacity-40 hover:bg-zinc-100 dark:hover:bg-zinc-800 text-xs transition-colors"
             >
-              Sau →
+              Sau
             </button>
           </div>
         </div>

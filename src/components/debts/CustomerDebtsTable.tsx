@@ -90,39 +90,39 @@ Xin chân thành cảm ơn Quý khách!`;
   };
 
   return (
-    <div className="bg-white dark:bg-zinc-900 border border-zinc-200/80 dark:border-zinc-800 rounded-3xl shadow-xs overflow-hidden">
-      {/* Table Header: Filters & Search bar */}
-      <div className="p-4 sm:p-5 border-b border-zinc-200/80 dark:border-zinc-800 flex items-center justify-between gap-3 flex-wrap">
-        <div className="flex items-center gap-3 flex-wrap">
-          {/* Dropdown lọc trạng thái nợ chuẩn Sapo */}
-          <div className="relative">
+    <div className="bg-white dark:bg-zinc-900 border border-zinc-200/80 dark:border-zinc-800 rounded-2xl sm:rounded-3xl shadow-2xs overflow-hidden">
+      {/* Header: Filters & Search bar */}
+      <div className="p-3 sm:p-4 border-b border-zinc-200/80 dark:border-zinc-800 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5">
+        <div className="flex items-center gap-2 flex-wrap">
+          {/* Dropdown lọc trạng thái nợ */}
+          <div className="relative flex-1 sm:flex-initial">
             <select
               value={filterType}
               onChange={(e) => onFilterTypeChange(e.target.value)}
-              className="text-xs font-semibold px-3 py-2 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 focus:outline-hidden focus:ring-2 focus:ring-rose-500 cursor-pointer"
+              className="w-full sm:w-auto text-xs font-semibold px-3 py-2 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 focus:outline-hidden focus:ring-2 focus:ring-rose-500 cursor-pointer"
             >
-              <option value="cuoi_ky">Nợ cuối kỳ (Mặc định Sapo)</option>
+              <option value="cuoi_ky">Nợ cuối kỳ (Mặc định)</option>
               <option value="phat_sinh">Có phát sinh nợ trong kỳ</option>
               <option value="all">Tất cả khách nợ</option>
             </select>
           </div>
 
-          <span className="text-xs px-2.5 py-1 rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 font-mono font-medium">
-            {totalCount.toLocaleString("vi-VN")} khách hàng
+          <span className="text-[11px] sm:text-xs px-2.5 py-1.5 rounded-xl bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 font-mono font-medium shrink-0">
+            {totalCount.toLocaleString("vi-VN")} khách
           </span>
         </div>
 
         {/* Search input */}
-        <div className="relative w-full sm:w-72">
+        <div className="relative w-full sm:w-64">
           <input
             type="text"
             value={searchQuery}
             onChange={(e) => onSearchChange(e.target.value)}
-            placeholder="Tìm kiếm theo tên đối tượng, SĐT..."
+            placeholder="Tìm tên khách, SĐT..."
             className="w-full text-xs pl-8 pr-3 py-2 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800 text-zinc-900 dark:text-white focus:outline-hidden focus:ring-2 focus:ring-rose-500"
           />
           <svg
-            className="w-4 h-4 text-zinc-400 absolute left-2.5 top-2.5"
+            className="w-3.5 h-3.5 text-zinc-400 absolute left-2.5 top-2.5"
             fill="none"
             viewBox="0 0 24 24"
             stroke="currentColor"
@@ -132,39 +132,148 @@ Xin chân thành cảm ơn Quý khách!`;
         </div>
       </div>
 
-      {/* Table */}
-      <div className="overflow-x-auto">
+      {/* 1. MOBILE CARD VIEW (< md screens) */}
+      <div className="block md:hidden divide-y divide-zinc-100 dark:divide-zinc-800">
+        {loading ? (
+          Array.from({ length: 4 }).map((_, i) => (
+            <div key={i} className="p-3.5 space-y-2.5 animate-pulse">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-full bg-zinc-200 dark:bg-zinc-800"></div>
+                <div className="space-y-1 flex-1">
+                  <div className="h-3.5 bg-zinc-200 dark:bg-zinc-800 rounded w-32"></div>
+                  <div className="h-2.5 bg-zinc-200 dark:bg-zinc-800 rounded w-20"></div>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-2 p-2 bg-zinc-50 dark:bg-zinc-800/40 rounded-xl">
+                <div className="h-4 bg-zinc-200 dark:bg-zinc-800 rounded"></div>
+                <div className="h-4 bg-zinc-200 dark:bg-zinc-800 rounded"></div>
+              </div>
+            </div>
+          ))
+        ) : customers.length === 0 ? (
+          <div className="py-10 text-center text-zinc-500">
+            <p className="font-semibold text-xs">Không tìm thấy khách hàng nào</p>
+          </div>
+        ) : (
+          customers.map((c) => {
+            const initial = (c.name || "K").trim().slice(0, 1).toUpperCase();
+            const isCopied = copiedKey === (c.phone || c.name);
+
+            return (
+              <div
+                key={c.phone || c.name}
+                onClick={() => onViewCustomerDetail(c)}
+                className="p-3.5 hover:bg-zinc-50 dark:hover:bg-zinc-800/40 transition-colors active:bg-zinc-100"
+              >
+                {/* Header: Name + Phone */}
+                <div className="flex items-start justify-between gap-2 mb-2">
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-rose-500 to-orange-500 text-white flex items-center justify-center font-bold text-xs shrink-0 shadow-2xs">
+                      {initial}
+                    </div>
+                    <div className="min-w-0">
+                      <div className="font-bold text-xs text-zinc-900 dark:text-zinc-100 truncate">
+                        {c.name}
+                      </div>
+                      {c.phone && (
+                        <div className="flex items-center gap-1.5 text-[11px] text-zinc-500 font-mono mt-0.5">
+                          <span>{c.phone}</span>
+                          <button
+                            type="button"
+                            onClick={(e) => handleCopyPhone(c.phone, e)}
+                            className="text-zinc-400 hover:text-zinc-600 p-0.5"
+                          >
+                            📋
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Actions */}
+                  <div className="flex items-center gap-1 shrink-0" onClick={(e) => e.stopPropagation()}>
+                    <button
+                      type="button"
+                      onClick={() => onViewCustomerDetail(c)}
+                      className="px-2.5 py-1 rounded-lg border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 font-medium text-[11px]"
+                    >
+                      Chi tiết
+                    </button>
+                    <button
+                      type="button"
+                      onClick={(e) => handleCopyStatement(c, e)}
+                      className={`px-2 py-1 rounded-lg font-medium text-[11px] border ${
+                        isCopied
+                          ? "bg-emerald-50 dark:bg-emerald-950/60 border-emerald-300 text-emerald-700 dark:text-emerald-300"
+                          : "bg-blue-50 dark:bg-blue-950/60 border-blue-200 dark:border-blue-900 text-blue-700 dark:text-blue-300"
+                      }`}
+                    >
+                      {isCopied ? "✓" : "Zalo"}
+                    </button>
+                  </div>
+                </div>
+
+                {/* Financial 2x2 Grid */}
+                <div className="grid grid-cols-2 gap-1.5 p-2 bg-zinc-50 dark:bg-zinc-800/40 rounded-xl text-[11px] font-mono">
+                  <div className="flex justify-between">
+                    <span className="text-zinc-500 text-[10px]">Đầu kỳ:</span>
+                    <span className="text-zinc-700 dark:text-zinc-300">{formatVND(c.dau_ky)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-zinc-500 text-[10px]">Tăng:</span>
+                    <span className="text-blue-600 dark:text-blue-400">
+                      {c.tang_trong_ky > 0 ? `+${formatVND(c.tang_trong_ky)}` : "0 ₫"}
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-zinc-500 text-[10px]">Giảm:</span>
+                    <span className="text-rose-600 dark:text-rose-400">
+                      {c.giam_trong_ky > 0 ? `-${formatVND(c.giam_trong_ky)}` : "0 ₫"}
+                    </span>
+                  </div>
+                  <div className="flex justify-between font-bold">
+                    <span className="text-emerald-700 dark:text-emerald-400 text-[10px]">Cuối kỳ:</span>
+                    <span className="text-emerald-600 dark:text-emerald-400">{formatVND(c.cuoi_ky)}</span>
+                  </div>
+                </div>
+              </div>
+            );
+          })
+        )}
+      </div>
+
+      {/* 2. DESKTOP TABLE VIEW (>= md screens) */}
+      <div className="hidden md:block overflow-x-auto">
         <table className="w-full text-left text-xs border-collapse">
           <thead>
             <tr className="border-b border-zinc-200/80 dark:border-zinc-800 bg-zinc-50/75 dark:bg-zinc-800/40 text-zinc-500 dark:text-zinc-400">
-              <th className="py-3 px-4 font-semibold">Tên đối tượng</th>
-              <th className="py-3 px-4 font-semibold">Số điện thoại</th>
-              <th className="py-3 px-4 font-semibold text-right">Nợ đầu kỳ</th>
-              <th className="py-3 px-4 font-semibold text-right">Nợ tăng trong kỳ</th>
-              <th className="py-3 px-4 font-semibold text-right">Nợ giảm trong kỳ</th>
-              <th className="py-3 px-4 font-semibold text-right">Phải thu/trả cuối kỳ</th>
-              <th className="py-3 px-4 font-semibold text-center">Thao tác</th>
+              <th className="py-2.5 px-4 font-semibold">Tên đối tượng</th>
+              <th className="py-2.5 px-4 font-semibold">Số điện thoại</th>
+              <th className="py-2.5 px-4 font-semibold text-right">Nợ đầu kỳ</th>
+              <th className="py-2.5 px-4 font-semibold text-right">Nợ tăng trong kỳ</th>
+              <th className="py-2.5 px-4 font-semibold text-right">Nợ giảm trong kỳ</th>
+              <th className="py-2.5 px-4 font-semibold text-right">Phải thu/trả cuối kỳ</th>
+              <th className="py-2.5 px-4 font-semibold text-center">Thao tác</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800/60">
             {loading ? (
               Array.from({ length: 5 }).map((_, i) => (
                 <tr key={i} className="animate-pulse">
-                  <td className="py-3.5 px-4"><div className="h-4 bg-zinc-200 dark:bg-zinc-800 rounded w-36 mb-1"></div></td>
-                  <td className="py-3.5 px-4"><div className="h-4 bg-zinc-200 dark:bg-zinc-800 rounded w-24"></div></td>
-                  <td className="py-3.5 px-4 text-right"><div className="h-4 bg-zinc-200 dark:bg-zinc-800 rounded w-20 ml-auto"></div></td>
-                  <td className="py-3.5 px-4 text-right"><div className="h-4 bg-zinc-200 dark:bg-zinc-800 rounded w-20 ml-auto"></div></td>
-                  <td className="py-3.5 px-4 text-right"><div className="h-4 bg-zinc-200 dark:bg-zinc-800 rounded w-20 ml-auto"></div></td>
-                  <td className="py-3.5 px-4 text-right"><div className="h-4 bg-zinc-200 dark:bg-zinc-800 rounded w-24 ml-auto"></div></td>
-                  <td className="py-3.5 px-4 text-center"><div className="h-6 bg-zinc-200 dark:bg-zinc-800 rounded w-16 mx-auto"></div></td>
+                  <td className="py-3 px-4"><div className="h-4 bg-zinc-200 dark:bg-zinc-800 rounded w-36 mb-1"></div></td>
+                  <td className="py-3 px-4"><div className="h-4 bg-zinc-200 dark:bg-zinc-800 rounded w-24"></div></td>
+                  <td className="py-3 px-4 text-right"><div className="h-4 bg-zinc-200 dark:bg-zinc-800 rounded w-20 ml-auto"></div></td>
+                  <td className="py-3 px-4 text-right"><div className="h-4 bg-zinc-200 dark:bg-zinc-800 rounded w-20 ml-auto"></div></td>
+                  <td className="py-3 px-4 text-right"><div className="h-4 bg-zinc-200 dark:bg-zinc-800 rounded w-20 ml-auto"></div></td>
+                  <td className="py-3 px-4 text-right"><div className="h-4 bg-zinc-200 dark:bg-zinc-800 rounded w-24 ml-auto"></div></td>
+                  <td className="py-3 px-4 text-center"><div className="h-6 bg-zinc-200 dark:bg-zinc-800 rounded w-16 mx-auto"></div></td>
                 </tr>
               ))
             ) : customers.length === 0 ? (
               <tr>
-                <td colSpan={7} className="py-12 text-center text-zinc-500">
-                  <div className="text-3xl mb-2">🎉</div>
-                  <p className="font-semibold text-sm">Không tìm thấy khách hàng nào</p>
-                  <p className="text-xs text-zinc-400 mt-1">Không có công nợ phát sinh theo bộ lọc đã chọn</p>
+                <td colSpan={7} className="py-10 text-center text-zinc-500">
+                  <p className="font-semibold text-xs">Không tìm thấy khách hàng nào</p>
+                  <p className="text-[11px] text-zinc-400 mt-0.5">Không có công nợ phát sinh theo bộ lọc đã chọn</p>
                 </td>
               </tr>
             ) : (
@@ -179,17 +288,17 @@ Xin chân thành cảm ơn Quý khách!`;
                     className="hover:bg-zinc-50/80 dark:hover:bg-zinc-800/40 transition-colors cursor-pointer group"
                   >
                     {/* Tên đối tượng */}
-                    <td className="py-3.5 px-4">
+                    <td className="py-2.5 px-4">
                       <div className="flex items-center gap-2.5">
-                        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-rose-500 to-orange-500 text-white flex items-center justify-center font-bold text-xs shrink-0 shadow-xs">
+                        <div className="w-7 h-7 rounded-full bg-gradient-to-br from-rose-500 to-orange-500 text-white flex items-center justify-center font-bold text-xs shrink-0 shadow-2xs">
                           {initial}
                         </div>
                         <div className="min-w-0">
-                          <div className="font-semibold text-zinc-900 dark:text-zinc-100 group-hover:text-rose-600 dark:group-hover:text-rose-400 transition-colors">
+                          <div className="font-semibold text-zinc-900 dark:text-zinc-100 group-hover:text-rose-600 dark:group-hover:text-rose-400 transition-colors truncate max-w-[200px]">
                             {c.name}
                           </div>
                           {c.address ? (
-                            <div className="text-[10px] text-zinc-400 truncate max-w-xs mt-0.5">
+                            <div className="text-[10px] text-zinc-400 truncate max-w-[220px]">
                               {c.address}
                             </div>
                           ) : null}
@@ -198,14 +307,14 @@ Xin chân thành cảm ơn Quý khách!`;
                     </td>
 
                     {/* Số điện thoại */}
-                    <td className="py-3.5 px-4">
+                    <td className="py-2.5 px-4">
                       {c.phone ? (
                         <div className="flex items-center gap-1.5 font-mono text-zinc-600 dark:text-zinc-300">
                           <span>{c.phone}</span>
                           <button
                             type="button"
                             onClick={(e) => handleCopyPhone(c.phone, e)}
-                            className="p-1 rounded text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 transition-colors"
+                            className="p-0.5 rounded text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 transition-colors"
                             title="Sao chép SĐT"
                           >
                             📋
@@ -217,29 +326,29 @@ Xin chân thành cảm ơn Quý khách!`;
                     </td>
 
                     {/* Nợ đầu kỳ */}
-                    <td className="py-3.5 px-4 text-right font-mono text-zinc-700 dark:text-zinc-300">
+                    <td className="py-2.5 px-4 text-right font-mono text-zinc-700 dark:text-zinc-300">
                       {formatVND(c.dau_ky)}
                     </td>
 
                     {/* Nợ tăng trong kỳ */}
-                    <td className="py-3.5 px-4 text-right font-mono text-blue-600 dark:text-blue-400">
+                    <td className="py-2.5 px-4 text-right font-mono text-blue-600 dark:text-blue-400">
                       {c.tang_trong_ky > 0 ? formatVND(c.tang_trong_ky) : "0 ₫"}
                     </td>
 
                     {/* Nợ giảm trong kỳ */}
-                    <td className="py-3.5 px-4 text-right font-mono text-rose-600 dark:text-rose-400">
+                    <td className="py-2.5 px-4 text-right font-mono text-rose-600 dark:text-rose-400">
                       {c.giam_trong_ky > 0 ? `-${formatVND(c.giam_trong_ky)}` : "0 ₫"}
                     </td>
 
                     {/* Phải thu/trả cuối kỳ */}
-                    <td className="py-3.5 px-4 text-right">
-                      <span className="font-mono font-bold text-sm text-emerald-600 dark:text-emerald-400">
+                    <td className="py-2.5 px-4 text-right">
+                      <span className="font-mono font-bold text-xs text-emerald-600 dark:text-emerald-400">
                         {formatVND(c.cuoi_ky)}
                       </span>
                     </td>
 
                     {/* Thao tác */}
-                    <td className="py-3.5 px-4 text-center" onClick={(e) => e.stopPropagation()}>
+                    <td className="py-2.5 px-4 text-center" onClick={(e) => e.stopPropagation()}>
                       <div className="flex items-center justify-center gap-1.5">
                         <button
                           type="button"
@@ -274,8 +383,8 @@ Xin chân thành cảm ơn Quý khách!`;
 
       {/* Pagination */}
       {totalPages > 1 && (
-        <div className="p-4 border-t border-zinc-200/80 dark:border-zinc-800 flex items-center justify-between flex-wrap gap-2 text-xs">
-          <div className="text-zinc-500">
+        <div className="p-3 sm:p-4 border-t border-zinc-200/80 dark:border-zinc-800 flex items-center justify-between flex-wrap gap-2 text-xs">
+          <div className="text-zinc-500 text-[11px] sm:text-xs">
             Trang <strong className="text-zinc-800 dark:text-zinc-200">{page}</strong> / {totalPages}
           </div>
           <div className="flex items-center gap-1">
@@ -283,7 +392,7 @@ Xin chân thành cảm ơn Quý khách!`;
               type="button"
               disabled={page <= 1}
               onClick={() => onPageChange(page - 1)}
-              className="px-3 py-1.5 rounded-lg border border-zinc-200 dark:border-zinc-700 disabled:opacity-40 hover:bg-zinc-100 dark:hover:bg-zinc-800 cursor-pointer transition-colors"
+              className="px-2.5 py-1 rounded-lg border border-zinc-200 dark:border-zinc-700 disabled:opacity-40 hover:bg-zinc-100 dark:hover:bg-zinc-800 cursor-pointer text-xs transition-colors"
             >
               Trước
             </button>
@@ -291,9 +400,9 @@ Xin chân thành cảm ơn Quý khách!`;
               type="button"
               disabled={page >= totalPages}
               onClick={() => onPageChange(page + 1)}
-              className="px-3 py-1.5 rounded-lg border border-zinc-200 dark:border-zinc-700 disabled:opacity-40 hover:bg-zinc-100 dark:hover:bg-zinc-800 cursor-pointer transition-colors"
+              className="px-2.5 py-1 rounded-lg border border-zinc-200 dark:border-zinc-700 disabled:opacity-40 hover:bg-zinc-100 dark:hover:bg-zinc-800 cursor-pointer text-xs transition-colors"
             >
-              Tiếp
+              Sau
             </button>
           </div>
         </div>
