@@ -385,6 +385,13 @@ export const SapoService = {
   },
 
   /**
+   * Lấy danh sách ID sản phẩm từ Sapo để đối soát tồn tại
+   */
+  async getProductsListSimple(page = 1, limit = 250): Promise<{ products: Array<{ id: number }> }> {
+    return sapoFetch(`/admin/products.json?page=${page}&limit=${limit}&fields=id`);
+  },
+
+  /**
    * Xóa sản phẩm khỏi Sapo
    */
   async deleteProduct(productId: number | string): Promise<any> {

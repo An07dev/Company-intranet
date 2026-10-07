@@ -88,6 +88,10 @@ export default function InventoryPage() {
           params.append("search", debouncedSearch);
         }
 
+        if (isManualRefresh) {
+          params.append("reconcile_sapo", "true");
+        }
+
         const res = await fetch(`/api/shopee/products?${params.toString()}`);
         const json = await res.json();
 
@@ -361,11 +365,11 @@ export default function InventoryPage() {
             type="button"
             onClick={() => fetchInventory(true)}
             disabled={loading || refreshing}
-            className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold rounded-xl bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-zinc-700 dark:text-zinc-200 hover:bg-zinc-50 dark:hover:bg-zinc-750 transition shadow-xs disabled:opacity-60"
-            title="Làm mới số liệu tồn kho"
+            className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold rounded-xl bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-zinc-700 dark:text-zinc-200 hover:bg-zinc-50 dark:hover:bg-zinc-750 transition shadow-xs disabled:opacity-60 cursor-pointer"
+            title="Đồng bộ và làm mới dữ liệu từ Sapo"
           >
             <span className={`inline-block ${refreshing ? "animate-spin" : ""}`}>🔄</span>
-            <span>{refreshing ? "Đang tải..." : "Làm mới"}</span>
+            <span>{refreshing ? "Đang đồng bộ..." : "Làm mới"}</span>
           </button>
 
           <Link
@@ -625,13 +629,16 @@ export default function InventoryPage() {
                       {/* Name & Thumbnail */}
                       <td className="py-3 px-4 max-w-[340px]">
                         <div className="flex items-center gap-2.5">
-                          {p.image ? (
+                          {p.image || p.variations?.[0]?.image ? (
                             <img
-                              src={p.image}
+                              src={p.image || p.variations?.[0]?.image}
                               alt=""
-                              className="w-9 h-9 rounded-lg object-cover border border-zinc-200 dark:border-zinc-700 shrink-0"
+                              className="w-9 h-9 rounded-lg object-cover border border-zinc-200 dark:border-zinc-700 shrink-0 bg-zinc-100 dark:bg-zinc-800"
                               onError={(e) => {
-                                (e.target as HTMLElement).style.display = "none";
+                                const target = e.currentTarget;
+                                target.onerror = null;
+                                target.src =
+                                  "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='36' height='36' viewBox='0 0 24 24' fill='none' stroke='%23a1a1aa' stroke-width='1.5'%3E%3Crect x='3' y='3' width='18' height='18' rx='2' ry='2'/%3E%3Ccircle cx='8.5' cy='8.5' r='1.5'/%3E%3Cpolyline points='21 15 16 10 5 21'/%3E%3C/svg%3E";
                               }}
                             />
                           ) : (

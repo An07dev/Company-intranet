@@ -10,10 +10,11 @@ function isValidImageUrl(url?: string): boolean {
   if (!url || typeof url !== "string") return false;
   const u = url.trim();
   if (!u) return false;
-  if (u.startsWith("data:image")) return false;
-  if (u.startsWith("blob:")) return false;
   if (/default-item-model-image/i.test(u)) return false;
+  if (u.startsWith("blob:")) return false;
+  if (u.startsWith("data:image")) return true;
   if (/^https?:\/\/|^\/\//i.test(u)) return true;
+  if (/^\/uploads\//i.test(u)) return true;
   return false;
 }
 
@@ -65,6 +66,14 @@ export function toSafeProduct(doc: IShopeeProductDocument): ShopeeProduct {
     sales: v.sales || 0,
     image: isValidImageUrl(v.image) ? v.image : "",
   }));
+
+  // Nếu ảnh chính cấp cha rỗng, thử lấy ảnh từ biến thể đầu tiên có ảnh
+  if (!image && variations.length > 0) {
+    const varWithImg = variations.find((v) => v.image && isValidImageUrl(v.image));
+    if (varWithImg && varWithImg.image) {
+      image = varWithImg.image;
+    }
+  }
 
   let priceMin = doc.price_min || 0;
   let priceMax = doc.price_max || 0;

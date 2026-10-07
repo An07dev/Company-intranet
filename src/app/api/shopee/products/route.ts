@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { ProductModel } from "@/server/models/product.model";
+import { SapoService } from "@/server/services/sapo.service";
+import { connectToDatabase } from "@/server/db";
+import { MongoShopeeProductModel } from "@/server/db/schema";
 
 // Headers hỗ trợ CORS để Chrome Extension bắn dữ liệu trực tiếp không bị chặn
 const corsHeaders = {
@@ -68,6 +71,41 @@ export async function POST(request: NextRequest) {
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
+    const reconcile_sapo = searchParams.get("reconcile_sapo") === "true";
+
+    // Nếu có cờ reconcile_sapo=true (khi ấn "Làm mới" trên giao diện kho):
+    // Tự động kiểm tra danh sách sản phẩm thực tế từ Sapo để xóa những sản phẩm đã bị xóa trên Sapo
+    if (reconcile_sapo) {
+      try {
+        const activeSapoIds: string[] = [];
+        let p = 1;
+        while (true) {
+          const res = await SapoService.getProductsListSimple(p, 250);
+          const list = res?.products || [];
+          if (!list.length) break;
+          for (const item of list) {
+            activeSapoIds.push(String(item.id));
+          }
+          if (list.length < 250) break;
+          p++;
+        }
+
+        if (activeSapoIds.length > 0) {
+          await connectToDatabase();
+          const delRes = await MongoShopeeProductModel.deleteMany({
+            shop_username: "sapo_omnichannel",
+            item_id: { $nin: activeSapoIds },
+          });
+          if (delRes.deletedCount > 0) {
+            console.log(
+              `[Reconcile Sapo] Đã dọn dẹp ${delRes.deletedCount} sản phẩm thừa không còn trên Sapo khỏi cơ sở dữ liệu nội bộ`
+            );
+          }
+        }
+      } catch (reconcileErr: any) {
+        console.warn("[Reconcile Sapo Error]:", reconcileErr.message);
+      }
+    }
     const page = parseInt(searchParams.get("page") || "1", 10);
     const limit = parseInt(searchParams.get("limit") || "50", 10);
     const status = searchParams.get("status") || undefined;

@@ -38,9 +38,9 @@ export function ShopeeProductDetailModal({
         {/* Header */}
         <div className="flex items-start justify-between p-6 border-b border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-900/50">
           <div className="flex items-start gap-4 pr-6">
-            {product.image ? (
+            {product.image || product.variations?.[0]?.image ? (
               <img
-                src={product.image}
+                src={product.image || product.variations?.[0]?.image}
                 alt={product.name}
                 referrerPolicy="no-referrer"
                 onError={(e) => {
@@ -53,14 +53,20 @@ export function ShopeeProductDetailModal({
             ) : null}
             <div
               className="modal-img-fallback w-16 h-16 rounded-xl bg-orange-100 dark:bg-orange-950/40 text-orange-600 items-center justify-center text-2xl font-bold shrink-0 shadow-sm"
-              style={{ display: product.image ? "none" : "flex" }}
+              style={{ display: product.image || product.variations?.[0]?.image ? "none" : "flex" }}
             >
               📦
             </div>
             <div>
               <div className="flex flex-wrap items-center gap-2 mb-1.5">
-                <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-orange-100 text-orange-700 dark:bg-orange-950/60 dark:text-orange-300">
-                  Shopee
+                <span
+                  className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold ${
+                    product.shop_username === "sapo_omnichannel"
+                      ? "bg-blue-100 text-blue-700 dark:bg-blue-950/60 dark:text-blue-300"
+                      : "bg-orange-100 text-orange-700 dark:bg-orange-950/60 dark:text-orange-300"
+                  }`}
+                >
+                  {product.shop_username === "sapo_omnichannel" ? "Sapo Omnichannel" : "Shopee"}
                 </span>
                 <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-zinc-100 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300">
                   Shop: {product.shop_username || "baobiyensen"}
@@ -199,9 +205,9 @@ export function ShopeeProductDetailModal({
                         </td>
                         <td className="py-3 px-4 font-semibold text-zinc-900 dark:text-zinc-100">
                           <div className="flex items-center gap-2.5">
-                            {v.image ? (
+                            {v.image || product.image ? (
                               <img
-                                src={v.image}
+                                src={v.image || product.image}
                                 alt={v.name}
                                 referrerPolicy="no-referrer"
                                 onError={(e) => {
@@ -214,7 +220,7 @@ export function ShopeeProductDetailModal({
                             ) : null}
                             <div
                               className="var-img-fallback w-8 h-8 rounded-lg bg-zinc-100 dark:bg-zinc-800 items-center justify-center text-zinc-400 shrink-0"
-                              style={{ display: v.image ? "none" : "flex" }}
+                              style={{ display: v.image || product.image ? "none" : "flex" }}
                             >
                               🏷️
                             </div>

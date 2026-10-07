@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { OrderModel } from "@/server/models/order.model";
 import { LogModel } from "@/server/models/log.model";
 import { ShopeeOrder } from "@/types";
+import { connectToDatabase } from "@/server/db";
+import { MongoShopeeProductModel } from "@/server/db/schema";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -27,7 +29,7 @@ export async function GET() {
   return NextResponse.json(
     {
       status: "ok",
-      message: "Sapo Webhook endpoint is active and ready to receive orders",
+      message: "Sapo Webhook endpoint is active and ready to receive orders and products",
       timestamp: new Date().toISOString(),
     },
     { status: 200, headers: corsHeaders }
@@ -36,13 +38,13 @@ export async function GET() {
 
 /**
  * POST /api/webhooks/sapo
- * Nhận dữ liệu webhook đơn hàng từ Sapo (orders/create, orders/updated)
+ * Nhận dữ liệu webhook đơn hàng & sản phẩm từ Sapo
  */
 export async function POST(request: NextRequest) {
   try {
-    const orderData = await request.json();
+    const rawData = await request.json();
 
-    if (!orderData || typeof orderData !== "object") {
+    if (!rawData || typeof rawData !== "object") {
       return NextResponse.json(
         { success: false, message: "Payload rỗng hoặc không hợp lệ" },
         { status: 400, headers: corsHeaders }
@@ -50,6 +52,109 @@ export async function POST(request: NextRequest) {
     }
 
     const topic = (request.headers.get("x-sapo-topic") || "").toLowerCase();
+
+    // =========================================================================
+    // 1. XỬ LÝ SỰ KIỆN SẢN PHẨM TỪ SAPO (Xóa sản phẩm, Cập nhật sản phẩm)
+    // =========================================================================
+    if (topic.includes("products/") || topic.includes("product/")) {
+      await connectToDatabase();
+      const prodId = String(rawData.id || rawData.item_id || "");
+
+      if (!prodId) {
+        return NextResponse.json(
+          { success: false, message: "Thiếu ID sản phẩm" },
+          { status: 400, headers: corsHeaders }
+        );
+      }
+
+      // SỰ KIỆN 1: XÓA SẢN PHẨM TRÊN SAPO ADMIN (products/delete)
+      if (topic.includes("delete")) {
+        console.log(`=== [Sapo Webhook] Nhận sự kiện XÓA SẢN PHẨM #${prodId} từ Sapo ===`);
+        const delRes = await MongoShopeeProductModel.deleteMany({
+          $or: [{ id: prodId }, { item_id: prodId }],
+        });
+
+        await LogModel.createLog({
+          level: "warn",
+          type: "product_delete",
+          source: "sapo_webhook",
+          shop_username: "sapo_omnichannel",
+          message: `Đã xóa sản phẩm #${prodId} khỏi hệ thống nội bộ (Đồng bộ thời gian thực từ sự kiện xóa trên Sapo Admin)`,
+          details: { prodId, deletedCount: delRes.deletedCount, raw: rawData },
+        });
+
+        return NextResponse.json(
+          {
+            success: true,
+            message: `Đã xóa sản phẩm #${prodId} khỏi hệ thống thành công!`,
+            deletedCount: delRes.deletedCount,
+          },
+          { status: 200, headers: corsHeaders }
+        );
+      }
+
+      // SỰ KIỆN 2: CẬP NHẬT / TẠO MỚI SẢN PHẨM TRÊN SAPO ADMIN (products/update, products/create)
+      if (topic.includes("update") || topic.includes("create")) {
+        console.log(`=== [Sapo Webhook] Nhận sự kiện CẬP NHẬT SẢN PHẨM #${prodId} từ Sapo ===`);
+        const variants = rawData.variants || [];
+        const stock = variants.reduce((sum: number, v: any) => sum + (v.inventory_quantity || 0), 0);
+        const prices = variants.map((v: any) => v.price || 0).filter((pr: number) => pr > 0);
+        const priceMin = prices.length > 0 ? Math.min(...prices) : 0;
+        const priceMax = prices.length > 0 ? Math.max(...prices) : 0;
+        const priceDisplay =
+          priceMin === priceMax
+            ? `₫${priceMin.toLocaleString("vi-VN")}`
+            : `₫${priceMin.toLocaleString("vi-VN")} - ₫${priceMax.toLocaleString("vi-VN")}`;
+
+        const finalVariations = variants.map((v: any) => ({
+          model_id: String(v.id),
+          name: v.title || v.sku || "Phân loại",
+          sku: v.sku || "",
+          price: v.price || 0,
+          stock: v.inventory_quantity || 0,
+          image: rawData.image?.src || rawData.images?.[0]?.src || "",
+        }));
+
+        const now = new Date().toISOString();
+        const prodDoc = {
+          id: prodId,
+          item_id: prodId,
+          name: rawData.name,
+          parent_sku: variants[0]?.sku || "",
+          image: rawData.image?.src || rawData.images?.[0]?.src || "",
+          product_url: `https://cua-hang-yen-sen.mysapo.net/admin/products/${prodId}`,
+          price_min: priceMin,
+          price_max: priceMax,
+          price_display: priceDisplay,
+          stock: stock,
+          status: stock > 0 ? "Đang hoạt động" : "Hết hàng",
+          options: rawData.options || [],
+          variations: finalVariations,
+          shop_username: "sapo_omnichannel",
+          synced_at: now,
+          updatedAt: now,
+        };
+
+        await MongoShopeeProductModel.updateOne(
+          { $or: [{ id: prodId }, { item_id: prodId }] },
+          { $set: prodDoc },
+          { upsert: true }
+        );
+
+        return NextResponse.json(
+          {
+            success: true,
+            message: `Đã cập nhật sản phẩm #${prodId} từ Sapo thành công!`,
+          },
+          { status: 200, headers: corsHeaders }
+        );
+      }
+    }
+
+    // =========================================================================
+    // 2. XỬ LÝ SỰ KIỆN ĐƠN HÀNG TỪ SAPO (orders/create, orders/updated, orders/cancelled)
+    // =========================================================================
+    const orderData = rawData;
 
     console.log(`=== [Sapo Webhook] Nhận sự kiện (${topic || "unknown"}) ===`);
     console.log("Mã đơn Sapo ID:", orderData.id);
