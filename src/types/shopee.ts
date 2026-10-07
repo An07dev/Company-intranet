@@ -30,6 +30,13 @@ export interface ShopeeSyncPayload {
   orders: ShopeeOrder[];
 }
 
+export interface ProductOption {
+  id?: number;
+  name: string;
+  values: string[];
+  position?: number;
+}
+
 export interface ShopeeProductVariation {
   model_id: string;
   name: string;
@@ -55,6 +62,7 @@ export interface ShopeeProduct {
   sales_30d: number;
   views_30d?: string | number;
   status: string;
+  options?: ProductOption[];
   variations: ShopeeProductVariation[];
   shop_username?: string;
   synced_at: string;

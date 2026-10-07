@@ -241,6 +241,7 @@ export async function POST(request: NextRequest) {
           sales_30d: 0,
           views_30d: "0",
           status: stock > 0 ? "Đang hoạt động" : "Hết hàng",
+          options: p.options || [],
           variations: variations,
           shop_username: "sapo_omnichannel",
           synced_at: now,

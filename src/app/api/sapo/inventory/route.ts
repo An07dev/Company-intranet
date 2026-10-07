@@ -295,6 +295,8 @@ export async function POST(request: NextRequest) {
       description = "",
       branch = "Kho Tổng Yến Sen",
       image = "",
+      options = [],
+      variants = [],
     } = body;
 
     if (!name || !name.trim()) {
@@ -307,6 +309,14 @@ export async function POST(request: NextRequest) {
     const cleanSku = (sku || `SKU-${Date.now()}`).trim();
     const numPrice = Math.max(0, Number(price) || 0);
     const numStock = Math.max(0, Number(stock) || 0);
+
+    // Kiểm tra xem người dùng có nhập thuộc tính (Options / Variants) không
+    const hasAttributes =
+      Array.isArray(options) &&
+      options.length > 0 &&
+      options.some((o: any) => o.name?.trim() && Array.isArray(o.values) && o.values.length > 0) &&
+      Array.isArray(variants) &&
+      variants.length > 0;
 
     // Xử lý ảnh (Base64 tải lên từ máy hoặc Link URL)
     let finalImageUrl = "";
@@ -362,14 +372,41 @@ export async function POST(request: NextRequest) {
       name: name.trim(),
       tags: "kho_tong_yen_sen,internal_website",
       description: description.trim(),
-      variants: [
+    };
+
+    let formattedOptions: any[] = [];
+    if (hasAttributes) {
+      formattedOptions = options
+        .filter((o: any) => o.name?.trim() && Array.isArray(o.values) && o.values.length > 0)
+        .map((opt: any, idx: number) => ({
+          name: String(opt.name).trim(),
+          values: opt.values.map((v: any) => String(v).trim()).filter(Boolean),
+          position: idx + 1,
+        }));
+
+      sapoProductPayload.options = formattedOptions;
+      sapoProductPayload.variants = variants.map((v: any, idx: number) => {
+        const vPrice = Math.max(0, Number(v.price) || numPrice);
+        const vSku = (v.sku || `${cleanSku}-${idx + 1}`).trim();
+        const vPayload: any = {
+          sku: vSku,
+          price: vPrice,
+          inventory_quantity: 0,
+        };
+        if (v.option1) vPayload.option1 = String(v.option1).trim();
+        if (v.option2) vPayload.option2 = String(v.option2).trim();
+        if (v.option3) vPayload.option3 = String(v.option3).trim();
+        return vPayload;
+      });
+    } else {
+      sapoProductPayload.variants = [
         {
           sku: cleanSku,
           price: numPrice,
           inventory_quantity: 0,
         },
-      ],
-    };
+      ];
+    }
 
     if (publicImageUrl) {
       sapoProductPayload.images = [{ src: publicImageUrl }];
@@ -383,7 +420,6 @@ export async function POST(request: NextRequest) {
     }
 
     const sapoItemId = String(sapoProd.id);
-    const variantId = sapoProd.variants?.[0]?.id;
 
     // Nếu Sapo đã tự sinh CDN URL cho ảnh, ưu tiên sử dụng Sapo CDN URL
     if (sapoProd.images && sapoProd.images.length > 0 && sapoProd.images[0]?.src) {
@@ -400,14 +436,80 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // 2. Nếu có tồn kho ban đầu, kích hoạt quản lý tồn kho và gán số lượng
-    if (variantId && numStock > 0) {
-      try {
-        await SapoService.updateVariantInventory(variantId, numStock);
-      } catch (err: any) {
-        console.warn("[Sapo Set Initial Stock Warning]:", err.message);
+    // 2. Xử lý tồn kho và biến thể
+    let finalVariations: any[] = [];
+    let totalStock = 0;
+    let minPrice = numPrice;
+    let maxPrice = numPrice;
+
+    if (hasAttributes && sapoProd.variants && sapoProd.variants.length > 0) {
+      finalVariations = sapoProd.variants.map((sv: any, idx: number) => {
+        const orig =
+          variants.find((v: any) => v.sku?.trim() === sv.sku?.trim()) ||
+          variants.find((v: any) => v.option1 === sv.option1 && (!v.option2 || v.option2 === sv.option2)) ||
+          variants[idx] ||
+          {};
+        const vStock = Math.max(0, Number(orig.stock) || 0);
+        totalStock += vStock;
+
+        return {
+          model_id: String(sv.id),
+          name: sv.title || orig.name || `Phân loại ${idx + 1}`,
+          sku: sv.sku || orig.sku || `${cleanSku}-${idx + 1}`,
+          price: Number(sv.price) || Number(orig.price) || numPrice,
+          stock: vStock,
+          sales: 0,
+          image: finalImageUrl,
+        };
+      });
+
+      // Cập nhật tồn kho từng biến thể lên Sapo
+      for (let i = 0; i < sapoProd.variants.length; i++) {
+        const sv = sapoProd.variants[i];
+        const fv = finalVariations[i];
+        if (sv.id && fv.stock > 0) {
+          try {
+            await SapoService.updateVariantInventory(sv.id, fv.stock);
+          } catch (err: any) {
+            console.warn(`[Sapo Set Variant Stock Warning] ${sv.id}:`, err.message);
+          }
+        }
       }
+
+      const prices = finalVariations.map((v) => v.price).filter((p) => p > 0);
+      if (prices.length > 0) {
+        minPrice = Math.min(...prices);
+        maxPrice = Math.max(...prices);
+      }
+    } else {
+      const variantId = sapoProd.variants?.[0]?.id;
+      totalStock = numStock;
+      if (variantId && numStock > 0) {
+        try {
+          await SapoService.updateVariantInventory(variantId, numStock);
+        } catch (err: any) {
+          console.warn("[Sapo Set Initial Stock Warning]:", err.message);
+        }
+      }
+
+      finalVariations = [
+        {
+          model_id: String(variantId || `model_${Date.now()}`),
+          name: "Mặc định",
+          sku: cleanSku,
+          price: numPrice,
+          stock: numStock,
+          image: finalImageUrl,
+        },
+      ];
     }
+
+    const priceDisplay =
+      minPrice === maxPrice
+        ? minPrice > 0
+          ? `₫${minPrice.toLocaleString("vi-VN")}`
+          : "--"
+        : `₫${minPrice.toLocaleString("vi-VN")} - ₫${maxPrice.toLocaleString("vi-VN")}`;
 
     // 3. Lưu vào MongoDB
     const prodDoc = {
@@ -417,23 +519,15 @@ export async function POST(request: NextRequest) {
       parent_sku: cleanSku,
       image: finalImageUrl,
       product_url: `https://cua-hang-yen-sen.mysapo.net/admin/products/${sapoItemId}`,
-      price_min: numPrice,
-      price_max: numPrice,
-      price_display: numPrice > 0 ? `₫${numPrice.toLocaleString("vi-VN")}` : "--",
-      stock: numStock,
+      price_min: minPrice,
+      price_max: maxPrice,
+      price_display: priceDisplay,
+      stock: totalStock,
       sales_30d: 0,
       views_30d: "0",
-      status: numStock > 0 ? "Đang hoạt động" : "Hết hàng",
-      variations: [
-        {
-          model_id: String(variantId || `model_${Date.now()}`),
-          name: "Mặc định",
-          sku: cleanSku,
-          price: numPrice,
-          stock: numStock,
-          image: finalImageUrl,
-        },
-      ],
+      status: totalStock > 0 ? "Đang hoạt động" : "Hết hàng",
+      options: sapoProd.options || (hasAttributes ? formattedOptions : []),
+      variations: finalVariations,
       shop_username: "sapo_omnichannel",
       synced_at: now,
       createdAt: now,

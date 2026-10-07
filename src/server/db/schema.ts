@@ -600,6 +600,13 @@ export interface IShopeeProductVariationDoc {
   image?: string;
 }
 
+export interface IShopeeProductOptionDoc {
+  id?: number;
+  name: string;
+  values: string[];
+  position?: number;
+}
+
 export interface IShopeeProductDocument {
   id: string;
   item_id: string;
@@ -614,6 +621,7 @@ export interface IShopeeProductDocument {
   sales_30d: number;
   views_30d?: string;
   status: string;
+  options?: IShopeeProductOptionDoc[];
   variations: IShopeeProductVariationDoc[];
   shop_username?: string;
   synced_at: string;
@@ -636,6 +644,14 @@ const ShopeeProductSchema = new Schema<IShopeeProductDocument>(
     sales_30d: { type: Number, default: 0 },
     views_30d: { type: String, default: "0" },
     status: { type: String, default: "Đang hoạt động", index: true },
+    options: [
+      {
+        id: { type: Number },
+        name: { type: String, default: "" },
+        values: [{ type: String }],
+        position: { type: Number, default: 1 },
+      },
+    ],
     variations: [
       {
         model_id: { type: String, required: true },
