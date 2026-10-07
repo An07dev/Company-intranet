@@ -426,6 +426,41 @@ export const SapoService = {
   },
 
   /**
+   * Lấy danh sách giao dịch thanh toán của một đơn hàng trên Sapo
+   */
+  async getTransactions(orderId: number | string): Promise<{ transactions: any[] }> {
+    return sapoFetch<{ transactions: any[] }>(`/admin/orders/${orderId}/transactions.json`);
+  },
+
+  /**
+   * Tạo giao dịch thanh toán (thu nợ) cho đơn hàng trên Sapo
+   */
+  async createTransaction(
+    orderId: number | string,
+    transactionData: {
+      amount: number;
+      kind?: "capture" | "sale";
+      gateway?: string;
+      status?: "success" | "pending";
+      source_name?: string;
+      note?: string;
+    }
+  ): Promise<any> {
+    return sapoFetch(`/admin/orders/${orderId}/transactions.json`, {
+      method: "POST",
+      body: JSON.stringify({
+        transaction: {
+          kind: transactionData.kind || "sale",
+          amount: Number(transactionData.amount),
+          gateway: transactionData.gateway || "Tiền mặt / Chuyển khoản",
+          status: transactionData.status || "success",
+          source_name: transactionData.source_name || "internal_website",
+        },
+      }),
+    });
+  },
+
+  /**
    * Xóa sản phẩm khỏi Sapo
    */
   async deleteProduct(productId: number | string): Promise<any> {
@@ -434,3 +469,4 @@ export const SapoService = {
     });
   },
 };
+
