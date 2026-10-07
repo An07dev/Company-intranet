@@ -16,27 +16,48 @@ interface CreateOrderModalProps {
   onOrderCreated?: () => void;
 }
 
-const POPULAR_SOURCES = [
-  { label: "Tại quầy", icon: "🏪" },
-  { label: "Zalo", icon: "💬" },
-  { label: "Facebook", icon: "📘" },
-  { label: "Hotline", icon: "📞" },
-  { label: "Website", icon: "🌐" },
-  { label: "Telesale", icon: "💼" },
-  { label: "TikTok", icon: "🎵" },
-  { label: "Khách quen", icon: "⭐" },
+const SAPO_ORDER_SOURCES = [
+  { value: "Tại quầy", label: "🏪 Tại quầy (POS)" },
+  { value: "Zalo", label: "💬 Zalo OA / Chat" },
+  { value: "Facebook", label: "📘 Facebook Fanpage" },
+  { value: "Hotline", label: "📞 Hotline / Bán trực tiếp" },
+  { value: "Website", label: "🌐 Website Bán Hàng" },
+  { value: "Telesale", label: "💼 Telesale" },
+  { value: "TikTok", label: "🎵 TikTok Shop" },
+  { value: "Khách quen", label: "⭐ Khách quen / Giới thiệu" },
+  { value: "Đối tác B2B", label: "🤝 Đại lý / Khách sỉ B2B" },
+  { value: "Sự kiện", label: "🎪 Sự kiện / Hội chợ" },
+  { value: "other", label: "✏️ Nguồn khác (Tự nhập...)" },
+];
+
+const SHIPPING_CARRIERS = [
+  { value: "", label: "-- Không chọn / Chưa gán --" },
+  { value: "Giao hàng tiết kiệm (GHTK)", label: "⚡ GHTK (Giao Hàng Tiết Kiệm)" },
+  { value: "Giao hàng nhanh (GHN)", label: "🚀 GHN (Giao Hàng Nhanh)" },
+  { value: "Viettel Post", label: "🔴 Viettel Post" },
+  { value: "VNPost", label: "📮 VNPost (Bưu Điện Việt Nam)" },
+  { value: "J&T Express", label: "🚚 J&T Express" },
+  { value: "Shopee Xpress (SPX)", label: "🟠 Shopee Xpress (SPX)" },
+  { value: "GrabExpress", label: "🟢 GrabExpress" },
+  { value: "Ahamove", label: "🛵 Ahamove" },
+  { value: "Lalamove", label: "🚐 Lalamove" },
+  { value: "Shipper nội bộ", label: "🏍️ Shipper nội bộ cửa hàng" },
+  { value: "Khách lấy tại quầy", label: "🚶 Khách tự lấy tại quầy" },
+  { value: "other", label: "✏️ Đơn vị khác (Tự nhập...)" },
 ];
 
 export function CreateOrderModal({ isOpen, onClose, onOrderCreated }: CreateOrderModalProps) {
   const { toast } = useToast();
 
   const [loading, setLoading] = useState(false);
-  const [sourceName, setSourceName] = useState("Tại quầy");
+  const [sourceSelect, setSourceSelect] = useState("Tại quầy");
+  const [customSource, setCustomSource] = useState("");
   const [buyerName, setBuyerName] = useState("");
   const [buyerPhone, setBuyerPhone] = useState("");
   const [buyerAddress, setBuyerAddress] = useState("");
   const [paymentMethod, setPaymentMethod] = useState("Tiền mặt");
-  const [shippingCarrier, setShippingCarrier] = useState("");
+  const [carrierSelect, setCarrierSelect] = useState("");
+  const [customCarrier, setCustomCarrier] = useState("");
   const [trackingNumber, setTrackingNumber] = useState("");
   const [note, setNote] = useState("");
   const [tags, setTags] = useState("internal_website");
@@ -94,11 +115,21 @@ export function CreateOrderModal({ isOpen, onClose, onOrderCreated }: CreateOrde
       return;
     }
 
+    const finalSource =
+      sourceSelect === "other"
+        ? (customSource.trim() || "Khác")
+        : sourceSelect;
+
+    const finalCarrier =
+      carrierSelect === "other"
+        ? customCarrier.trim()
+        : carrierSelect;
+
     setLoading(true);
     try {
       const payload = {
-        source_name: sourceName.trim() || "Tại quầy",
-        shop_username: sourceName.trim() || "Tại quầy",
+        source_name: finalSource,
+        shop_username: finalSource,
         buyer_name: buyerName.trim(),
         buyer_phone: buyerPhone.trim(),
         buyer_address: buyerAddress.trim(),
@@ -108,7 +139,7 @@ export function CreateOrderModal({ isOpen, onClose, onOrderCreated }: CreateOrde
           quantity: Number(it.quantity) || 1,
         })),
         payment_method: paymentMethod,
-        shipping_carrier: shippingCarrier.trim(),
+        shipping_carrier: finalCarrier,
         tracking_number: trackingNumber.trim(),
         note: note.trim(),
         tags: tags.trim(),
@@ -176,65 +207,38 @@ export function CreateOrderModal({ isOpen, onClose, onOrderCreated }: CreateOrde
               <span>Nguồn đơn & Thông tin khách hàng</span>
             </div>
 
-            {/* Nguồn đơn hàng (Hiển thị cột Nguồn đơn trên Sapo) */}
-            <div>
-              <div className="flex items-center justify-between mb-1">
-                <label className="block text-[11px] font-semibold text-zinc-700 dark:text-zinc-300">
-                  Nguồn đơn hàng (Hiển thị trên Sapo Admin) <span className="text-rose-500">*</span>
-                </label>
-                <span className="text-[10px] text-zinc-400">
-                  Tự do nhập bất kỳ nguồn nào hoặc chọn nhanh
-                </span>
-              </div>
-              <input
-                type="text"
-                required
-                list="sapo-source-suggestions"
-                placeholder="Ví dụ: Zalo, Facebook, Hotline, Tại quầy, Telesale, Khách quen..."
-                value={sourceName}
-                onChange={(e) => setSourceName(e.target.value)}
-                className="w-full px-3 py-2 bg-white dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 rounded-xl text-zinc-900 dark:text-zinc-100 font-medium placeholder:text-zinc-400 focus:ring-2 focus:ring-emerald-500 focus:outline-hidden text-xs"
-              />
-              <datalist id="sapo-source-suggestions">
-                <option value="Tại quầy" />
-                <option value="Zalo" />
-                <option value="Facebook" />
-                <option value="Hotline" />
-                <option value="Website" />
-                <option value="Telesale" />
-                <option value="TikTok" />
-                <option value="Instagram" />
-                <option value="Khách quen" />
-                <option value="Đối tác B2B" />
-                <option value="Hội chợ / Sự kiện" />
-              </datalist>
-
-              {/* Quick source pills */}
-              <div className="flex items-center gap-1.5 flex-wrap mt-2">
-                {POPULAR_SOURCES.map((s) => {
-                  const isSelected = sourceName === s.label;
-                  return (
-                    <button
-                      key={s.label}
-                      type="button"
-                      onClick={() => setSourceName(s.label)}
-                      className={`px-2 py-0.5 rounded-lg text-[11px] font-medium transition-all flex items-center gap-1 cursor-pointer border ${
-                        isSelected
-                          ? "bg-emerald-50 dark:bg-emerald-950/60 border-emerald-500 text-emerald-700 dark:text-emerald-300 font-bold shadow-xs"
-                          : "bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-700 text-zinc-600 dark:text-zinc-300 hover:border-zinc-300 dark:hover:border-zinc-600 hover:bg-zinc-50 dark:hover:bg-zinc-800"
-                      }`}
-                    >
-                      <span>{s.icon}</span>
-                      <span>{s.label}</span>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {/* Nguồn đơn hàng Dropdown */}
               <div>
-                <label className="block text-[11px] font-medium text-zinc-600 dark:text-zinc-400 mb-1">
+                <label className="block text-[11px] font-semibold text-zinc-700 dark:text-zinc-300 mb-1">
+                  Nguồn đơn hàng (Sapo) <span className="text-rose-500">*</span>
+                </label>
+                <select
+                  value={sourceSelect}
+                  onChange={(e) => setSourceSelect(e.target.value)}
+                  className="w-full px-3 py-2 bg-white dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 rounded-xl text-zinc-900 dark:text-zinc-100 font-medium focus:ring-2 focus:ring-emerald-500 focus:outline-hidden text-xs cursor-pointer"
+                >
+                  {SAPO_ORDER_SOURCES.map((s) => (
+                    <option key={s.value} value={s.value}>
+                      {s.label}
+                    </option>
+                  ))}
+                </select>
+                {sourceSelect === "other" && (
+                  <input
+                    type="text"
+                    required
+                    placeholder="Nhập tên nguồn đơn tùy ý..."
+                    value={customSource}
+                    onChange={(e) => setCustomSource(e.target.value)}
+                    className="w-full mt-2 px-3 py-2 bg-white dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 rounded-xl text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 focus:ring-2 focus:ring-emerald-500 focus:outline-hidden text-xs animate-in fade-in duration-150"
+                  />
+                )}
+              </div>
+
+              {/* Họ & tên khách hàng */}
+              <div>
+                <label className="block text-[11px] font-semibold text-zinc-700 dark:text-zinc-300 mb-1">
                   Họ & tên khách hàng <span className="text-rose-500">*</span>
                 </label>
                 <input
@@ -243,10 +247,11 @@ export function CreateOrderModal({ isOpen, onClose, onOrderCreated }: CreateOrde
                   placeholder="Ví dụ: Nguyễn Văn A hoặc Khách lẻ"
                   value={buyerName}
                   onChange={(e) => setBuyerName(e.target.value)}
-                  className="w-full px-3 py-2 bg-white dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 rounded-xl text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 focus:ring-2 focus:ring-emerald-500 focus:outline-hidden"
+                  className="w-full px-3 py-2 bg-white dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 rounded-xl text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 focus:ring-2 focus:ring-emerald-500 focus:outline-hidden text-xs"
                 />
               </div>
 
+              {/* Số điện thoại */}
               <div>
                 <label className="block text-[11px] font-medium text-zinc-600 dark:text-zinc-400 mb-1">
                   Số điện thoại
@@ -256,10 +261,11 @@ export function CreateOrderModal({ isOpen, onClose, onOrderCreated }: CreateOrde
                   placeholder="Ví dụ: 0987654321"
                   value={buyerPhone}
                   onChange={(e) => setBuyerPhone(e.target.value)}
-                  className="w-full px-3 py-2 bg-white dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 rounded-xl text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 focus:ring-2 focus:ring-emerald-500 focus:outline-hidden"
+                  className="w-full px-3 py-2 bg-white dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 rounded-xl text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 focus:ring-2 focus:ring-emerald-500 focus:outline-hidden text-xs"
                 />
               </div>
 
+              {/* Địa chỉ giao hàng */}
               <div>
                 <label className="block text-[11px] font-medium text-zinc-600 dark:text-zinc-400 mb-1">
                   Địa chỉ giao hàng
@@ -269,7 +275,7 @@ export function CreateOrderModal({ isOpen, onClose, onOrderCreated }: CreateOrde
                   placeholder="Ví dụ: 123 Lê Lợi, Q1, TP. HCM"
                   value={buyerAddress}
                   onChange={(e) => setBuyerAddress(e.target.value)}
-                  className="w-full px-3 py-2 bg-white dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 rounded-xl text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 focus:ring-2 focus:ring-emerald-500 focus:outline-hidden"
+                  className="w-full px-3 py-2 bg-white dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 rounded-xl text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 focus:ring-2 focus:ring-emerald-500 focus:outline-hidden text-xs"
                 />
               </div>
             </div>
@@ -393,17 +399,31 @@ export function CreateOrderModal({ isOpen, onClose, onOrderCreated }: CreateOrde
                 </select>
               </div>
 
+              {/* Đơn vị vận chuyển Dropdown */}
               <div>
                 <label className="block text-[11px] font-medium text-zinc-600 dark:text-zinc-400 mb-1">
                   Đơn vị vận chuyển
                 </label>
-                <input
-                  type="text"
-                  placeholder="GHTK, GHN, Viettel..."
-                  value={shippingCarrier}
-                  onChange={(e) => setShippingCarrier(e.target.value)}
-                  className="w-full px-3 py-2 bg-white dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 rounded-xl text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 focus:ring-2 focus:ring-emerald-500 focus:outline-hidden"
-                />
+                <select
+                  value={carrierSelect}
+                  onChange={(e) => setCarrierSelect(e.target.value)}
+                  className="w-full px-3 py-2 bg-white dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 rounded-xl text-zinc-900 dark:text-zinc-100 font-medium focus:ring-2 focus:ring-emerald-500 focus:outline-hidden text-xs cursor-pointer"
+                >
+                  {SHIPPING_CARRIERS.map((c) => (
+                    <option key={c.value} value={c.value}>
+                      {c.label}
+                    </option>
+                  ))}
+                </select>
+                {carrierSelect === "other" && (
+                  <input
+                    type="text"
+                    placeholder="Nhập tên đơn vị vận chuyển..."
+                    value={customCarrier}
+                    onChange={(e) => setCustomCarrier(e.target.value)}
+                    className="w-full mt-1.5 px-3 py-2 bg-white dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 rounded-xl text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 focus:ring-2 focus:ring-emerald-500 focus:outline-hidden text-xs animate-in fade-in duration-150"
+                  />
+                )}
               </div>
 
               <div>

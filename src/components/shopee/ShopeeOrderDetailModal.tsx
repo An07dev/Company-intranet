@@ -291,11 +291,25 @@ export function ShopeeOrderDetailModal({
                   <label className="block text-zinc-500 font-medium mb-1">Đơn vị vận chuyển</label>
                   <input
                     type="text"
+                    list="detail-carrier-suggestions"
                     value={editForm.shipping_carrier}
                     onChange={(e) => setEditForm((prev) => ({ ...prev, shipping_carrier: e.target.value }))}
                     placeholder="VD: Viettel Post / SPX / GHTK"
                     className="w-full px-3 py-2 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100"
                   />
+                  <datalist id="detail-carrier-suggestions">
+                    <option value="Giao hàng tiết kiệm (GHTK)" />
+                    <option value="Giao hàng nhanh (GHN)" />
+                    <option value="Viettel Post" />
+                    <option value="VNPost" />
+                    <option value="J&T Express" />
+                    <option value="Shopee Xpress (SPX)" />
+                    <option value="GrabExpress" />
+                    <option value="Ahamove" />
+                    <option value="Lalamove" />
+                    <option value="Shipper nội bộ" />
+                    <option value="Khách lấy tại quầy" />
+                  </datalist>
                 </div>
               </div>
 
