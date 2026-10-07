@@ -39,17 +39,6 @@ export function ShopeeOrderDetailModal({
   const [copiedAll, setCopiedAll] = useState(false);
   const [showRaw, setShowRaw] = useState(false);
 
-  // Edit State
-  const [isEditing, setIsEditing] = useState(false);
-  const [saving, setSaving] = useState(false);
-  const [editForm, setEditForm] = useState({
-    buyer_username: order?.buyer_username || "",
-    shipping_carrier: order?.shipping_carrier || "",
-    tracking_number: order?.tracking_number || "",
-    note: "",
-    tags: "",
-  });
-
   // Action State (Cancel/Close/Open)
   const [actionLoading, setActionLoading] = useState(false);
   const [refreshingStatus, setRefreshingStatus] = useState(false);
@@ -125,50 +114,6 @@ export function ShopeeOrderDetailModal({
     navigator.clipboard.writeText(lines.join("\n"));
     setCopiedAll(true);
     setTimeout(() => setCopiedAll(false), 2000);
-  };
-
-  const handleStartEdit = () => {
-    setIsEditing(true);
-    let initialNote = "";
-    if (order.raw_text) {
-      try {
-        const raw = JSON.parse(order.raw_text);
-        if (raw.note) initialNote = raw.note;
-      } catch {}
-    }
-    setEditForm({
-      buyer_username: order.buyer_username || "",
-      shipping_carrier: order.shipping_carrier || "",
-      tracking_number: order.tracking_number || "",
-      note: initialNote,
-      tags: "",
-    });
-  };
-
-  const handleSaveEdit = async () => {
-    setSaving(true);
-    try {
-      const res = await fetch("/api/sapo/orders", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          order_sn: order.order_sn,
-          ...editForm,
-        }),
-      });
-      const data = await res.json();
-      if (data.success) {
-        toast.success(data.message || "Đã lưu thay đổi đơn hàng lên Sapo!");
-        setIsEditing(false);
-        onOrderUpdated?.();
-      } else {
-        toast.error(data.message || "Lỗi lưu đơn hàng");
-      }
-    } catch {
-      toast.error("Không thể kết nối đến máy chủ");
-    } finally {
-      setSaving(false);
-    }
   };
 
   const handleConfirmCancel = async () => {
@@ -310,163 +255,64 @@ export function ShopeeOrderDetailModal({
 
         {/* Modal Body */}
         <div className="p-4 sm:p-5 overflow-y-auto space-y-4">
-          {/* Chế độ Chỉnh sửa (Edit Mode) */}
-          {isEditing ? (
-            <div className="p-4 rounded-2xl bg-emerald-50/50 dark:bg-emerald-950/20 border border-emerald-200/60 dark:border-emerald-900/40 space-y-3 text-xs">
-              <div className="font-bold text-emerald-800 dark:text-emerald-300 flex items-center gap-1.5 mb-1">
-                <span>✏️</span>
-                <span>Chỉnh sửa thông tin đơn hàng (Đồng bộ Sapo)</span>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-zinc-500 font-medium mb-1">Tên khách hàng</label>
-                  <input
-                    type="text"
-                    value={editForm.buyer_username}
-                    onChange={(e) => setEditForm((prev) => ({ ...prev, buyer_username: e.target.value }))}
-                    className="w-full px-3 py-2 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100"
-                  />
+          {/* Thông tin đơn hàng */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 bg-zinc-50/70 dark:bg-zinc-800/40 p-3.5 rounded-2xl border border-zinc-200/70 dark:border-zinc-800">
+            <div>
+              <span className="text-[11px] font-medium text-zinc-500 block">Khách hàng:</span>
+              <div className="flex items-center gap-2 mt-0.5">
+                <div className="w-6 h-6 rounded-full bg-orange-100 dark:bg-orange-950 text-orange-600 dark:text-orange-400 flex items-center justify-center text-xs font-bold shrink-0">
+                  {order.buyer_username.slice(0, 1).toUpperCase()}
                 </div>
-                <div>
-                  <label className="block text-zinc-500 font-medium mb-1">Đơn vị vận chuyển</label>
-                  <input
-                    type="text"
-                    list="detail-carrier-suggestions"
-                    value={editForm.shipping_carrier}
-                    onChange={(e) => setEditForm((prev) => ({ ...prev, shipping_carrier: e.target.value }))}
-                    placeholder="VD: Viettel Post / SPX / GHTK"
-                    className="w-full px-3 py-2 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100"
-                  />
-                  <datalist id="detail-carrier-suggestions">
-                    <option value="Giao hàng tiết kiệm (GHTK)" />
-                    <option value="Giao hàng nhanh (GHN)" />
-                    <option value="Viettel Post" />
-                    <option value="VNPost" />
-                    <option value="J&T Express" />
-                    <option value="Shopee Xpress (SPX)" />
-                    <option value="GrabExpress" />
-                    <option value="Ahamove" />
-                    <option value="Lalamove" />
-                    <option value="Shipper nội bộ" />
-                    <option value="Khách lấy tại quầy" />
-                  </datalist>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-zinc-500 font-medium mb-1">Mã vận đơn (Tracking No.)</label>
-                  <input
-                    type="text"
-                    value={editForm.tracking_number}
-                    onChange={(e) => setEditForm((prev) => ({ ...prev, tracking_number: e.target.value }))}
-                    placeholder="VD: 163961546419"
-                    className="w-full px-3 py-2 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 font-mono"
-                  />
-                </div>
-                <div>
-                  <label className="block text-zinc-500 font-medium mb-1">Thẻ Tag Sapo</label>
-                  <input
-                    type="text"
-                    value={editForm.tags}
-                    onChange={(e) => setEditForm((prev) => ({ ...prev, tags: e.target.value }))}
-                    placeholder="VD: VIP, can_gap, da_xac_nhan"
-                    className="w-full px-3 py-2 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-zinc-500 font-medium mb-1">Ghi chú đơn hàng (Lưu lên Sapo)</label>
-                <textarea
-                  rows={2}
-                  value={editForm.note}
-                  onChange={(e) => setEditForm((prev) => ({ ...prev, note: e.target.value }))}
-                  placeholder="Nhập ghi chú giao hàng, dặn dò đóng gói..."
-                  className="w-full px-3 py-2 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100"
-                />
-              </div>
-
-              <div className="flex justify-end gap-2 pt-2 border-t border-emerald-200/60 dark:border-emerald-900/40">
-                <button
-                  type="button"
-                  onClick={() => setIsEditing(false)}
-                  disabled={saving}
-                  className="px-3.5 py-1.5 rounded-xl border border-zinc-200 dark:border-zinc-700 hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-600 dark:text-zinc-300 font-semibold"
-                >
-                  Hủy
-                </button>
-                <button
-                  type="button"
-                  onClick={handleSaveEdit}
-                  disabled={saving}
-                  className="px-4 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-semibold transition flex items-center gap-1.5 shadow-xs"
-                >
-                  {saving ? "Đang lưu lên Sapo..." : "💾 Lưu thay đổi"}
-                </button>
-              </div>
-            </div>
-          ) : (
-            /* Chế độ Xem (View Mode) */
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 bg-zinc-50/70 dark:bg-zinc-800/40 p-3.5 rounded-2xl border border-zinc-200/70 dark:border-zinc-800">
-              <div>
-                <span className="text-[11px] font-medium text-zinc-500 block">Khách hàng:</span>
-                <div className="flex items-center gap-2 mt-0.5">
-                  <div className="w-6 h-6 rounded-full bg-orange-100 dark:bg-orange-950 text-orange-600 dark:text-orange-400 flex items-center justify-center text-xs font-bold shrink-0">
-                    {order.buyer_username.slice(0, 1).toUpperCase()}
-                  </div>
-                  <span className="text-xs sm:text-sm font-semibold text-zinc-900 dark:text-white">
-                    {order.buyer_username}
-                  </span>
-                </div>
-              </div>
-
-              <div>
-                <span className="text-[11px] font-medium text-zinc-500 block">Tổng thanh toán:</span>
-                <div className="text-xs sm:text-sm font-bold text-emerald-600 dark:text-emerald-400 mt-0.5">
-                  {formatVND(order.total_amount)}
-                  <span className="text-[11px] text-zinc-400 font-normal ml-1">
-                    ({order.payment_method || "Chưa rõ"})
-                  </span>
-                </div>
-              </div>
-
-              <div>
-                <span className="text-[11px] font-medium text-zinc-500 block">Đơn vị vận chuyển:</span>
-                <span className="text-xs text-zinc-700 dark:text-zinc-300 mt-0.5 block">
-                  {order.shipping_carrier || "Chưa gán đơn vị VC"}
+                <span className="text-xs sm:text-sm font-semibold text-zinc-900 dark:text-white">
+                  {order.buyer_username}
                 </span>
               </div>
+            </div>
 
-              <div>
-                <span className="text-[11px] font-medium text-zinc-500 block">Mã vận đơn:</span>
-                {order.tracking_number ? (
-                  <div className="flex items-center gap-1.5 mt-0.5">
-                    <span className="font-mono text-xs font-semibold text-zinc-900 dark:text-white">
-                      {order.tracking_number}
-                    </span>
-                    <button
-                      type="button"
-                      onClick={handleCopyTracking}
-                      className="text-[11px] text-orange-600 dark:text-orange-400 hover:underline"
-                    >
-                      {copiedTracking ? "Đã chép" : "Sao chép"}
-                    </button>
-                  </div>
-                ) : (
-                  <span className="text-xs text-zinc-400 italic">Chưa có mã vận đơn</span>
-                )}
+            <div>
+              <span className="text-[11px] font-medium text-zinc-500 block">Tổng thanh toán:</span>
+              <div className="text-xs sm:text-sm font-bold text-emerald-600 dark:text-emerald-400 mt-0.5">
+                {formatVND(order.total_amount)}
+                <span className="text-[11px] text-zinc-400 font-normal ml-1">
+                  ({order.payment_method || "Chưa rõ"})
+                </span>
               </div>
+            </div>
 
-              {order.status_description && (
-                <div className="col-span-full border-t border-zinc-200/60 dark:border-zinc-700/60 pt-2 text-[11px] text-zinc-500">
-                  <span className="font-medium text-zinc-600 dark:text-zinc-400">Chi tiết trạng thái: </span>
-                  {order.status_description}
+            <div>
+              <span className="text-[11px] font-medium text-zinc-500 block">Đơn vị vận chuyển:</span>
+              <span className="text-xs text-zinc-700 dark:text-zinc-300 mt-0.5 block">
+                {order.shipping_carrier || "Chưa gán đơn vị VC"}
+              </span>
+            </div>
+
+            <div>
+              <span className="text-[11px] font-medium text-zinc-500 block">Mã vận đơn:</span>
+              {order.tracking_number ? (
+                <div className="flex items-center gap-1.5 mt-0.5">
+                  <span className="font-mono text-xs font-semibold text-zinc-900 dark:text-white">
+                    {order.tracking_number}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={handleCopyTracking}
+                    className="text-[11px] text-orange-600 dark:text-orange-400 hover:underline"
+                  >
+                    {copiedTracking ? "Đã chép" : "Sao chép"}
+                  </button>
                 </div>
+              ) : (
+                <span className="text-xs text-zinc-400 italic">Chưa có mã vận đơn</span>
               )}
             </div>
-          )}
+
+            {order.status_description && (
+              <div className="col-span-full border-t border-zinc-200/60 dark:border-zinc-700/60 pt-2 text-[11px] text-zinc-500">
+                <span className="font-medium text-zinc-600 dark:text-zinc-400">Chi tiết trạng thái: </span>
+                {order.status_description}
+              </div>
+            )}
+          </div>
 
           {/* Section: Danh sách sản phẩm */}
           <div>
@@ -535,18 +381,6 @@ export function ShopeeOrderDetailModal({
         {/* Footer with Write Operations */}
         <div className="flex items-center justify-between p-4 border-t border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-800/40 gap-2 flex-wrap">
           <div className="flex items-center gap-1.5 flex-wrap">
-            {!isEditing && (
-              <button
-                type="button"
-                onClick={handleStartEdit}
-                className="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs transition-colors flex items-center gap-1.5 shadow-xs cursor-pointer"
-                title="Chỉnh sửa thông tin đơn hàng và ghi chú lên Sapo"
-              >
-                <span>✏️</span>
-                <span>Chỉnh sửa đơn</span>
-              </button>
-            )}
-
             {order.order_status !== "Đã hủy" && (
               <button
                 type="button"
