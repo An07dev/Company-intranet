@@ -719,7 +719,7 @@ export default function MultiChannelOrdersPage() {
               )}
             </div>
 
-            <button
+            {/* <button
               type="button"
               onClick={handleDeleteAllOrders}
               disabled={deletingAll || (stats?.totalOrders ?? totalRecords) === 0}
@@ -728,7 +728,7 @@ export default function MultiChannelOrdersPage() {
             >
               <span>{deletingAll ? "⏳" : "🗑️"}</span>
               <span>{deletingAll ? "Đang xóa..." : "Xóa hết"}</span>
-            </button>
+            </button> */}
 
             <button
               type="button"
@@ -879,7 +879,7 @@ export default function MultiChannelOrdersPage() {
 
                 <div className="my-1 border-t border-zinc-100 dark:border-zinc-800" />
 
-                <button
+                {/* <button
                   type="button"
                   onClick={() => {
                     setShowMoreMenu(false);
@@ -890,7 +890,7 @@ export default function MultiChannelOrdersPage() {
                 >
                   <span className="text-sm">🗑️</span>
                   <span>Xóa tất cả đơn hàng</span>
-                </button>
+                </button> */}
               </div>
             )}
           </div>
@@ -963,8 +963,8 @@ export default function MultiChannelOrdersPage() {
                 tab.key === "all"
                   ? stats?.totalOrders
                   : tab.key === "Đang giao"
-                  ? (stats?.statusCounts?.["Đang giao hàng"] ?? stats?.statusCounts?.["Đang giao"] ?? 0)
-                  : stats?.statusCounts?.[tab.key];
+                    ? (stats?.statusCounts?.["Đang giao hàng"] ?? stats?.statusCounts?.["Đang giao"] ?? 0)
+                    : stats?.statusCounts?.[tab.key];
 
               return (
                 <button
@@ -974,20 +974,18 @@ export default function MultiChannelOrdersPage() {
                     setSelectedStatus(tab.key);
                     setCurrentPage(1);
                   }}
-                  className={`px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-lg sm:rounded-xl transition-all whitespace-nowrap text-xs font-semibold shrink-0 cursor-pointer flex items-center gap-1.5 active:scale-95 ${
-                    isActive
-                      ? "bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 shadow-2xs"
-                      : "text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 bg-zinc-50 dark:bg-zinc-800/60"
-                  }`}
+                  className={`px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-lg sm:rounded-xl transition-all whitespace-nowrap text-xs font-semibold shrink-0 cursor-pointer flex items-center gap-1.5 active:scale-95 ${isActive
+                    ? "bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 shadow-2xs"
+                    : "text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 bg-zinc-50 dark:bg-zinc-800/60"
+                    }`}
                 >
                   <span>{tab.label}</span>
                   {count !== null && count !== undefined && (
                     <span
-                      className={`px-1.5 py-0.2 rounded-full text-[10px] font-mono font-medium ${
-                        isActive
-                          ? "bg-zinc-700 text-zinc-200 dark:bg-zinc-300 dark:text-zinc-900"
-                          : "bg-zinc-200/80 dark:bg-zinc-700/80 text-zinc-600 dark:text-zinc-300"
-                      }`}
+                      className={`px-1.5 py-0.2 rounded-full text-[10px] font-mono font-medium ${isActive
+                        ? "bg-zinc-700 text-zinc-200 dark:bg-zinc-300 dark:text-zinc-900"
+                        : "bg-zinc-200/80 dark:bg-zinc-700/80 text-zinc-600 dark:text-zinc-300"
+                        }`}
                     >
                       {Number(count).toLocaleString("vi-VN")}
                     </span>
@@ -1459,11 +1457,10 @@ export default function MultiChannelOrdersPage() {
                         key={idx}
                         type="button"
                         onClick={() => setCurrentPage(page)}
-                        className={`w-8 h-8 rounded-lg font-medium transition-colors ${
-                          currentPage === page
-                            ? "bg-orange-600 text-white font-bold"
-                            : "hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-600 dark:text-zinc-300"
-                        }`}
+                        className={`w-8 h-8 rounded-lg font-medium transition-colors ${currentPage === page
+                          ? "bg-orange-600 text-white font-bold"
+                          : "hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-600 dark:text-zinc-300"
+                          }`}
                       >
                         {page}
                       </button>

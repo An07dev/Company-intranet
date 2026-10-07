@@ -1059,61 +1059,97 @@ export default function InventoryPage() {
 
           {/* 5. Pagination Bar */}
           {totalRecords > 0 && (
-            <div className="flex items-center justify-between gap-2 p-3 sm:p-4 bg-white dark:bg-zinc-900 rounded-xl sm:rounded-2xl border border-zinc-200 dark:border-zinc-800 text-xs shadow-2xs">
-              <button
-                type="button"
-                onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-                disabled={currentPage === 1}
-                className="px-3 py-1.5 rounded-lg border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800 hover:bg-zinc-100 dark:hover:bg-zinc-700 disabled:opacity-40 disabled:cursor-not-allowed transition font-semibold cursor-pointer"
-              >
-                ‹ Trước
-              </button>
+            <div className="p-3 sm:p-4 bg-white dark:bg-zinc-900 rounded-xl sm:rounded-2xl border border-zinc-200 dark:border-zinc-800 text-xs shadow-2xs">
+              {/* Giao diện Mobile (sm:hidden) */}
+              <div className="flex sm:hidden items-center justify-between gap-2">
+                <button
+                  type="button"
+                  onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                  disabled={currentPage === 1}
+                  className="px-3 py-1.5 rounded-lg border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800 hover:bg-zinc-100 dark:hover:bg-zinc-700 disabled:opacity-40 disabled:cursor-not-allowed transition font-semibold cursor-pointer"
+                >
+                  ‹ Trước
+                </button>
 
-              <div className="text-center font-semibold text-zinc-700 dark:text-zinc-300">
-                <span>
-                  Trang <span className="font-bold text-zinc-900 dark:text-white">{currentPage}</span> / {totalPages}
-                </span>
-                <span className="hidden sm:inline text-zinc-400 font-normal ml-1.5">
-                  ({totalRecords} SKU)
-                </span>
+                <div className="text-center font-semibold text-zinc-700 dark:text-zinc-300">
+                  <span>
+                    Trang <span className="font-bold text-zinc-900 dark:text-white">{currentPage}</span> / {totalPages}
+                  </span>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                  disabled={currentPage === totalPages}
+                  className="px-3 py-1.5 rounded-lg border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800 hover:bg-zinc-100 dark:hover:bg-zinc-700 disabled:opacity-40 disabled:cursor-not-allowed transition font-semibold cursor-pointer"
+                >
+                  Sau ›
+                </button>
               </div>
 
-              <div className="hidden sm:flex items-center gap-1">
-                {paginationItems.map((item, idx) => {
-                  if (item === "...") {
-                    return (
-                      <span key={`dots-${idx}`} className="w-7 h-7 flex items-center justify-center text-xs text-zinc-400 font-bold">
-                        ...
-                      </span>
-                    );
-                  }
-                  const pageNum = Number(item);
-                  const isActive = currentPage === pageNum;
-                  return (
-                    <button
-                      key={`page-${pageNum}`}
-                      type="button"
-                      onClick={() => setCurrentPage(pageNum)}
-                      className={`w-7 h-7 text-xs font-semibold rounded-lg transition-all cursor-pointer ${
-                        isActive
-                          ? "bg-amber-600 text-white shadow-2xs font-bold"
-                          : "border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100"
-                      }`}
-                    >
-                      {pageNum}
-                    </button>
-                  );
-                })}
-              </div>
+              {/* Giao diện Desktop (hidden sm:flex) */}
+              <div className="hidden sm:flex items-center justify-between gap-4">
+                <div className="text-zinc-500 dark:text-zinc-400 font-medium">
+                  Hiển thị{" "}
+                  <strong className="text-zinc-900 dark:text-white font-semibold">
+                    {Math.min((currentPage - 1) * pageSize + 1, totalRecords).toLocaleString("vi-VN")} -{" "}
+                    {Math.min(currentPage * pageSize, totalRecords).toLocaleString("vi-VN")}
+                  </strong>{" "}
+                  trong tổng số{" "}
+                  <strong className="text-zinc-900 dark:text-white font-semibold">
+                    {totalRecords.toLocaleString("vi-VN")}
+                  </strong>{" "}
+                  SKU (Trang {currentPage} / {totalPages})
+                </div>
 
-              <button
-                type="button"
-                onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-                disabled={currentPage === totalPages}
-                className="px-3 py-1.5 rounded-lg border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800 hover:bg-zinc-100 dark:hover:bg-zinc-700 disabled:opacity-40 disabled:cursor-not-allowed transition font-semibold cursor-pointer"
-              >
-                Sau ›
-              </button>
+                <div className="flex items-center gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                    disabled={currentPage === 1}
+                    className="px-3 py-1.5 rounded-lg border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800 hover:bg-zinc-100 dark:hover:bg-zinc-700 disabled:opacity-40 disabled:cursor-not-allowed transition font-semibold cursor-pointer text-zinc-700 dark:text-zinc-200"
+                  >
+                    ‹ Trước
+                  </button>
+
+                  <div className="flex items-center gap-1">
+                    {paginationItems.map((item, idx) => {
+                      if (item === "...") {
+                        return (
+                          <span key={`dots-${idx}`} className="w-8 h-8 flex items-center justify-center text-xs text-zinc-400 font-bold">
+                            ...
+                          </span>
+                        );
+                      }
+                      const pageNum = Number(item);
+                      const isActive = currentPage === pageNum;
+                      return (
+                        <button
+                          key={`page-${pageNum}`}
+                          type="button"
+                          onClick={() => setCurrentPage(pageNum)}
+                          className={`w-8 h-8 text-xs font-semibold rounded-lg transition-all cursor-pointer ${
+                            isActive
+                              ? "bg-amber-600 text-white shadow-2xs font-bold"
+                              : "border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100"
+                          }`}
+                        >
+                          {pageNum}
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                    disabled={currentPage === totalPages}
+                    className="px-3 py-1.5 rounded-lg border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800 hover:bg-zinc-100 dark:hover:bg-zinc-700 disabled:opacity-40 disabled:cursor-not-allowed transition font-semibold cursor-pointer text-zinc-700 dark:text-zinc-200"
+                  >
+                    Sau ›
+                  </button>
+                </div>
+              </div>
             </div>
           )}
         </div>
