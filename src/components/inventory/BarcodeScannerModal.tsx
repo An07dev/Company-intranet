@@ -189,16 +189,16 @@ export function BarcodeScannerModal({
       >
         {/* Header */}
         <div className="flex items-center justify-between p-4 sm:p-5 border-b border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-800/40">
-          <div className="flex items-center gap-2.5">
-            <div className="w-9 h-9 rounded-xl bg-amber-500/10 dark:bg-amber-500/20 text-amber-600 dark:text-amber-400 flex items-center justify-center text-lg">
+          <div className="flex items-center gap-2.5 min-w-0 pr-2">
+            <div className="w-9 h-9 rounded-xl bg-amber-500/10 dark:bg-amber-500/20 text-amber-600 dark:text-amber-400 flex items-center justify-center text-lg shrink-0">
               📷
             </div>
-            <div>
-              <h2 className="font-bold text-zinc-900 dark:text-white text-base">
+            <div className="min-w-0">
+              <h2 className="font-bold text-zinc-900 dark:text-white text-base truncate">
                 Quét Mã QR Tồn Kho
               </h2>
-              <p className="text-[11px] text-zinc-500">
-                Nhận diện ngay mã QR sản phẩm và tra cứu số lượng tồn kho khả dụng tức thì
+              <p className="text-[11px] text-zinc-500 line-clamp-1 sm:line-clamp-none">
+                Nhận diện ngay mã QR sản phẩm và tra cứu tồn kho tức thì
               </p>
             </div>
           </div>
@@ -208,7 +208,7 @@ export function BarcodeScannerModal({
               stopCamera();
               onClose();
             }}
-            className="p-1.5 rounded-lg text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
+            className="p-1.5 rounded-lg text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors shrink-0"
           >
             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -217,11 +217,11 @@ export function BarcodeScannerModal({
         </div>
 
         {/* Tab Selection */}
-        <div className="flex items-center border-b border-zinc-200 dark:border-zinc-800 px-4 pt-2 bg-zinc-50/30 dark:bg-zinc-800/20 text-xs">
+        <div className="flex items-center border-b border-zinc-200 dark:border-zinc-800 px-3 sm:px-4 pt-2 bg-zinc-50/30 dark:bg-zinc-800/20 text-xs overflow-x-auto no-scrollbar whitespace-nowrap">
           <button
             type="button"
             onClick={() => setActiveTab("camera")}
-            className={`py-2 px-3.5 font-semibold border-b-2 transition-all flex items-center gap-1.5 cursor-pointer ${
+            className={`py-2 px-3 font-semibold border-b-2 transition-all flex items-center gap-1.5 cursor-pointer shrink-0 ${
               activeTab === "camera"
                 ? "border-amber-600 text-amber-600 dark:text-amber-400"
                 : "border-transparent text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200"
@@ -234,7 +234,7 @@ export function BarcodeScannerModal({
           <button
             type="button"
             onClick={() => setActiveTab("gun")}
-            className={`py-2 px-3.5 font-semibold border-b-2 transition-all flex items-center gap-1.5 cursor-pointer ${
+            className={`py-2 px-3 font-semibold border-b-2 transition-all flex items-center gap-1.5 cursor-pointer shrink-0 ${
               activeTab === "gun"
                 ? "border-amber-600 text-amber-600 dark:text-amber-400"
                 : "border-transparent text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200"
@@ -247,7 +247,7 @@ export function BarcodeScannerModal({
           <button
             type="button"
             onClick={() => setActiveTab("image")}
-            className={`py-2 px-3.5 font-semibold border-b-2 transition-all flex items-center gap-1.5 cursor-pointer ${
+            className={`py-2 px-3 font-semibold border-b-2 transition-all flex items-center gap-1.5 cursor-pointer shrink-0 ${
               activeTab === "image"
                 ? "border-amber-600 text-amber-600 dark:text-amber-400"
                 : "border-transparent text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200"

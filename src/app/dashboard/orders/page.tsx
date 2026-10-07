@@ -123,23 +123,28 @@ export default function MultiChannelOrdersPage() {
     counts: { open: 953, cancelled: 2591, closed: 10836, total: 14380 },
   });
 
-  // Dropdown lựa chọn đồng bộ Sapo (200 đơn mới nhất / toàn bộ đơn)
+  // Dropdown lựa chọn đồng bộ Sapo & Menu thao tác phụ (Mobile)
   const [showSyncMenu, setShowSyncMenu] = useState(false);
   const syncMenuRef = React.useRef<HTMLDivElement>(null);
+  const [showMoreMenu, setShowMoreMenu] = useState(false);
+  const moreMenuRef = React.useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (syncMenuRef.current && !syncMenuRef.current.contains(event.target as Node)) {
         setShowSyncMenu(false);
       }
+      if (moreMenuRef.current && !moreMenuRef.current.contains(event.target as Node)) {
+        setShowMoreMenu(false);
+      }
     };
-    if (showSyncMenu) {
+    if (showSyncMenu || showMoreMenu) {
       document.addEventListener("mousedown", handleClickOutside);
     }
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
     };
-  }, [showSyncMenu]);
+  }, [showSyncMenu, showMoreMenu]);
 
   // Debounce search input
   useEffect(() => {
@@ -568,141 +573,258 @@ export default function MultiChannelOrdersPage() {
   const statusTabs = [
     { key: "all", label: "Tất cả" },
     { key: "Chờ xử lý", label: "Chờ xử lý" },
-    { key: "Đang giao", label: "Đang giao hàng" },
+    { key: "Đang giao", label: "Đang giao" },
     { key: "Đã giao", label: "Đã giao" },
     { key: "Đã hủy", label: "Đã hủy" },
   ];
 
   return (
-    <div className="w-full px-4 sm:px-6 lg:px-8 py-5 space-y-5 max-w-[1850px] mx-auto">
+    <div className="w-full px-3 sm:px-6 lg:px-8 py-3.5 sm:py-5 space-y-3.5 sm:space-y-5 max-w-[1850px] mx-auto">
       {/* 1. Header Card */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white dark:bg-zinc-900 p-4 sm:p-5 rounded-2xl border border-zinc-200 dark:border-zinc-800 shadow-sm">
-        <div>
-          <div className="flex items-center gap-2.5">
-            <div className="w-10 h-10 rounded-xl bg-orange-500/10 dark:bg-orange-500/20 text-orange-600 dark:text-orange-400 flex items-center justify-center text-xl shrink-0">
+      <div className="bg-white dark:bg-zinc-900 p-3.5 sm:p-5 rounded-2xl border border-zinc-200 dark:border-zinc-800 shadow-2xs sm:shadow-sm space-y-3">
+        {/* Top: Title & Info */}
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2.5 min-w-0">
+            <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-orange-500/10 dark:bg-orange-500/20 text-orange-600 dark:text-orange-400 flex items-center justify-center text-lg sm:text-xl shrink-0">
               🛍️
             </div>
-            <div>
-              <div className="flex items-center gap-2 text-xs text-zinc-500 mb-0.5">
+            <div className="min-w-0">
+              <div className="hidden sm:flex items-center gap-2 text-xs text-zinc-500 mb-0.5">
                 <span>Nghiệp vụ bán hàng</span>
                 <span>/</span>
                 <span className="text-zinc-900 dark:text-zinc-100 font-medium">Quản lý đơn hàng</span>
               </div>
-              <h1 className="text-lg sm:text-xl font-bold text-zinc-900 dark:text-white leading-tight">
-                Đơn Hàng Đa Kênh
-              </h1>
+              <div className="flex items-center gap-2">
+                <h1 className="text-base sm:text-xl font-bold text-zinc-900 dark:text-white leading-tight truncate">
+                  Đơn Hàng Đa Kênh
+                </h1>
+                <span className="px-2 py-0.5 rounded-full bg-orange-50 dark:bg-orange-950/80 text-orange-700 dark:text-orange-300 text-[11px] font-mono font-bold border border-orange-200/80 dark:border-orange-800 shrink-0">
+                  {(stats?.totalOrders ?? totalRecords).toLocaleString("vi-VN")} đơn
+                </span>
+              </div>
               <p className="hidden sm:block text-xs text-zinc-500 mt-0.5">
                 Quản lý & theo dõi danh sách đơn hàng tự động từ Sapo (Shopee, TikTok Shop, Lazada, POS, Web)
               </p>
             </div>
           </div>
+
+          {/* Desktop Right Toolbar (sm:flex hidden) */}
+          <div className="hidden sm:flex items-center gap-2 shrink-0">
+            <Link
+              href="/dashboard/webhooks"
+              className="py-2 px-3 text-xs font-medium rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-zinc-700 dark:text-zinc-200 hover:bg-zinc-50 dark:hover:bg-zinc-700/60 transition-colors shadow-2xs flex items-center gap-1.5 shrink-0"
+              title="Cấu hình Webhook"
+            >
+              <span>⚡</span>
+              <span>Cấu hình Webhook</span>
+            </Link>
+
+            <button
+              type="button"
+              onClick={handleExportCSV}
+              className="py-2 px-3 text-xs font-semibold rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-zinc-700 dark:text-zinc-200 hover:bg-zinc-50 dark:hover:bg-zinc-700/60 transition-colors shadow-2xs flex items-center gap-1.5 shrink-0 cursor-pointer"
+              title="Xuất danh sách đơn hàng ra file Excel / CSV"
+            >
+              <span>📊</span>
+              <span>Xuất CSV</span>
+            </button>
+
+            {/* Nút Lập đơn hàng mới */}
+            <button
+              type="button"
+              onClick={() => setIsCreateOpen(true)}
+              className="py-2 px-3.5 text-xs font-semibold rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white transition-colors shadow-2xs flex items-center gap-1.5 cursor-pointer shrink-0"
+              title="Tạo đơn hàng mới trực tiếp lên Sapo Omnichannel"
+            >
+              <span>➕</span>
+              <span>Lập đơn mới</span>
+            </button>
+
+            {/* Dropdown nút Đồng bộ Sapo với 2 lựa chọn */}
+            <div className="relative shrink-0" ref={syncMenuRef}>
+              <button
+                type="button"
+                onClick={() => setShowSyncMenu((prev) => !prev)}
+                disabled={syncingSapo}
+                className="py-2 px-3.5 text-xs font-semibold rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white transition-colors shadow-2xs flex items-center gap-1.5 disabled:opacity-60 cursor-pointer"
+                title="Chọn phương thức đồng bộ từ Sapo Omnichannel"
+              >
+                <span className={syncingSapo ? "animate-spin" : ""}>📥</span>
+                <span>{syncingSapo ? "Đang đồng bộ..." : "Đồng bộ từ Sapo"}</span>
+                <span className={`text-[10px] ml-0.5 transition-transform duration-200 ${showSyncMenu ? "rotate-180" : ""}`}>
+                  ▼
+                </span>
+              </button>
+
+              {showSyncMenu && (
+                <div className="absolute right-0 mt-2 w-80 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl shadow-xl p-2 z-50 animate-in fade-in zoom-in-95 duration-150">
+                  <div className="px-3 py-1.5 border-b border-zinc-100 dark:border-zinc-800 mb-1.5">
+                    <span className="text-[11px] font-semibold text-zinc-400 uppercase tracking-wider">
+                      Chọn chế độ đồng bộ Sapo
+                    </span>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowSyncMenu(false);
+                      handleSyncRecent200();
+                    }}
+                    className="w-full text-left p-2.5 rounded-xl hover:bg-emerald-50 dark:hover:bg-emerald-950/40 transition-colors flex items-start gap-3 group cursor-pointer"
+                  >
+                    <div className="w-8 h-8 rounded-lg bg-emerald-100 dark:bg-emerald-900/60 text-emerald-700 dark:text-emerald-300 flex items-center justify-center text-sm shrink-0 group-hover:scale-105 transition-transform">
+                      ⚡
+                    </div>
+                    <div className="flex-1">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-bold text-zinc-900 dark:text-white group-hover:text-emerald-600 dark:group-hover:text-emerald-400">
+                          Đồng bộ 200 đơn mới nhất
+                        </span>
+                        <span className="text-[10px] font-medium bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 px-1.5 py-0.5 rounded-full">
+                          Nhanh ~2s
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-zinc-500 dark:text-zinc-400 mt-0.5">
+                        Kéo 200 đơn hàng phát sinh gần nhất, cập nhật tức thì
+                      </p>
+                    </div>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowSyncMenu(false);
+                      handleSyncFromSapo();
+                    }}
+                    className="w-full text-left p-2.5 rounded-xl hover:bg-blue-50 dark:hover:bg-blue-950/40 transition-colors flex items-start gap-3 group mt-1 cursor-pointer"
+                  >
+                    <div className="w-8 h-8 rounded-lg bg-blue-100 dark:bg-blue-900/60 text-blue-700 dark:text-blue-300 flex items-center justify-center text-sm shrink-0 group-hover:scale-105 transition-transform">
+                      🔄
+                    </div>
+                    <div className="flex-1">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-bold text-zinc-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400">
+                          Đồng bộ toàn bộ đơn
+                        </span>
+                        <span className="text-[10px] font-medium bg-blue-100 dark:bg-blue-950 text-blue-700 dark:text-blue-300 px-1.5 py-0.5 rounded-full">
+                          14.380 đơn
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-zinc-500 dark:text-zinc-400 mt-0.5">
+                        Kéo toàn bộ lịch sử đa kênh với thanh tiến trình trực quan
+                      </p>
+                    </div>
+                  </button>
+                </div>
+              )}
+            </div>
+
+            <button
+              type="button"
+              onClick={handleDeleteAllOrders}
+              disabled={deletingAll || (stats?.totalOrders ?? totalRecords) === 0}
+              className="py-2 px-3 text-xs font-semibold rounded-xl border border-rose-200 dark:border-rose-900/60 bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300 hover:bg-rose-100 dark:hover:bg-rose-900/50 transition-colors shadow-2xs flex items-center gap-1.5 disabled:opacity-40 shrink-0 cursor-pointer"
+              title="Xóa toàn bộ đơn hàng"
+            >
+              <span>{deletingAll ? "⏳" : "🗑️"}</span>
+              <span>{deletingAll ? "Đang xóa..." : "Xóa hết"}</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => fetchOrders(true)}
+              disabled={refreshing || loading}
+              className="py-2 px-3.5 text-xs font-semibold rounded-xl bg-orange-600 hover:bg-orange-700 text-white transition-colors shadow-2xs flex items-center gap-1.5 disabled:opacity-60 shrink-0 cursor-pointer"
+              title="Làm mới danh sách"
+            >
+              <span className={`inline-block ${refreshing ? "animate-spin" : ""}`}>🔄</span>
+              <span>Làm mới</span>
+            </button>
+          </div>
         </div>
 
-        <div className="flex items-center gap-2 self-end sm:self-auto w-full sm:w-auto">
-          <Link
-            href="/dashboard/webhooks"
-            className="py-2 px-3 text-xs font-medium rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-zinc-700 dark:text-zinc-200 hover:bg-zinc-50 dark:hover:bg-zinc-700/60 transition-colors shadow-xs flex items-center gap-1.5"
-          >
-            <span>⚡</span>
-            <span>Cấu hình Webhook</span>
-          </Link>
-
-          <button
-            type="button"
-            onClick={handleExportCSV}
-            className="py-2 px-3 text-xs font-semibold rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-zinc-700 dark:text-zinc-200 hover:bg-zinc-50 dark:hover:bg-zinc-700/60 transition-colors shadow-xs flex items-center gap-1.5"
-            title="Xuất danh sách đơn hàng ra file Excel / CSV"
-          >
-            <span>📊</span>
-            <span className="hidden sm:inline">Xuất CSV</span>
-          </button>
-
-          {/* Nút Lập đơn hàng mới */}
+        {/* Mobile Toolbar (sm:hidden): Perfectly balanced, fills 100% width cleanly */}
+        <div className="sm:hidden pt-2.5 border-t border-zinc-100 dark:border-zinc-800/80 flex items-center gap-2">
+          {/* 1. Nút chính nổi bật: Lập đơn mới (flex-1) */}
           <button
             type="button"
             onClick={() => setIsCreateOpen(true)}
-            className="py-2 px-3.5 text-xs font-semibold rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white transition-colors shadow-xs flex items-center gap-1.5 cursor-pointer shrink-0"
-            title="Tạo đơn hàng mới trực tiếp lên Sapo Omnichannel"
+            className="flex-1 py-2 px-3 text-xs font-bold rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white shadow-2xs flex items-center justify-center gap-1.5 active:scale-[0.98] transition-all cursor-pointer"
           >
             <span>➕</span>
-            <span className="hidden sm:inline">Lập đơn mới</span>
-            <span className="sm:hidden">Tạo đơn</span>
+            <span>Lập đơn mới</span>
           </button>
 
-          {/* Dropdown nút Đồng bộ Sapo với 2 lựa chọn */}
-          <div className="relative" ref={syncMenuRef}>
+          {/* 2. Nút Đồng bộ Sapo (Dropdown) */}
+          <div className="relative shrink-0">
             <button
               type="button"
               onClick={() => setShowSyncMenu((prev) => !prev)}
               disabled={syncingSapo}
-              className="py-2 px-3.5 text-xs font-semibold rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white transition-colors shadow-xs flex items-center gap-1.5 disabled:opacity-60 cursor-pointer"
-              title="Chọn phương thức đồng bộ từ Sapo Omnichannel"
+              className="py-2 px-2.5 text-xs font-semibold rounded-xl bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 shadow-2xs flex items-center gap-1 disabled:opacity-60 cursor-pointer active:scale-[0.98] transition-all"
+              title="Đồng bộ từ Sapo"
             >
               <span className={syncingSapo ? "animate-spin" : ""}>📥</span>
-              <span>{syncingSapo ? "Đang đồng bộ..." : "Đồng bộ từ Sapo"}</span>
-              <span className={`text-[10px] ml-0.5 transition-transform duration-200 ${showSyncMenu ? "rotate-180" : ""}`}>
-                ▼
-              </span>
+              <span>Đồng bộ</span>
+              <span className={`text-[9px] transition-transform duration-200 ${showSyncMenu ? "rotate-180" : ""}`}>▼</span>
             </button>
 
             {showSyncMenu && (
-              <div className="absolute right-0 mt-2 w-80 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl shadow-xl p-2 z-50 animate-in fade-in zoom-in-95 duration-150">
+              <div className="absolute right-0 mt-2 w-72 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl shadow-xl p-2 z-50 animate-in fade-in zoom-in-95 duration-150">
                 <div className="px-3 py-1.5 border-b border-zinc-100 dark:border-zinc-800 mb-1.5">
                   <span className="text-[11px] font-semibold text-zinc-400 uppercase tracking-wider">
                     Chọn chế độ đồng bộ Sapo
                   </span>
                 </div>
 
-                {/* Mục 1: Đồng bộ 200 đơn mới nhất */}
                 <button
                   type="button"
                   onClick={() => {
                     setShowSyncMenu(false);
                     handleSyncRecent200();
                   }}
-                  className="w-full text-left p-2.5 rounded-xl hover:bg-emerald-50 dark:hover:bg-emerald-950/40 transition-colors flex items-start gap-3 group cursor-pointer"
+                  className="w-full text-left p-2.5 rounded-xl hover:bg-emerald-50 dark:hover:bg-emerald-950/40 transition-colors flex items-start gap-2.5 group cursor-pointer"
                 >
-                  <div className="w-8 h-8 rounded-lg bg-emerald-100 dark:bg-emerald-900/60 text-emerald-700 dark:text-emerald-300 flex items-center justify-center text-sm shrink-0 group-hover:scale-105 transition-transform">
+                  <div className="w-7 h-7 rounded-lg bg-emerald-100 dark:bg-emerald-900/60 text-emerald-700 dark:text-emerald-300 flex items-center justify-center text-xs shrink-0">
                     ⚡
                   </div>
-                  <div className="flex-1">
+                  <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between">
-                      <span className="text-xs font-bold text-zinc-900 dark:text-white group-hover:text-emerald-600 dark:group-hover:text-emerald-400">
-                        Đồng bộ 200 đơn mới nhất
+                      <span className="text-xs font-bold text-zinc-900 dark:text-white">
+                        200 đơn mới nhất
                       </span>
-                      <span className="text-[10px] font-medium bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 px-1.5 py-0.5 rounded-full">
-                        Nhanh ~2s
+                      <span className="text-[10px] font-medium bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 px-1.5 py-0.2 rounded-full">
+                        ~2s
                       </span>
                     </div>
-                    <p className="text-[11px] text-zinc-500 dark:text-zinc-400 mt-0.5">
-                      Kéo 200 đơn hàng phát sinh gần nhất, cập nhật tức thì
+                    <p className="text-[11px] text-zinc-500 truncate mt-0.5">
+                      Kéo 200 đơn phát sinh gần nhất
                     </p>
                   </div>
                 </button>
 
-                {/* Mục 2: Đồng bộ toàn bộ đơn */}
                 <button
                   type="button"
                   onClick={() => {
                     setShowSyncMenu(false);
                     handleSyncFromSapo();
                   }}
-                  className="w-full text-left p-2.5 rounded-xl hover:bg-blue-50 dark:hover:bg-blue-950/40 transition-colors flex items-start gap-3 group mt-1 cursor-pointer"
+                  className="w-full text-left p-2.5 rounded-xl hover:bg-blue-50 dark:hover:bg-blue-950/40 transition-colors flex items-start gap-2.5 group mt-1 cursor-pointer"
                 >
-                  <div className="w-8 h-8 rounded-lg bg-blue-100 dark:bg-blue-900/60 text-blue-700 dark:text-blue-300 flex items-center justify-center text-sm shrink-0 group-hover:scale-105 transition-transform">
+                  <div className="w-7 h-7 rounded-lg bg-blue-100 dark:bg-blue-900/60 text-blue-700 dark:text-blue-300 flex items-center justify-center text-xs shrink-0">
                     🔄
                   </div>
-                  <div className="flex-1">
+                  <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between">
-                      <span className="text-xs font-bold text-zinc-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400">
-                        Đồng bộ toàn bộ đơn
+                      <span className="text-xs font-bold text-zinc-900 dark:text-white">
+                        Toàn bộ 14.380 đơn
                       </span>
-                      <span className="text-[10px] font-medium bg-blue-100 dark:bg-blue-950 text-blue-700 dark:text-blue-300 px-1.5 py-0.5 rounded-full">
-                        14.380 đơn
+                      <span className="text-[10px] font-medium bg-blue-100 dark:bg-blue-950 text-blue-700 dark:text-blue-300 px-1.5 py-0.2 rounded-full">
+                        Đầy đủ
                       </span>
                     </div>
-                    <p className="text-[11px] text-zinc-500 dark:text-zinc-400 mt-0.5">
-                      Kéo toàn bộ lịch sử đa kênh với thanh tiến trình trực quan
+                    <p className="text-[11px] text-zinc-500 truncate mt-0.5">
+                      Kéo toàn bộ lịch sử theo tiến trình
                     </p>
                   </div>
                 </button>
@@ -710,93 +832,139 @@ export default function MultiChannelOrdersPage() {
             )}
           </div>
 
-          <button
-            type="button"
-            onClick={handleDeleteAllOrders}
-            disabled={deletingAll || (stats?.totalOrders ?? totalRecords) === 0}
-            className="py-2 px-3 text-xs font-semibold rounded-xl border border-rose-200 dark:border-rose-900/60 bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300 hover:bg-rose-100 dark:hover:bg-rose-900/50 transition-colors shadow-xs flex items-center gap-1.5 disabled:opacity-40"
-            title="Xóa toàn bộ đơn hàng"
-          >
-            <span>{deletingAll ? "⏳" : "🗑️"}</span>
-            <span className="hidden sm:inline">{deletingAll ? "Đang xóa..." : "Xóa hết"}</span>
-          </button>
-
+          {/* 3. Nút Làm mới */}
           <button
             type="button"
             onClick={() => fetchOrders(true)}
             disabled={refreshing || loading}
-            className="py-2 px-3.5 text-xs font-semibold rounded-xl bg-orange-600 hover:bg-orange-700 text-white transition-colors shadow-sm flex items-center gap-1.5 disabled:opacity-60"
+            className="w-9 h-9 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-200 shadow-2xs hover:bg-zinc-100 dark:hover:bg-zinc-700 transition flex items-center justify-center disabled:opacity-60 cursor-pointer shrink-0 active:scale-95"
             title="Làm mới danh sách"
           >
-            <span className={`inline-block ${refreshing ? "animate-spin" : ""}`}>🔄</span>
-            <span>Làm mới</span>
+            <span className={`text-sm ${refreshing ? "animate-spin" : ""}`}>🔄</span>
           </button>
+
+          {/* 4. Menu Thêm (⋯) gom gọn Xuất CSV, Webhook & Xóa hết */}
+          <div className="relative shrink-0" ref={moreMenuRef}>
+            <button
+              type="button"
+              onClick={() => setShowMoreMenu((prev) => !prev)}
+              className="w-9 h-9 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-200 shadow-2xs hover:bg-zinc-100 dark:hover:bg-zinc-700 transition flex items-center justify-center cursor-pointer shrink-0 active:scale-95 font-bold text-base"
+              title="Tùy chọn khác"
+            >
+              ⋯
+            </button>
+
+            {showMoreMenu && (
+              <div className="absolute right-0 mt-2 w-60 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl shadow-xl p-1.5 z-50 animate-in fade-in zoom-in-95 duration-150 text-xs">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowMoreMenu(false);
+                    handleExportCSV();
+                  }}
+                  className="w-full text-left p-2.5 rounded-xl hover:bg-zinc-100 dark:hover:bg-zinc-800 flex items-center gap-2.5 text-zinc-700 dark:text-zinc-300 font-medium cursor-pointer"
+                >
+                  <span className="text-sm">📊</span>
+                  <span>Xuất file Excel / CSV</span>
+                </button>
+
+                <Link
+                  href="/dashboard/webhooks"
+                  onClick={() => setShowMoreMenu(false)}
+                  className="w-full text-left p-2.5 rounded-xl hover:bg-zinc-100 dark:hover:bg-zinc-800 flex items-center gap-2.5 text-zinc-700 dark:text-zinc-300 font-medium"
+                >
+                  <span className="text-sm">⚡</span>
+                  <span>Cấu hình Webhook Sapo</span>
+                </Link>
+
+                <div className="my-1 border-t border-zinc-100 dark:border-zinc-800" />
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowMoreMenu(false);
+                    handleDeleteAllOrders();
+                  }}
+                  disabled={deletingAll || (stats?.totalOrders ?? totalRecords) === 0}
+                  className="w-full text-left p-2.5 rounded-xl hover:bg-rose-50 dark:hover:bg-rose-950/40 flex items-center gap-2.5 text-rose-600 dark:text-rose-400 font-medium cursor-pointer disabled:opacity-40"
+                >
+                  <span className="text-sm">🗑️</span>
+                  <span>Xóa tất cả đơn hàng</span>
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
       {/* 2. Thống kê nhanh (Stats Cards) */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-        <div className="bg-white dark:bg-zinc-900 p-4 rounded-2xl border border-zinc-200 dark:border-zinc-800 shadow-sm relative overflow-hidden">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-4">
+        <div className="bg-white dark:bg-zinc-900 p-3 sm:p-4 rounded-xl sm:rounded-2xl border border-zinc-200 dark:border-zinc-800 shadow-2xs sm:shadow-sm relative overflow-hidden">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-medium text-zinc-500">Tổng số đơn hàng</span>
-            <div className="w-8 h-8 rounded-lg bg-orange-50 dark:bg-orange-950/60 text-orange-600 dark:text-orange-400 flex items-center justify-center text-sm">
+            <span className="text-[11px] sm:text-xs font-medium text-zinc-500">Tổng đơn hàng</span>
+            <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-lg bg-orange-50 dark:bg-orange-950/60 text-orange-600 dark:text-orange-400 flex items-center justify-center text-xs sm:text-sm">
               📦
             </div>
           </div>
-          <div className="mt-2 text-2xl font-bold text-zinc-900 dark:text-white">
-            {stats?.totalOrders ?? totalRecords}
+          <div className="mt-1 sm:mt-2 text-lg sm:text-2xl font-bold font-mono text-zinc-900 dark:text-white">
+            {Number(stats?.totalOrders ?? totalRecords).toLocaleString("vi-VN")}
           </div>
-          <span className="text-[11px] text-zinc-400 mt-0.5 block">Đã ghi nhận trong hệ thống</span>
+          <span className="text-[10px] sm:text-[11px] text-zinc-400 mt-0.5 block truncate">Đã ghi nhận trong hệ thống</span>
         </div>
 
-        <div className="bg-white dark:bg-zinc-900 p-4 rounded-2xl border border-zinc-200 dark:border-zinc-800 shadow-sm relative overflow-hidden">
+        <div className="bg-white dark:bg-zinc-900 p-3 sm:p-4 rounded-xl sm:rounded-2xl border border-zinc-200 dark:border-zinc-800 shadow-2xs sm:shadow-sm relative overflow-hidden">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-medium text-zinc-500">Tổng doanh thu</span>
-            <div className="w-8 h-8 rounded-lg bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 flex items-center justify-center text-sm">
+            <span className="text-[11px] sm:text-xs font-medium text-zinc-500">Tổng doanh thu</span>
+            <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-lg bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 flex items-center justify-center text-xs sm:text-sm">
               💰
             </div>
           </div>
-          <div className="mt-2 text-2xl font-bold text-emerald-600 dark:text-emerald-400">
+          <div className="mt-1 sm:mt-2 text-[14px] sm:text-2xl font-bold font-mono text-emerald-600 dark:text-emerald-400 truncate tracking-tight" title={formatVND(stats?.totalRevenue ?? 0)}>
             {formatVND(stats?.totalRevenue ?? 0)}
           </div>
-          <span className="text-[11px] text-zinc-400 mt-0.5 block">Tổng giá trị đơn</span>
+          <span className="text-[10px] sm:text-[11px] text-zinc-400 mt-0.5 block truncate">Tổng giá trị đơn</span>
         </div>
 
-        <div className="bg-white dark:bg-zinc-900 p-4 rounded-2xl border border-zinc-200 dark:border-zinc-800 shadow-sm relative overflow-hidden">
+        <div className="bg-white dark:bg-zinc-900 p-3 sm:p-4 rounded-xl sm:rounded-2xl border border-zinc-200 dark:border-zinc-800 shadow-2xs sm:shadow-sm relative overflow-hidden">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-medium text-zinc-500">Chờ xử lý</span>
-            <div className="w-8 h-8 rounded-lg bg-amber-50 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 flex items-center justify-center text-sm">
+            <span className="text-[11px] sm:text-xs font-medium text-zinc-500">Chờ xử lý</span>
+            <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-lg bg-amber-50 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 flex items-center justify-center text-xs sm:text-sm">
               ⏳
             </div>
           </div>
-          <div className="mt-2 text-2xl font-bold text-amber-600 dark:text-amber-400">
-            {stats?.statusCounts?.["Chờ xử lý"] ?? 0}
+          <div className="mt-1 sm:mt-2 text-lg sm:text-2xl font-bold font-mono text-amber-600 dark:text-amber-400">
+            {Number(stats?.statusCounts?.["Chờ xử lý"] ?? 0).toLocaleString("vi-VN")}
           </div>
-          <span className="text-[11px] text-zinc-400 mt-0.5 block">Cần chuẩn bị & đóng gói</span>
+          <span className="text-[10px] sm:text-[11px] text-zinc-400 mt-0.5 block truncate">Cần chuẩn bị & đóng gói</span>
         </div>
 
-        <div className="bg-white dark:bg-zinc-900 p-4 rounded-2xl border border-zinc-200 dark:border-zinc-800 shadow-sm relative overflow-hidden">
+        <div className="bg-white dark:bg-zinc-900 p-3 sm:p-4 rounded-xl sm:rounded-2xl border border-zinc-200 dark:border-zinc-800 shadow-2xs sm:shadow-sm relative overflow-hidden">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-medium text-zinc-500">Đã giao hàng</span>
-            <div className="w-8 h-8 rounded-lg bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 flex items-center justify-center text-sm">
+            <span className="text-[11px] sm:text-xs font-medium text-zinc-500">Đã giao hàng</span>
+            <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-lg bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 flex items-center justify-center text-xs sm:text-sm">
               🚚
             </div>
           </div>
-          <div className="mt-2 text-2xl font-bold text-indigo-600 dark:text-indigo-400">
-            {stats?.statusCounts?.["Đã giao hàng"] ?? stats?.statusCounts?.["Đã giao"] ?? 0}
+          <div className="mt-1 sm:mt-2 text-lg sm:text-2xl font-bold font-mono text-indigo-600 dark:text-indigo-400">
+            {Number(stats?.statusCounts?.["Đã giao hàng"] ?? stats?.statusCounts?.["Đã giao"] ?? 0).toLocaleString("vi-VN")}
           </div>
-          <span className="text-[11px] text-zinc-400 mt-0.5 block">Hoàn tất giao dịch</span>
+          <span className="text-[10px] sm:text-[11px] text-zinc-400 mt-0.5 block truncate">Hoàn tất giao dịch</span>
         </div>
       </div>
 
       {/* 3. Thanh Bộ Lọc & Tìm Kiếm */}
-      <div className="bg-white dark:bg-zinc-900 p-3 sm:p-4 rounded-2xl border border-zinc-200 dark:border-zinc-800 shadow-sm space-y-3">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
+      <div className="bg-white dark:bg-zinc-900 p-2 sm:p-3.5 rounded-xl sm:rounded-2xl border border-zinc-200/80 dark:border-zinc-800 shadow-2xs sm:shadow-sm space-y-2 sm:space-y-3">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-2 sm:gap-3">
           {/* Tabs Trạng thái */}
-          <div className="flex items-center gap-1.5 overflow-x-auto pb-1 md:pb-0 scrollbar-none">
+          <div className="flex items-center gap-1 sm:gap-1.5 overflow-x-auto pb-0.5 md:pb-0 scrollbar-none [&::-webkit-scrollbar]:hidden -mx-0.5 px-0.5">
             {statusTabs.map((tab) => {
               const isActive = selectedStatus === tab.key;
-              const count = tab.key === "all" ? stats?.totalOrders : stats?.statusCounts?.[tab.key];
+              const count =
+                tab.key === "all"
+                  ? stats?.totalOrders
+                  : tab.key === "Đang giao"
+                  ? (stats?.statusCounts?.["Đang giao hàng"] ?? stats?.statusCounts?.["Đang giao"] ?? 0)
+                  : stats?.statusCounts?.[tab.key];
 
               return (
                 <button
@@ -806,22 +974,22 @@ export default function MultiChannelOrdersPage() {
                     setSelectedStatus(tab.key);
                     setCurrentPage(1);
                   }}
-                  className={`px-3 py-1.5 rounded-xl transition-colors whitespace-nowrap text-xs font-medium ${
+                  className={`px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-lg sm:rounded-xl transition-all whitespace-nowrap text-xs font-semibold shrink-0 cursor-pointer flex items-center gap-1.5 active:scale-95 ${
                     isActive
-                      ? "bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 shadow-sm font-semibold"
-                      : "text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800"
+                      ? "bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 shadow-2xs"
+                      : "text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 bg-zinc-50 dark:bg-zinc-800/60"
                   }`}
                 >
-                  {tab.label}
+                  <span>{tab.label}</span>
                   {count !== null && count !== undefined && (
                     <span
-                      className={`ml-1.5 px-1.5 py-0.2 rounded-full text-[10px] ${
+                      className={`px-1.5 py-0.2 rounded-full text-[10px] font-mono font-medium ${
                         isActive
-                          ? "bg-zinc-700 text-zinc-200 dark:bg-zinc-300 dark:text-zinc-800"
-                          : "bg-zinc-100 dark:bg-zinc-800 text-zinc-500"
+                          ? "bg-zinc-700 text-zinc-200 dark:bg-zinc-300 dark:text-zinc-900"
+                          : "bg-zinc-200/80 dark:bg-zinc-700/80 text-zinc-600 dark:text-zinc-300"
                       }`}
                     >
-                      {count}
+                      {Number(count).toLocaleString("vi-VN")}
                     </span>
                   )}
                 </button>
@@ -829,77 +997,107 @@ export default function MultiChannelOrdersPage() {
             })}
           </div>
 
-          {/* Ô Tìm kiếm & Phân trang */}
-          <div className="flex items-center gap-2 w-full md:w-auto">
-            <div className="relative flex-1 md:w-72">
-              <span className="absolute left-3 top-2.5 text-zinc-400 text-xs">🔍</span>
+          {/* Ô Tìm kiếm & Bộ lọc: Trên mobile nằm chung 1 hàng gọn gàng (flex-row) */}
+          <div className="flex items-center gap-1.5 sm:gap-2 w-full md:w-auto">
+            {/* Ô Tìm kiếm (flex-1) */}
+            <div className="relative flex-1 md:w-64">
+              <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-zinc-400 text-xs pointer-events-none">🔍</span>
               <input
                 type="text"
-                placeholder="Tìm mã đơn, khách hàng, mã vận đơn..."
+                placeholder="Tìm mã đơn, khách, vận đơn..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-8 pr-8 py-2 text-xs rounded-xl border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800 text-zinc-900 dark:text-white placeholder-zinc-400 focus:ring-2 focus:ring-orange-500 focus:outline-none transition-all"
+                className="w-full pl-7 pr-7 py-1.5 sm:py-2 text-xs rounded-xl border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800 text-zinc-900 dark:text-white placeholder-zinc-400 focus:ring-2 focus:ring-orange-500 focus:outline-hidden transition-all"
               />
               {searchQuery && (
                 <button
                   type="button"
                   onClick={() => setSearchQuery("")}
-                  className="absolute right-2.5 top-2 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 p-0.5 rounded text-xs"
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 p-0.5 rounded text-xs cursor-pointer"
+                  title="Xóa tìm kiếm"
                 >
                   ✕
                 </button>
               )}
             </div>
 
-            {/* Select Shop */}
+            {/* Dropdown Kênh / Sàn: Tự động co giãn vừa vặn với icon và mũi tên tùy biến */}
             {stats?.uniqueShops && stats.uniqueShops.length > 0 && (
-              <select
-                value={selectedShop}
-                onChange={(e) => {
-                  setSelectedShop(e.target.value);
-                  setCurrentPage(1);
-                }}
-                className="px-2.5 py-2 text-xs rounded-xl border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800 text-zinc-900 dark:text-white focus:ring-2 focus:ring-orange-500 focus:outline-none shrink-0"
-                title="Lọc theo kênh / sàn"
-              >
-                <option value="all">🏪 Tất cả Kênh ({stats.totalOrders})</option>
-                {stats.uniqueShops.map((shopName) => {
-                  const b = getChannelBadge(shopName);
-                  return (
-                    <option key={shopName} value={shopName}>
-                      {b.icon} {b.label}
-                    </option>
-                  );
-                })}
-              </select>
+              <div className="relative shrink-0 max-w-[125px] sm:max-w-[170px]">
+                <select
+                  value={selectedShop}
+                  onChange={(e) => {
+                    setSelectedShop(e.target.value);
+                    setCurrentPage(1);
+                  }}
+                  className="w-full appearance-none pl-2.5 pr-6 py-1.5 sm:py-2 text-xs rounded-xl border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800 text-zinc-900 dark:text-white focus:ring-2 focus:ring-orange-500 focus:outline-hidden truncate cursor-pointer font-medium"
+                  title="Lọc theo kênh / sàn"
+                >
+                  <option value="all">🏪 Tất cả kênh</option>
+                  {stats.uniqueShops.map((shopName) => {
+                    const b = getChannelBadge(shopName);
+                    return (
+                      <option key={shopName} value={shopName}>
+                        {b.icon} {b.label}
+                      </option>
+                    );
+                  })}
+                </select>
+                <span className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-[8px] text-zinc-400">
+                  ▼
+                </span>
+              </div>
             )}
 
-            {/* Select page size */}
-            <select
-              value={pageSize}
-              onChange={(e) => {
-                setPageSize(Number(e.target.value));
-                setCurrentPage(1);
-              }}
-              className="px-2.5 py-2 text-xs rounded-xl border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800 text-zinc-900 dark:text-white focus:ring-2 focus:ring-orange-500 focus:outline-none shrink-0"
-              title="Số dòng mỗi trang"
-            >
-              <option value={15}>15 / trang</option>
-              <option value={30}>30 / trang</option>
-              <option value={50}>50 / trang</option>
-            </select>
+            {/* Select page size: Ẩn trên mobile để tiết kiệm diện tích, giữ nguyên trên Desktop */}
+            <div className="hidden sm:block relative shrink-0">
+              <select
+                value={pageSize}
+                onChange={(e) => {
+                  setPageSize(Number(e.target.value));
+                  setCurrentPage(1);
+                }}
+                className="appearance-none pl-2.5 pr-6 py-2 text-xs rounded-xl border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800 text-zinc-900 dark:text-white focus:ring-2 focus:ring-orange-500 focus:outline-hidden cursor-pointer font-medium"
+                title="Số dòng mỗi trang"
+              >
+                <option value={15}>15 / trang</option>
+                <option value={30}>30 / trang</option>
+                <option value={50}>50 / trang</option>
+              </select>
+              <span className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-[8px] text-zinc-400">
+                ▼
+              </span>
+            </div>
+
+            {/* Nút Xóa tất cả bộ lọc khi đang có điều kiện lọc */}
+            {(selectedStatus !== "all" || selectedShop !== "all" || searchQuery) && (
+              <button
+                type="button"
+                onClick={() => {
+                  setSelectedStatus("all");
+                  setSelectedShop("all");
+                  setSearchQuery("");
+                  setCurrentPage(1);
+                }}
+                className="py-1.5 px-2 text-[11px] font-semibold text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/40 hover:bg-rose-100 rounded-xl border border-rose-200 dark:border-rose-900/40 transition shrink-0 cursor-pointer flex items-center gap-1 active:scale-95"
+                title="Đặt lại tất cả bộ lọc"
+              >
+                <span>✕</span>
+                <span className="hidden sm:inline">Đặt lại</span>
+              </button>
+            )}
           </div>
         </div>
       </div>
 
       {/* 4. Nội dung bảng & Trạng thái tải */}
       {loading ? (
-        <div className="text-center py-16 bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800 shadow-sm space-y-3">
+        <div className="text-center py-12 sm:py-16 bg-white dark:bg-zinc-900 rounded-xl sm:rounded-2xl border border-zinc-200 dark:border-zinc-800 shadow-2xs sm:shadow-sm space-y-3">
           <div className="inline-block w-6 h-6 border-2 border-orange-500 border-t-transparent rounded-full animate-spin" />
           <div className="text-xs text-zinc-500 font-medium">Đang tải danh sách đơn hàng...</div>
         </div>
       ) : orders.length === 0 ? (
-        <div className="text-center py-14 bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800 shadow-sm space-y-3 p-4">
+        <div className="text-center py-10 sm:py-14 bg-white dark:bg-zinc-900 rounded-xl sm:rounded-2xl border border-zinc-200 dark:border-zinc-800 shadow-2xs sm:shadow-sm space-y-3 p-4">
           <div className="w-12 h-12 mx-auto rounded-2xl bg-orange-50 dark:bg-orange-950/60 text-orange-500 flex items-center justify-center text-2xl">
             📦
           </div>
@@ -926,7 +1124,7 @@ export default function MultiChannelOrdersPage() {
                   setSelectedShop("all");
                   setCurrentPage(1);
                 }}
-                className="px-3.5 py-1.5 text-xs font-semibold rounded-xl bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 hover:opacity-90 transition-opacity"
+                className="px-3.5 py-1.5 text-xs font-semibold rounded-xl bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 hover:opacity-90 transition-opacity cursor-pointer"
               >
                 Xóa bộ lọc
               </button>
@@ -942,9 +1140,152 @@ export default function MultiChannelOrdersPage() {
           </div>
         </div>
       ) : (
-        <>
-          {/* Table View */}
-          <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800 shadow-sm overflow-hidden">
+        <div className="space-y-4">
+          {/* =========================================================================
+              GIAO DIỆN MOBILE: DANH SÁCH DẠNG THẺ (CARD VIEW - md:hidden)
+             ========================================================================= */}
+          <div className="md:hidden space-y-2.5">
+            {orders.map((order) => {
+              const isCopied = copiedSn === order.order_sn;
+              const isTrackingCopied = copiedTracking === order.tracking_number;
+              const items = order.items || [];
+              const firstItem = items[0];
+              const extraItemsCount = items.length - 1;
+              const channel = getChannelBadge(order.shop_username);
+
+              return (
+                <div
+                  key={order.order_sn}
+                  onClick={() => setSelectedOrder(order)}
+                  className="bg-white dark:bg-zinc-900 rounded-xl border border-zinc-200 dark:border-zinc-800 p-3.5 shadow-2xs space-y-2.5 transition active:scale-[0.99] cursor-pointer"
+                >
+                  {/* Hàng 1: Mã đơn & Kênh bán & Trạng thái */}
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-1.5 min-w-0">
+                      <span className="font-mono font-bold text-xs text-zinc-900 dark:text-white truncate">
+                        {order.order_sn}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={(e) => handleCopySn(order.order_sn, e)}
+                        className="p-1 rounded-md text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 text-xs shrink-0 cursor-pointer"
+                        title="Sao chép mã đơn"
+                      >
+                        {isCopied ? "✓" : "📋"}
+                      </button>
+                    </div>
+
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold border ${channel.badgeClass}`}>
+                        <span>{channel.icon}</span>
+                        <span>{channel.label}</span>
+                      </span>
+                      <ShopeeStatusBadge status={order.order_status} />
+                    </div>
+                  </div>
+
+                  {/* Hàng 2: Khách hàng & Sản phẩm */}
+                  <div className="bg-zinc-50 dark:bg-zinc-800/40 p-2.5 rounded-lg space-y-1.5 text-xs">
+                    <div className="flex items-center justify-between text-zinc-600 dark:text-zinc-300">
+                      <span className="font-semibold text-zinc-900 dark:text-white truncate max-w-[170px]">
+                        👤 {order.buyer_username || "Khách mua"}
+                      </span>
+                      <span className="text-[11px] text-zinc-400 font-mono">
+                        {order.payment_method || "COD"}
+                      </span>
+                    </div>
+
+                    {firstItem ? (
+                      <div className="text-[11px] text-zinc-600 dark:text-zinc-400">
+                        <div className="line-clamp-1 font-medium text-zinc-800 dark:text-zinc-200">
+                          📦 {firstItem.product_name}
+                        </div>
+                        <div className="flex items-center gap-1.5 mt-0.5 text-zinc-500">
+                          {firstItem.variation && (
+                            <span className="bg-zinc-200/70 dark:bg-zinc-700 px-1.5 py-0.2 rounded text-[10px]">
+                              {firstItem.variation}
+                            </span>
+                          )}
+                          <span>x{firstItem.quantity}</span>
+                          {extraItemsCount > 0 && (
+                            <span className="text-orange-600 dark:text-orange-400 font-semibold text-[10px]">
+                              +{extraItemsCount} SP khác
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="text-[11px] text-zinc-400 italic">Không có chi tiết mặt hàng</div>
+                    )}
+                  </div>
+
+                  {/* Hàng 3: Tổng tiền & Vận chuyển & Thời gian */}
+                  <div className="flex items-center justify-between gap-2 pt-1 border-t border-zinc-100 dark:border-zinc-800/80 text-xs">
+                    <div>
+                      <div className="text-[10px] text-zinc-400">Tổng thanh toán</div>
+                      <div className="font-mono font-bold text-sm text-zinc-900 dark:text-white">
+                        {formatVND(order.total_amount)}
+                      </div>
+                    </div>
+
+                    <div className="text-right">
+                      <div className="flex items-center justify-end gap-1 text-[11px] text-zinc-600 dark:text-zinc-300 font-medium">
+                        <span className="truncate max-w-[130px]">
+                          🚚 {order.shipping_carrier || "Chưa gán"}
+                        </span>
+                        {order.tracking_number && (
+                          <button
+                            type="button"
+                            onClick={(e) => handleCopyTracking(order.tracking_number!, e)}
+                            className="text-zinc-400 hover:text-zinc-700 p-0.5 text-xs cursor-pointer"
+                            title="Sao chép mã vận đơn"
+                          >
+                            {isTrackingCopied ? "✓" : "📋"}
+                          </button>
+                        )}
+                      </div>
+                      <div className="text-[10px] text-zinc-400 mt-0.5">
+                        {formatDateTime(order.createdAt || order.synced_at)}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+
+            {/* Mobile Pagination Bar */}
+            <div className="flex items-center justify-between gap-2 p-3 bg-white dark:bg-zinc-900 rounded-xl border border-zinc-200 dark:border-zinc-800 text-xs shadow-2xs">
+              <button
+                type="button"
+                onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                disabled={currentPage === 1}
+                className="px-3 py-1.5 rounded-lg border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800 disabled:opacity-40 font-semibold cursor-pointer"
+              >
+                ‹ Trước
+              </button>
+
+              <div className="text-center font-semibold text-zinc-700 dark:text-zinc-300">
+                <span>Trang {currentPage} / {totalPages}</span>
+                <div className="text-[10px] font-normal text-zinc-400">
+                  {orders.length} / {totalRecords} đơn
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                disabled={currentPage === totalPages}
+                className="px-3 py-1.5 rounded-lg border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800 disabled:opacity-40 font-semibold cursor-pointer"
+              >
+                Sau ›
+              </button>
+            </div>
+          </div>
+
+          {/* =========================================================================
+              GIAO DIỆN DESKTOP: BẢNG DỮ LIỆU ĐẦY ĐỦ (TABLE VIEW - hidden md:block)
+             ========================================================================= */}
+          <div className="hidden md:block bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800 shadow-sm overflow-hidden">
             <div className="overflow-x-auto">
               <table className="w-full text-left text-xs border-collapse">
                 <thead>
@@ -1094,7 +1435,7 @@ export default function MultiChannelOrdersPage() {
               </table>
             </div>
 
-            {/* Phân trang */}
+            {/* Desktop Phân trang */}
             <div className="flex flex-col sm:flex-row items-center justify-between gap-3 p-4 border-t border-zinc-200 dark:border-zinc-800 text-xs">
               <div className="text-zinc-500">
                 Hiển thị <span className="font-semibold text-zinc-900 dark:text-white">{orders.length}</span> /{" "}
@@ -1145,23 +1486,23 @@ export default function MultiChannelOrdersPage() {
               )}
             </div>
           </div>
-        </>
+        </div>
       )}
 
       {/* Modal Tiến trình Đồng bộ Sapo Omnichannel (14.380 đơn) */}
       {syncModal.isOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
-          <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-3xl shadow-2xl max-w-xl w-full p-6 animate-in fade-in zoom-in-95 duration-200">
-            <div className="flex items-center justify-between border-b border-zinc-100 dark:border-zinc-800 pb-4 mb-4">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-2xl bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 flex items-center justify-center text-lg shadow-xs">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-xs">
+          <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl sm:rounded-3xl shadow-2xl max-w-xl w-full p-4 sm:p-6 animate-in fade-in zoom-in-95 duration-200">
+            <div className="flex items-center justify-between border-b border-zinc-100 dark:border-zinc-800 pb-3 sm:pb-4 mb-3 sm:mb-4">
+              <div className="flex items-center gap-2.5 sm:gap-3">
+                <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl sm:rounded-2xl bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 flex items-center justify-center text-base sm:text-lg shadow-xs shrink-0">
                   📥
                 </div>
                 <div>
-                  <h3 className="text-base font-bold text-zinc-900 dark:text-white">
+                  <h3 className="text-sm sm:text-base font-bold text-zinc-900 dark:text-white">
                     Đồng bộ Toàn diện Sapo Omnichannel
                   </h3>
-                  <p className="text-xs text-zinc-500">
+                  <p className="text-[11px] sm:text-xs text-zinc-500">
                     Kéo toàn bộ 14.380 đơn hàng đa kênh (Shopee, TikTok, Lazada, POS, Web)
                   </p>
                 </div>
@@ -1170,15 +1511,15 @@ export default function MultiChannelOrdersPage() {
                 <button
                   type="button"
                   onClick={() => setSyncModal((prev) => ({ ...prev, isOpen: false }))}
-                  className="w-8 h-8 rounded-full hover:bg-zinc-100 dark:hover:bg-zinc-800 flex items-center justify-center text-zinc-400 hover:text-zinc-600 text-sm"
+                  className="w-8 h-8 rounded-full hover:bg-zinc-100 dark:hover:bg-zinc-800 flex items-center justify-center text-zinc-400 hover:text-zinc-600 text-sm cursor-pointer"
                 >
                   ✕
                 </button>
               )}
             </div>
 
-            {/* Thống kê 3 trạng thái Sapo */}
-            <div className="grid grid-cols-4 gap-2 mb-4 text-center">
+            {/* Thống kê 3 trạng thái Sapo: 2x2 trên mobile, 4 cột trên sm */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-4 text-center">
               <div className="bg-zinc-50 dark:bg-zinc-800/50 p-2.5 rounded-xl border border-zinc-100 dark:border-zinc-800">
                 <div className="text-[10px] text-zinc-400 font-medium">Tổng Sapo</div>
                 <div className="text-sm font-bold text-zinc-800 dark:text-zinc-100 mt-0.5">

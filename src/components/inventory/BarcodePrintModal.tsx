@@ -53,15 +53,15 @@ export function BarcodePrintModal({ product, isOpen, onClose }: BarcodePrintModa
       >
         {/* Header */}
         <div className="flex items-center justify-between p-4 sm:p-5 border-b border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-800/40">
-          <div className="flex items-center gap-2.5">
-            <div className="w-9 h-9 rounded-xl bg-amber-500/10 dark:bg-amber-500/20 text-amber-600 dark:text-amber-400 flex items-center justify-center text-lg">
+          <div className="flex items-center gap-2.5 min-w-0 pr-2">
+            <div className="w-9 h-9 rounded-xl bg-amber-500/10 dark:bg-amber-500/20 text-amber-600 dark:text-amber-400 flex items-center justify-center text-lg shrink-0">
               🖨️
             </div>
-            <div>
-              <h2 className="font-bold text-zinc-900 dark:text-white text-base">
+            <div className="min-w-0">
+              <h2 className="font-bold text-zinc-900 dark:text-white text-base truncate">
                 In Tem Mã QR Định Danh Sản Phẩm
               </h2>
-              <p className="text-[11px] text-zinc-500">
+              <p className="text-[11px] text-zinc-500 line-clamp-1 sm:line-clamp-none">
                 In tem dán nhãn mã QR lên bao bì, thùng hàng phục vụ quét mã tra cứu tồn kho
               </p>
             </div>
@@ -225,22 +225,22 @@ export function BarcodePrintModal({ product, isOpen, onClose }: BarcodePrintModa
         </div>
 
         {/* Modal Actions */}
-        <div className="flex items-center justify-between p-4 border-t border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-800/40">
-          <div className="text-[11px] text-zinc-500">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between p-3.5 sm:p-4 border-t border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-800/40 gap-3">
+          <div className="text-[11px] text-zinc-500 text-center sm:text-left">
             Sẽ in: <strong>{copyCount}</strong> tem mã QR
           </div>
           <div className="flex items-center gap-2">
             <button
               type="button"
               onClick={onClose}
-              className="py-2 px-4 text-xs font-semibold rounded-xl border border-zinc-200 dark:border-zinc-700 hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-600 dark:text-zinc-300 transition-colors"
+              className="flex-1 sm:flex-initial py-2 px-4 text-xs font-semibold rounded-xl border border-zinc-200 dark:border-zinc-700 hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-600 dark:text-zinc-300 transition-colors text-center"
             >
               Đóng
             </button>
             <button
               type="button"
               onClick={handlePrint}
-              className="py-2 px-5 text-xs font-bold rounded-xl bg-amber-600 hover:bg-amber-700 text-white transition-all shadow-md flex items-center gap-1.5 cursor-pointer"
+              className="flex-1 sm:flex-initial py-2 px-5 text-xs font-bold rounded-xl bg-amber-600 hover:bg-amber-700 text-white transition-all shadow-md flex items-center justify-center gap-1.5 cursor-pointer"
             >
               <span>🖨️</span>
               <span>In {copyCount} Tem QR Ngay</span>

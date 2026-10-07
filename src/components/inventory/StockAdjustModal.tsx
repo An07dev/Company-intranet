@@ -135,15 +135,15 @@ export function StockAdjustModal({
       >
         {/* Header */}
         <div className="flex items-center justify-between p-4 sm:p-5 border-b border-zinc-200 dark:border-zinc-800 bg-amber-50/60 dark:bg-amber-950/20">
-          <div className="flex items-center gap-2.5">
-            <div className="w-9 h-9 rounded-xl bg-amber-500/20 text-amber-600 dark:text-amber-400 flex items-center justify-center text-lg">
+          <div className="flex items-center gap-2.5 min-w-0 pr-2">
+            <div className="w-9 h-9 rounded-xl bg-amber-500/20 text-amber-600 dark:text-amber-400 flex items-center justify-center text-lg shrink-0">
               ⚡
             </div>
-            <div>
-              <h2 className="font-bold text-zinc-900 dark:text-white text-base">
+            <div className="min-w-0">
+              <h2 className="font-bold text-zinc-900 dark:text-white text-base truncate">
                 Điều Chỉnh Tồn Kho Thực Tế
               </h2>
-              <div className="text-[11px] text-zinc-500">
+              <div className="text-[11px] text-zinc-500 line-clamp-1 sm:line-clamp-none">
                 Đồng bộ 2 chiều trực tiếp lên hệ thống Sapo Kho vận
               </div>
             </div>
@@ -151,7 +151,7 @@ export function StockAdjustModal({
           <button
             type="button"
             onClick={onClose}
-            className="p-1.5 rounded-lg text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
+            className="p-1.5 rounded-lg text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors shrink-0"
           >
             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -338,22 +338,22 @@ export function StockAdjustModal({
           </div>
 
           {/* Footer buttons */}
-          <div className="pt-3 border-t border-zinc-200 dark:border-zinc-800 flex items-center justify-end gap-2.5">
+          <div className="pt-3 border-t border-zinc-200 dark:border-zinc-800 grid grid-cols-2 gap-2 sm:flex sm:items-center sm:justify-end">
             <button
               type="button"
               onClick={onClose}
               disabled={loading}
-              className="px-4 py-2 text-xs font-semibold rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-700 transition"
+              className="w-full sm:w-auto px-4 py-2.5 sm:py-2 text-xs font-semibold rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-700 transition text-center"
             >
               Hủy bỏ
             </button>
             <button
               type="submit"
               disabled={loading}
-              className="px-4 py-2 text-xs font-bold rounded-xl bg-amber-600 hover:bg-amber-700 text-white transition shadow-sm flex items-center gap-1.5 disabled:opacity-60 cursor-pointer"
+              className="w-full sm:w-auto px-4 py-2.5 sm:py-2 text-xs font-bold rounded-xl bg-amber-600 hover:bg-amber-700 text-white transition shadow-sm flex items-center justify-center gap-1.5 disabled:opacity-60 cursor-pointer text-center"
             >
               <span>{loading ? "⏳" : "⚡"}</span>
-              <span>{loading ? "Đang đồng bộ Sapo..." : "Cập nhật tồn lên Sapo"}</span>
+              <span className="truncate">{loading ? "Đang đồng bộ..." : "Cập nhật tồn Sapo"}</span>
             </button>
           </div>
         </form>

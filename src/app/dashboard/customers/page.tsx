@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useState, useTransition } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useToast } from "@/context/ToastContext";
 
 interface Address {
   id: number;
@@ -33,6 +34,7 @@ interface Customer {
 }
 
 export default function CustomersPage() {
+  const { toast } = useToast();
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -43,6 +45,7 @@ export default function CustomersPage() {
   const [totalCount, setTotalCount] = useState(0);
   const [searchQuery, setSearchQuery] = useState("");
   const [activeQuery, setActiveQuery] = useState("");
+  const [copiedPhone, setCopiedPhone] = useState<string | null>(null);
   const [stats, setStats] = useState({
     pageTotalSpent: 0,
     pageTotalOrders: 0,
@@ -52,7 +55,6 @@ export default function CustomersPage() {
 
   // Modal
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
-  const [, startTransition] = useTransition();
 
   const fetchCustomers = async (p = 1, query = "") => {
     setLoading(true);
@@ -70,6 +72,7 @@ export default function CustomersPage() {
       setStats(json.data.stats || { pageTotalSpent: 0, pageTotalOrders: 0, vipCount: 0, totalCustomers: 0 });
     } catch (err: any) {
       setError(err.message || "Lỗi tải dữ liệu khách hàng");
+      toast.error(err.message || "Lỗi tải dữ liệu khách hàng");
     } finally {
       setLoading(false);
     }
@@ -91,6 +94,14 @@ export default function CustomersPage() {
     setPage(1);
   };
 
+  const handleCopyPhone = (phone: string, e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
+    navigator.clipboard.writeText(phone);
+    setCopiedPhone(phone);
+    toast.success(`Đã sao chép SĐT: ${phone}`);
+    setTimeout(() => setCopiedPhone(null), 2000);
+  };
+
   const formatCurrency = (val: number) => {
     return (val || 0).toLocaleString("vi-VN") + " ₫";
   };
@@ -101,416 +112,672 @@ export default function CustomersPage() {
   };
 
   return (
-    <div className="p-4 sm:p-6 lg:p-8 space-y-6 max-w-[1600px] mx-auto min-h-screen">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-zinc-200 dark:border-zinc-800 pb-5">
-        <div>
-          <div className="flex items-center gap-2">
-            <span className="px-2.5 py-0.5 text-xs font-semibold rounded-full bg-blue-100 dark:bg-blue-950 text-blue-700 dark:text-blue-300">
-              Sapo CRM & Công nợ
-            </span>
-            <span className="text-xs text-zinc-500 font-mono">
-              Store: cua-hang-yen-sen.mysapo.net
-            </span>
+    <div className="w-full px-3 sm:px-6 lg:px-8 py-3.5 sm:py-5 space-y-3 sm:space-y-4 max-w-[1650px] mx-auto min-h-screen">
+      {/* 1. Header Card */}
+      <div className="bg-white dark:bg-zinc-900 p-3.5 sm:p-5 rounded-2xl border border-zinc-200 dark:border-zinc-800 shadow-2xs sm:shadow-sm space-y-3">
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2.5 min-w-0">
+            <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-blue-500/10 dark:bg-blue-500/20 text-blue-600 dark:text-blue-400 flex items-center justify-center text-lg sm:text-xl shrink-0">
+              👥
+            </div>
+            <div className="min-w-0">
+              <div className="hidden sm:flex items-center gap-2 text-xs text-zinc-500 mb-0.5">
+                <span>Sapo CRM & Đối tác</span>
+                <span>/</span>
+                <span className="text-zinc-900 dark:text-zinc-100 font-medium">Khách hàng đa kênh</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <h1 className="text-base sm:text-xl font-bold text-zinc-900 dark:text-white leading-tight truncate">
+                  Quản lý Khách hàng & CRM
+                </h1>
+                <span className="hidden sm:inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-blue-100 dark:bg-blue-950 text-blue-700 dark:text-blue-300">
+                  {totalCount.toLocaleString("vi-VN")} khách
+                </span>
+              </div>
+              <div className="text-[11px] text-zinc-400 truncate mt-0.5 sm:hidden">
+                {totalCount.toLocaleString("vi-VN")} hồ sơ • Sapo Omnichannel
+              </div>
+            </div>
           </div>
-          <h1 className="text-2xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50 mt-1">
-            Quản lý Khách hàng & CRM
-          </h1>
-          <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-0.5">
-            Dữ liệu khách hàng đồng bộ thời gian thực từ Sapo Omnichannel và các sàn thương mại
-          </p>
+
+          {/* Desktop Toolbar */}
+          <div className="hidden sm:flex items-center gap-2 shrink-0">
+            <button
+              type="button"
+              onClick={() => fetchCustomers(page, activeQuery)}
+              disabled={loading}
+              className="py-2 px-3 text-xs font-semibold rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-zinc-700 dark:text-zinc-200 hover:bg-zinc-50 dark:hover:bg-zinc-700 transition flex items-center gap-1.5 cursor-pointer disabled:opacity-60 shadow-2xs"
+            >
+              <span className={loading ? "animate-spin" : ""}>🔄</span>
+              <span>Làm mới</span>
+            </button>
+            <Link
+              href="/dashboard/orders"
+              className="py-2 px-3.5 text-xs font-semibold rounded-xl bg-blue-600 text-white hover:bg-blue-700 transition flex items-center gap-1.5 shadow-2xs cursor-pointer"
+            >
+              <span>📦</span>
+              <span>Xem đơn hàng</span>
+            </Link>
+          </div>
         </div>
 
-        <div className="flex items-center gap-2">
-          <button
-            onClick={() => fetchCustomers(page, activeQuery)}
-            disabled={loading}
-            className="inline-flex items-center gap-2 px-3.5 py-2 text-xs font-medium rounded-lg border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-zinc-700 dark:text-zinc-200 hover:bg-zinc-50 dark:hover:bg-zinc-700 transition"
-          >
-            <span className={loading ? "animate-spin" : ""}>🔄</span>
-            Làm mới
-          </button>
+        {/* Mobile Toolbar (sm:hidden) */}
+        <div className="sm:hidden pt-2.5 border-t border-zinc-100 dark:border-zinc-800/80 flex items-center gap-2">
           <Link
             href="/dashboard/orders"
-            className="inline-flex items-center gap-2 px-3.5 py-2 text-xs font-medium rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition shadow-xs"
+            className="flex-1 py-2 px-3 text-xs font-bold rounded-xl bg-blue-600 hover:bg-blue-700 text-white shadow-2xs flex items-center justify-center gap-1.5 active:scale-[0.98] transition cursor-pointer text-center"
           >
             <span>📦</span>
-            Xem đơn hàng
+            <span>Xem đơn hàng</span>
           </Link>
+          <button
+            type="button"
+            onClick={() => fetchCustomers(page, activeQuery)}
+            disabled={loading}
+            className="py-2 px-3 text-xs font-semibold rounded-xl border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-200 active:scale-95 transition flex items-center gap-1.5 cursor-pointer disabled:opacity-50 shrink-0"
+          >
+            <span className={loading ? "animate-spin" : ""}>🔄</span>
+            <span>Làm mới</span>
+          </button>
         </div>
       </div>
 
-      {/* KPI Stats */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="p-4 rounded-xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-xs">
+      {/* 2. KPI Stats Grid */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-4">
+        <div className="bg-white dark:bg-zinc-900 p-3 sm:p-4 rounded-xl sm:rounded-2xl border border-zinc-200 dark:border-zinc-800 shadow-2xs sm:shadow-sm relative overflow-hidden">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-medium text-zinc-500 dark:text-zinc-400">Tổng khách hàng</span>
-            <span className="text-lg">👥</span>
+            <span className="text-[11px] sm:text-xs font-medium text-zinc-500">Tổng khách hàng</span>
+            <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-lg bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 flex items-center justify-center text-xs sm:text-sm">
+              👥
+            </div>
           </div>
-          <div className="text-2xl sm:text-3xl font-extrabold font-mono mt-1 text-zinc-900 dark:text-zinc-100">
+          <div className="mt-1 sm:mt-2 text-lg sm:text-2xl font-bold font-mono text-zinc-900 dark:text-white">
             {totalCount.toLocaleString("vi-VN")}
           </div>
-          <div className="text-[11px] text-zinc-500 mt-1">Hồ sơ khách hàng trên hệ thống</div>
+          <span className="text-[10px] sm:text-[11px] text-zinc-400 mt-0.5 block truncate">Hồ sơ khách hàng</span>
         </div>
 
-        <div className="p-4 rounded-xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-xs">
+        <div className="bg-white dark:bg-zinc-900 p-3 sm:p-4 rounded-xl sm:rounded-2xl border border-zinc-200 dark:border-zinc-800 shadow-2xs sm:shadow-sm relative overflow-hidden">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-medium text-zinc-500 dark:text-zinc-400">Khách VIP trang này</span>
-            <span className="text-lg">💎</span>
+            <span className="text-[11px] sm:text-xs font-medium text-zinc-500">Khách VIP (trang này)</span>
+            <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-lg bg-amber-50 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 flex items-center justify-center text-xs sm:text-sm">
+              💎
+            </div>
           </div>
-          <div className="text-2xl sm:text-3xl font-extrabold font-mono mt-1 text-amber-600 dark:text-amber-400">
+          <div className="mt-1 sm:mt-2 text-lg sm:text-2xl font-bold font-mono text-amber-600 dark:text-amber-400">
             {stats.vipCount}
           </div>
-          <div className="text-[11px] text-zinc-500 mt-1">Chi tiêu tích lũy ≥ 1.000.000 ₫</div>
+          <span className="text-[10px] sm:text-[11px] text-zinc-400 mt-0.5 block truncate">Chi tiêu ≥ 1.000.000 ₫</span>
         </div>
 
-        <div className="p-4 rounded-xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-xs">
+        <div className="bg-white dark:bg-zinc-900 p-3 sm:p-4 rounded-xl sm:rounded-2xl border border-zinc-200 dark:border-zinc-800 shadow-2xs sm:shadow-sm relative overflow-hidden">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-medium text-zinc-500 dark:text-zinc-400">Tổng đơn đặt (trang này)</span>
-            <span className="text-lg">📦</span>
+            <span className="text-[11px] sm:text-xs font-medium text-zinc-500">Tổng đơn đặt (trang này)</span>
+            <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-lg bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 flex items-center justify-center text-xs sm:text-sm">
+              📦
+            </div>
           </div>
-          <div className="text-2xl sm:text-3xl font-extrabold font-mono mt-1 text-indigo-600 dark:text-indigo-400">
+          <div className="mt-1 sm:mt-2 text-lg sm:text-2xl font-bold font-mono text-indigo-600 dark:text-indigo-400">
             {stats.pageTotalOrders.toLocaleString("vi-VN")}
           </div>
-          <div className="text-[11px] text-zinc-500 mt-1">Lượt mua hàng đã ghi nhận</div>
+          <span className="text-[10px] sm:text-[11px] text-zinc-400 mt-0.5 block truncate">Lượt mua đã ghi nhận</span>
         </div>
 
-        <div className="p-4 rounded-xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-xs">
+        <div className="bg-white dark:bg-zinc-900 p-3 sm:p-4 rounded-xl sm:rounded-2xl border border-zinc-200 dark:border-zinc-800 shadow-2xs sm:shadow-sm relative overflow-hidden">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-medium text-zinc-500 dark:text-zinc-400">Doanh số (trang này)</span>
-            <span className="text-lg">💰</span>
+            <span className="text-[11px] sm:text-xs font-medium text-zinc-500">Doanh số (trang này)</span>
+            <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-lg bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 flex items-center justify-center text-xs sm:text-sm">
+              💰
+            </div>
           </div>
-          <div className="text-xl sm:text-2xl font-extrabold font-mono mt-1 text-emerald-600 dark:text-emerald-400 truncate">
+          <div
+            className="mt-1 sm:mt-2 text-[14px] sm:text-2xl font-bold font-mono text-emerald-600 dark:text-emerald-400 truncate tracking-tight"
+            title={formatCurrency(stats.pageTotalSpent)}
+          >
             {formatCurrency(stats.pageTotalSpent)}
           </div>
-          <div className="text-[11px] text-zinc-500 mt-1">Tổng tiền khách đã thanh toán</div>
+          <span className="text-[10px] sm:text-[11px] text-zinc-400 mt-0.5 block truncate">Tổng tiền đã chi</span>
         </div>
       </div>
 
-      {/* Search & Filters */}
-      <div className="p-4 rounded-xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-xs">
-        <form onSubmit={handleSearch} className="flex flex-col sm:flex-row items-center gap-3">
-          <div className="relative flex-1 w-full">
+      {/* 3. Search & Filters Bar */}
+      <div className="bg-white dark:bg-zinc-900 p-2 sm:p-3.5 rounded-xl sm:rounded-2xl border border-zinc-200/80 dark:border-zinc-800 shadow-2xs sm:shadow-sm">
+        <form onSubmit={handleSearch} className="flex items-center gap-1.5 sm:gap-2">
+          <div className="relative flex-1">
+            <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-zinc-400 text-xs pointer-events-none">🔍</span>
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Tìm theo tên khách hàng, số điện thoại..."
-              className="w-full pl-9 pr-4 py-2 text-xs rounded-lg border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 focus:outline-hidden focus:ring-2 focus:ring-blue-500"
+              placeholder="Tìm theo tên khách, SĐT, mã ID..."
+              className="w-full pl-7 pr-7 py-1.5 sm:py-2 text-xs rounded-xl border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800 text-zinc-900 dark:text-white placeholder-zinc-400 focus:ring-2 focus:ring-blue-500 focus:outline-hidden transition-all"
             />
-            <span className="absolute left-3 top-2.5 text-zinc-400 text-xs">🔍</span>
-          </div>
-
-          <div className="flex items-center gap-2 w-full sm:w-auto">
-            <button
-              type="submit"
-              className="flex-1 sm:flex-none px-4 py-2 text-xs font-medium rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition"
-            >
-              Tìm kiếm
-            </button>
-            {activeQuery && (
+            {searchQuery && (
               <button
                 type="button"
-                onClick={handleClearSearch}
-                className="px-3 py-2 text-xs font-medium rounded-lg border border-zinc-200 dark:border-zinc-700 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition"
+                onClick={() => setSearchQuery("")}
+                className="absolute right-2 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 p-0.5 rounded text-xs cursor-pointer"
+                title="Xóa tìm kiếm"
               >
-                Xóa tìm kiếm
+                ✕
               </button>
             )}
           </div>
+
+          <button
+            type="submit"
+            className="py-1.5 sm:py-2 px-3 sm:px-4 text-xs font-semibold rounded-xl bg-blue-600 hover:bg-blue-700 text-white transition shadow-2xs shrink-0 cursor-pointer active:scale-95"
+          >
+            Tìm kiếm
+          </button>
+
+          {activeQuery && (
+            <button
+              type="button"
+              onClick={handleClearSearch}
+              className="py-1.5 sm:py-2 px-2.5 text-xs font-semibold rounded-xl border border-rose-200 dark:border-rose-900/60 bg-rose-50 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400 hover:bg-rose-100 transition shrink-0 cursor-pointer flex items-center gap-1 active:scale-95"
+              title="Xóa bộ lọc tìm kiếm"
+            >
+              <span>✕</span>
+              <span className="hidden sm:inline">Đặt lại</span>
+            </button>
+          )}
         </form>
       </div>
 
       {/* Error state */}
       {error && (
-        <div className="p-4 rounded-xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800 text-rose-700 dark:text-rose-300 text-xs">
-          <strong>Lỗi: </strong> {error}
+        <div className="p-3 sm:p-4 rounded-xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800 text-rose-700 dark:text-rose-300 text-xs flex items-center gap-2">
+          <span>⚠️</span>
+          <span>{error}</span>
         </div>
       )}
 
-      {/* Table */}
-      <div className="rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-xs overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs">
-            <thead className="bg-zinc-50 dark:bg-zinc-800/60 border-b border-zinc-200 dark:border-zinc-800 text-zinc-600 dark:text-zinc-300 font-semibold uppercase tracking-wider text-[11px]">
-              <tr>
-                <th className="py-3 px-4">Khách hàng</th>
-                <th className="py-3 px-4">Số điện thoại</th>
-                <th className="py-3 px-4">Khu vực / Địa chỉ</th>
-                <th className="py-3 px-4 text-center">Đơn hàng</th>
-                <th className="py-3 px-4 text-right">Tổng chi tiêu</th>
-                <th className="py-3 px-4">Đơn cuối</th>
-                <th className="py-3 px-4 text-center">Thao tác</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-zinc-200 dark:divide-zinc-800">
-              {loading ? (
-                <tr>
-                  <td colSpan={7} className="py-12 text-center text-zinc-500">
-                    <div className="inline-flex items-center gap-2">
-                      <span className="animate-spin text-base">⏳</span>
-                      <span>Đang tải danh sách khách hàng từ Sapo...</span>
-                    </div>
-                  </td>
-                </tr>
-              ) : customers.length === 0 ? (
-                <tr>
-                  <td colSpan={7} className="py-12 text-center text-zinc-500">
-                    Không tìm thấy khách hàng nào phù hợp
-                  </td>
-                </tr>
-              ) : (
-                customers.map((c) => {
-                  const fullName = getFullName(c);
-                  const isVip = (c.total_spent || 0) >= 1000000;
-                  const addr = c.default_address;
+      {/* 4. Customer Data Display */}
+      {loading ? (
+        <div className="p-12 text-center text-zinc-500 bg-white dark:bg-zinc-900 rounded-xl sm:rounded-2xl border border-zinc-200 dark:border-zinc-800 shadow-2xs">
+          <div className="inline-flex items-center gap-2 text-xs sm:text-sm font-medium">
+            <span className="animate-spin text-base">⏳</span>
+            <span>Đang tải danh sách khách hàng từ Sapo Omnichannel...</span>
+          </div>
+        </div>
+      ) : customers.length === 0 ? (
+        <div className="p-12 text-center text-zinc-500 bg-white dark:bg-zinc-900 rounded-xl sm:rounded-2xl border border-zinc-200 dark:border-zinc-800 shadow-2xs space-y-3">
+          <div className="text-3xl">👥</div>
+          <div className="text-xs sm:text-sm font-semibold text-zinc-800 dark:text-zinc-200">
+            Không tìm thấy khách hàng nào phù hợp
+          </div>
+          {activeQuery && (
+            <button
+              type="button"
+              onClick={handleClearSearch}
+              className="px-3.5 py-1.5 text-xs font-semibold rounded-xl bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 hover:opacity-90 transition cursor-pointer"
+            >
+              Xóa tìm kiếm
+            </button>
+          )}
+        </div>
+      ) : (
+        <div className="space-y-3 sm:space-y-4">
+          {/* =========================================================================
+              GIAO DIỆN MOBILE: DANH SÁCH DẠNG THẺ (CARD VIEW - md:hidden)
+             ========================================================================= */}
+          <div className="md:hidden space-y-2.5">
+            {customers.map((c) => {
+              const fullName = getFullName(c);
+              const isVip = (c.total_spent || 0) >= 1000000;
+              const addr = c.default_address;
+              const isPhoneCopied = copiedPhone === c.phone;
 
-                  return (
-                    <tr
-                      key={c.id}
-                      className="hover:bg-zinc-50/70 dark:hover:bg-zinc-800/40 transition"
-                    >
-                      {/* Name & Avatar */}
-                      <td className="py-3 px-4">
-                        <div className="flex items-center gap-2.5">
-                          <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs shrink-0 ${
-                            isVip
-                              ? "bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300 border border-amber-300 dark:border-amber-700"
-                              : "bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-300"
-                          }`}>
-                            {fullName.charAt(0).toUpperCase()}
-                          </div>
-                          <div>
-                            <div className="font-semibold text-zinc-900 dark:text-zinc-100 flex items-center gap-1.5">
-                              <span>{fullName}</span>
-                              {isVip && (
-                                <span className="px-1.5 py-0.2 rounded text-[10px] font-bold bg-amber-500 text-white">
-                                  VIP
-                                </span>
-                              )}
-                            </div>
-                            <div className="text-[11px] text-zinc-400 font-mono">
-                              ID: #{c.id}
-                            </div>
-                          </div>
+              return (
+                <div
+                  key={c.id}
+                  onClick={() => setSelectedCustomer(c)}
+                  className="bg-white dark:bg-zinc-900 rounded-xl border border-zinc-200 dark:border-zinc-800 p-3.5 shadow-2xs space-y-2.5 transition active:scale-[0.99] cursor-pointer"
+                >
+                  {/* Hàng 1: Avatar, Tên khách & Badge VIP */}
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      <div
+                        className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs shrink-0 ${
+                          isVip
+                            ? "bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300 border border-amber-300 dark:border-amber-700"
+                            : "bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-300"
+                        }`}
+                      >
+                        {fullName.charAt(0).toUpperCase()}
+                      </div>
+                      <div className="min-w-0">
+                        <div className="font-bold text-xs text-zinc-900 dark:text-white flex items-center gap-1.5 truncate">
+                          <span className="truncate">{fullName}</span>
+                          {isVip && (
+                            <span className="px-1.5 py-0.2 rounded text-[9px] font-bold bg-amber-500 text-white shrink-0">
+                              VIP
+                            </span>
+                          )}
                         </div>
-                      </td>
+                        <div className="text-[10px] text-zinc-400 font-mono">
+                          ID: #{c.id}
+                        </div>
+                      </div>
+                    </div>
 
-                      {/* Phone */}
-                      <td className="py-3 px-4">
-                        {c.phone ? (
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setSelectedCustomer(c);
+                      }}
+                      className="px-2.5 py-1 text-[11px] font-semibold rounded-lg bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 text-zinc-700 dark:text-zinc-300 transition shrink-0 cursor-pointer"
+                    >
+                      Chi tiết ›
+                    </button>
+                  </div>
+
+                  {/* Hàng 2: SĐT & Địa chỉ khu vực */}
+                  <div className="bg-zinc-50 dark:bg-zinc-800/40 p-2.5 rounded-lg space-y-1 text-xs">
+                    <div className="flex items-center justify-between gap-2">
+                      {c.phone ? (
+                        <div className="flex items-center gap-1.5">
                           <a
                             href={`tel:${c.phone}`}
-                            className="font-mono text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1"
+                            onClick={(e) => e.stopPropagation()}
+                            className="font-mono font-semibold text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1"
                           >
                             <span>📞</span>
                             <span>{c.phone}</span>
                           </a>
-                        ) : (
-                          <span className="text-zinc-400 italic">Chưa có SĐT</span>
-                        )}
-                      </td>
+                          <button
+                            type="button"
+                            onClick={(e) => handleCopyPhone(c.phone!, e)}
+                            className="p-0.5 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 text-[11px]"
+                            title="Sao chép SĐT"
+                          >
+                            {isPhoneCopied ? "✓" : "📋"}
+                          </button>
+                        </div>
+                      ) : (
+                        <span className="text-zinc-400 italic text-[11px]">Chưa có số điện thoại</span>
+                      )}
 
-                      {/* Address */}
-                      <td className="py-3 px-4 max-w-[240px]">
-                        {addr ? (
-                          <div className="truncate text-zinc-700 dark:text-zinc-300" title={`${addr.address1 || ""}, ${addr.district || ""}, ${addr.city || ""}`}>
-                            <span className="font-medium text-zinc-900 dark:text-zinc-100">
-                              {addr.city || addr.province || "Chưa rõ tỉnh/thành"}
-                            </span>
-                            {addr.district && (
-                              <span className="text-zinc-500"> • {addr.district}</span>
-                            )}
-                            <div className="text-[11px] text-zinc-400 truncate">
-                              {addr.address1 || ""}
+                      <span className="text-[11px] text-zinc-500 dark:text-zinc-400 truncate max-w-[150px]">
+                        📍 {addr?.city || addr?.province || "Chưa rõ tỉnh thành"}
+                      </span>
+                    </div>
+
+                    {addr?.address1 && (
+                      <div className="text-[10px] text-zinc-400 truncate">
+                        {[addr.address1, addr.district].filter(Boolean).join(" • ")}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Hàng 3: Đơn hàng, Tổng chi tiêu & Đơn cuối */}
+                  <div className="flex items-center justify-between gap-2 pt-1 border-t border-zinc-100 dark:border-zinc-800/80 text-xs">
+                    <div className="flex items-center gap-2">
+                      <span className="px-2 py-0.5 rounded-md font-mono font-bold text-[11px] bg-zinc-100 dark:bg-zinc-800 text-zinc-800 dark:text-zinc-200">
+                        📦 {c.orders_count || 0} đơn
+                      </span>
+                      <span className="font-mono font-bold text-xs text-emerald-600 dark:text-emerald-400">
+                        {formatCurrency(c.total_spent)}
+                      </span>
+                    </div>
+
+                    <div className="text-[10px] font-mono text-zinc-400 text-right truncate max-w-[120px]">
+                      {c.last_order_name || (c.last_order_id ? `#${c.last_order_id}` : "Chưa có đơn")}
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* =========================================================================
+              GIAO DIỆN DESKTOP: BẢNG TABLE (hidden md:block)
+             ========================================================================= */}
+          <div className="hidden md:block rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-2xs overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-xs">
+                <thead className="bg-zinc-50 dark:bg-zinc-800/60 border-b border-zinc-200 dark:border-zinc-800 text-zinc-600 dark:text-zinc-300 font-semibold uppercase tracking-wider text-[11px]">
+                  <tr>
+                    <th className="py-3 px-4">Khách hàng</th>
+                    <th className="py-3 px-4">Số điện thoại</th>
+                    <th className="py-3 px-4">Khu vực / Địa chỉ</th>
+                    <th className="py-3 px-4 text-center">Đơn hàng</th>
+                    <th className="py-3 px-4 text-right">Tổng chi tiêu</th>
+                    <th className="py-3 px-4">Đơn cuối</th>
+                    <th className="py-3 px-4 text-center">Thao tác</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-zinc-200 dark:divide-zinc-800">
+                  {customers.map((c) => {
+                    const fullName = getFullName(c);
+                    const isVip = (c.total_spent || 0) >= 1000000;
+                    const addr = c.default_address;
+
+                    return (
+                      <tr
+                        key={c.id}
+                        className="hover:bg-zinc-50/70 dark:hover:bg-zinc-800/40 transition cursor-pointer"
+                        onClick={() => setSelectedCustomer(c)}
+                      >
+                        {/* Name & Avatar */}
+                        <td className="py-3 px-4">
+                          <div className="flex items-center gap-2.5">
+                            <div
+                              className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs shrink-0 ${
+                                isVip
+                                  ? "bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300 border border-amber-300 dark:border-amber-700"
+                                  : "bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-300"
+                              }`}
+                            >
+                              {fullName.charAt(0).toUpperCase()}
+                            </div>
+                            <div>
+                              <div className="font-semibold text-zinc-900 dark:text-zinc-100 flex items-center gap-1.5">
+                                <span>{fullName}</span>
+                                {isVip && (
+                                  <span className="px-1.5 py-0.2 rounded text-[10px] font-bold bg-amber-500 text-white">
+                                    VIP
+                                  </span>
+                                )}
+                              </div>
+                              <div className="text-[11px] text-zinc-400 font-mono">
+                                ID: #{c.id}
+                              </div>
                             </div>
                           </div>
-                        ) : (
-                          <span className="text-zinc-400 italic">Chưa cập nhật</span>
-                        )}
-                      </td>
+                        </td>
 
-                      {/* Orders count */}
-                      <td className="py-3 px-4 text-center">
-                        <span className="inline-block px-2 py-0.5 rounded-full text-xs font-mono font-bold bg-zinc-100 dark:bg-zinc-800 text-zinc-800 dark:text-zinc-200">
-                          {c.orders_count || 0}
-                        </span>
-                      </td>
+                        {/* Phone */}
+                        <td className="py-3 px-4" onClick={(e) => e.stopPropagation()}>
+                          {c.phone ? (
+                            <div className="flex items-center gap-1.5">
+                              <a
+                                href={`tel:${c.phone}`}
+                                className="font-mono text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1"
+                              >
+                                <span>📞</span>
+                                <span>{c.phone}</span>
+                              </a>
+                              <button
+                                type="button"
+                                onClick={(e) => handleCopyPhone(c.phone!, e)}
+                                className="text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 text-xs"
+                                title="Sao chép SĐT"
+                              >
+                                {copiedPhone === c.phone ? "✓" : "📋"}
+                              </button>
+                            </div>
+                          ) : (
+                            <span className="text-zinc-400 italic">Chưa có SĐT</span>
+                          )}
+                        </td>
 
-                      {/* Total spent */}
-                      <td className="py-3 px-4 text-right">
-                        <span className="font-mono font-bold text-emerald-600 dark:text-emerald-400">
-                          {formatCurrency(c.total_spent)}
-                        </span>
-                      </td>
+                        {/* Address */}
+                        <td className="py-3 px-4 max-w-[240px]">
+                          {addr ? (
+                            <div
+                              className="truncate text-zinc-700 dark:text-zinc-300"
+                              title={`${addr.address1 || ""}, ${addr.district || ""}, ${addr.city || ""}`}
+                            >
+                              <span className="font-medium text-zinc-900 dark:text-zinc-100">
+                                {addr.city || addr.province || "Chưa rõ tỉnh/thành"}
+                              </span>
+                              {addr.district && (
+                                <span className="text-zinc-500"> • {addr.district}</span>
+                              )}
+                              <div className="text-[11px] text-zinc-400 truncate">
+                                {addr.address1 || ""}
+                              </div>
+                            </div>
+                          ) : (
+                            <span className="text-zinc-400 italic">Chưa cập nhật</span>
+                          )}
+                        </td>
 
-                      {/* Last order */}
-                      <td className="py-3 px-4 font-mono text-[11px] text-zinc-500">
-                        {c.last_order_name || (c.last_order_id ? `#${c.last_order_id}` : "Chưa có đơn")}
-                      </td>
+                        {/* Orders count */}
+                        <td className="py-3 px-4 text-center">
+                          <span className="inline-block px-2 py-0.5 rounded-full text-xs font-mono font-bold bg-zinc-100 dark:bg-zinc-800 text-zinc-800 dark:text-zinc-200">
+                            {c.orders_count || 0}
+                          </span>
+                        </td>
 
-                      {/* Actions */}
-                      <td className="py-3 px-4 text-center">
-                        <button
-                          type="button"
-                          onClick={() => setSelectedCustomer(c)}
-                          className="px-2.5 py-1 text-xs font-medium rounded-md border border-zinc-200 dark:border-zinc-700 hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-700 dark:text-zinc-300 transition"
-                        >
-                          Chi tiết
-                        </button>
-                      </td>
-                    </tr>
-                  );
-                })
-              )}
-            </tbody>
-          </table>
-        </div>
+                        {/* Total spent */}
+                        <td className="py-3 px-4 text-right">
+                          <span className="font-mono font-bold text-emerald-600 dark:text-emerald-400">
+                            {formatCurrency(c.total_spent)}
+                          </span>
+                        </td>
 
-        {/* Pagination */}
-        {totalCount > 0 && (
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-3 p-4 border-t border-zinc-200 dark:border-zinc-800 text-xs">
-            <div className="text-zinc-500">
-              Trang <span className="font-bold text-zinc-900 dark:text-zinc-100">{page}</span> / {totalPages} (Tổng {totalCount} khách hàng)
+                        {/* Last order */}
+                        <td className="py-3 px-4 font-mono text-[11px] text-zinc-500">
+                          {c.last_order_name || (c.last_order_id ? `#${c.last_order_id}` : "Chưa có đơn")}
+                        </td>
+
+                        {/* Actions */}
+                        <td className="py-3 px-4 text-center" onClick={(e) => e.stopPropagation()}>
+                          <button
+                            type="button"
+                            onClick={() => setSelectedCustomer(c)}
+                            className="px-2.5 py-1 text-xs font-semibold rounded-lg border border-zinc-200 dark:border-zinc-700 hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-700 dark:text-zinc-300 transition cursor-pointer"
+                          >
+                            Chi tiết
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
             </div>
-            <div className="flex items-center gap-1.5">
+          </div>
+
+          {/* 5. Pagination */}
+          {totalCount > 0 && (
+            <div className="flex items-center justify-between gap-2 p-3 sm:p-4 bg-white dark:bg-zinc-900 rounded-xl sm:rounded-2xl border border-zinc-200 dark:border-zinc-800 text-xs shadow-2xs">
               <button
                 type="button"
                 onClick={() => setPage((p) => Math.max(1, p - 1))}
                 disabled={page <= 1}
-                className="px-3 py-1.5 rounded-lg border border-zinc-200 dark:border-zinc-700 hover:bg-zinc-100 dark:hover:bg-zinc-800 disabled:opacity-40 disabled:cursor-not-allowed transition font-medium"
+                className="px-3 py-1.5 rounded-lg border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800 hover:bg-zinc-100 dark:hover:bg-zinc-700 disabled:opacity-40 disabled:cursor-not-allowed transition font-semibold cursor-pointer"
               >
-                ← Trước
+                ‹ Trước
               </button>
+
+              <div className="text-center font-semibold text-zinc-700 dark:text-zinc-300">
+                <span>
+                  Trang <span className="font-bold text-zinc-900 dark:text-white">{page}</span> / {totalPages}
+                </span>
+                <span className="hidden sm:inline text-zinc-400 font-normal ml-1.5">
+                  ({totalCount.toLocaleString("vi-VN")} khách)
+                </span>
+              </div>
+
               <button
                 type="button"
                 onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
                 disabled={page >= totalPages}
-                className="px-3 py-1.5 rounded-lg border border-zinc-200 dark:border-zinc-700 hover:bg-zinc-100 dark:hover:bg-zinc-800 disabled:opacity-40 disabled:cursor-not-allowed transition font-medium"
+                className="px-3 py-1.5 rounded-lg border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800 hover:bg-zinc-100 dark:hover:bg-zinc-700 disabled:opacity-40 disabled:cursor-not-allowed transition font-semibold cursor-pointer"
               >
-                Sau →
+                Sau ›
               </button>
             </div>
-          </div>
-        )}
-      </div>
+          )}
+        </div>
+      )}
 
-      {/* Customer Detail Modal */}
+      {/* =========================================================================
+          6. MODAL CHI TIẾT KHÁCH HÀNG (MOBILE OPTIMIZED)
+         ========================================================================= */}
       {selectedCustomer && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl max-w-xl w-full max-h-[90vh] overflow-y-auto p-6 space-y-5 shadow-2xl">
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-2.5 sm:p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-200"
+          onClick={() => setSelectedCustomer(null)}
+        >
+          <div
+            className="w-full max-w-lg bg-white dark:bg-zinc-900 rounded-2xl sm:rounded-3xl border border-zinc-200 dark:border-zinc-800 shadow-2xl overflow-hidden flex flex-col max-h-[92dvh] sm:max-h-[88vh]"
+            onClick={(e) => e.stopPropagation()}
+          >
             {/* Modal Header */}
-            <div className="flex items-center justify-between border-b border-zinc-200 dark:border-zinc-800 pb-4">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-950 text-blue-700 dark:text-blue-300 font-bold flex items-center justify-center text-sm">
+            <div className="flex items-center justify-between px-3.5 py-3 sm:px-5 sm:py-4 border-b border-zinc-100 dark:border-zinc-800 bg-zinc-50/70 dark:bg-zinc-800/40 shrink-0">
+              <div className="flex items-center gap-2.5 min-w-0 pr-2">
+                <div className="w-9 h-9 rounded-full bg-blue-100 dark:bg-blue-950 text-blue-700 dark:text-blue-300 font-bold flex items-center justify-center text-xs sm:text-sm shrink-0">
                   {getFullName(selectedCustomer).charAt(0).toUpperCase()}
                 </div>
-                <div>
-                  <h3 className="text-base font-bold text-zinc-900 dark:text-zinc-100">
-                    {getFullName(selectedCustomer)}
-                  </h3>
-                  <p className="text-xs text-zinc-400 font-mono">
+                <div className="min-w-0">
+                  <div className="flex items-center gap-1.5">
+                    <h3 className="text-sm sm:text-base font-bold text-zinc-900 dark:text-zinc-100 truncate">
+                      {getFullName(selectedCustomer)}
+                    </h3>
+                    {(selectedCustomer.total_spent || 0) >= 1000000 && (
+                      <span className="px-1.5 py-0.2 rounded text-[9px] font-bold bg-amber-500 text-white shrink-0">
+                        VIP
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-[10px] sm:text-[11px] text-zinc-400 font-mono mt-0.5">
                     Sapo Customer ID: #{selectedCustomer.id}
                   </p>
                 </div>
               </div>
               <button
+                type="button"
                 onClick={() => setSelectedCustomer(null)}
-                className="w-8 h-8 rounded-lg flex items-center justify-center text-zinc-400 hover:text-zinc-600 hover:bg-zinc-100 dark:hover:bg-zinc-800 text-sm"
+                className="p-1.5 rounded-xl text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition active:scale-90 cursor-pointer"
+                title="Đóng modal"
               >
-                ✕
+                <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
               </button>
             </div>
 
-            {/* Customer Stats Cards */}
-            <div className="grid grid-cols-2 gap-3">
-              <div className="p-3 rounded-xl bg-zinc-50 dark:bg-zinc-800/60 border border-zinc-200 dark:border-zinc-800">
-                <div className="text-[11px] text-zinc-500">Tổng số đơn hàng</div>
-                <div className="text-xl font-bold font-mono text-zinc-900 dark:text-zinc-100 mt-0.5">
-                  {selectedCustomer.orders_count || 0}
+            {/* Modal Body */}
+            <div className="p-3 sm:p-4 overflow-y-auto space-y-3 sm:space-y-4">
+              {/* Customer Stats (2x2 Grid) */}
+              <div className="grid grid-cols-2 gap-2.5">
+                <div className="p-3 rounded-xl sm:rounded-2xl bg-zinc-50/80 dark:bg-zinc-800/40 border border-zinc-200/70 dark:border-zinc-800">
+                  <div className="text-[10px] sm:text-[11px] text-zinc-400 font-medium">📦 Tổng số đơn hàng</div>
+                  <div className="text-lg sm:text-xl font-bold font-mono text-zinc-900 dark:text-zinc-100 mt-0.5">
+                    {selectedCustomer.orders_count || 0}
+                  </div>
+                </div>
+                <div className="p-3 rounded-xl sm:rounded-2xl bg-zinc-50/80 dark:bg-zinc-800/40 border border-zinc-200/70 dark:border-zinc-800">
+                  <div className="text-[10px] sm:text-[11px] text-zinc-400 font-medium">💰 Tổng chi tiêu</div>
+                  <div className="text-lg sm:text-xl font-bold font-mono text-emerald-600 dark:text-emerald-400 mt-0.5 truncate">
+                    {formatCurrency(selectedCustomer.total_spent)}
+                  </div>
                 </div>
               </div>
-              <div className="p-3 rounded-xl bg-zinc-50 dark:bg-zinc-800/60 border border-zinc-200 dark:border-zinc-800">
-                <div className="text-[11px] text-zinc-500">Tổng chi tiêu</div>
-                <div className="text-xl font-bold font-mono text-emerald-600 dark:text-emerald-400 mt-0.5">
-                  {formatCurrency(selectedCustomer.total_spent)}
-                </div>
-              </div>
-            </div>
 
-            {/* Contact info */}
-            <div className="space-y-2 text-xs">
-              <div className="font-semibold text-zinc-900 dark:text-zinc-100">Thông tin liên lạc:</div>
-              <div className="p-3 rounded-xl bg-zinc-50 dark:bg-zinc-800/50 space-y-1.5">
-                <div className="flex items-center justify-between">
-                  <span className="text-zinc-500">Số điện thoại:</span>
-                  <span className="font-mono font-medium text-zinc-900 dark:text-zinc-100">
-                    {selectedCustomer.phone || "Chưa có"}
-                  </span>
+              {/* Thông tin liên lạc (2x2 Grid) */}
+              <div className="p-3 sm:p-3.5 rounded-xl sm:rounded-2xl bg-zinc-50/80 dark:bg-zinc-800/40 border border-zinc-200/70 dark:border-zinc-800 text-xs grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                <div>
+                  <span className="text-[10px] text-zinc-400 font-medium block">📞 Số điện thoại</span>
+                  <div className="mt-0.5">
+                    {selectedCustomer.phone ? (
+                      <div className="flex items-center gap-1.5">
+                        <a
+                          href={`tel:${selectedCustomer.phone}`}
+                          className="font-mono font-semibold text-blue-600 dark:text-blue-400 hover:underline"
+                        >
+                          {selectedCustomer.phone}
+                        </a>
+                        <button
+                          type="button"
+                          onClick={() => handleCopyPhone(selectedCustomer.phone!)}
+                          className="text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 text-xs p-0.5"
+                          title="Sao chép SĐT"
+                        >
+                          {copiedPhone === selectedCustomer.phone ? "✓" : "📋"}
+                        </button>
+                      </div>
+                    ) : (
+                      <span className="text-zinc-400 italic text-[11px]">Chưa cập nhật</span>
+                    )}
+                  </div>
                 </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-zinc-500">Email:</span>
-                  <span className="text-zinc-900 dark:text-zinc-100">
+
+                <div>
+                  <span className="text-[10px] text-zinc-400 font-medium block">✉️ Email</span>
+                  <div className="font-medium text-zinc-800 dark:text-zinc-200 truncate mt-0.5">
                     {selectedCustomer.email || "Chưa cập nhật"}
-                  </span>
+                  </div>
                 </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-zinc-500">Đơn hàng gần nhất:</span>
-                  <span className="font-mono text-blue-600 dark:text-blue-400">
-                    {selectedCustomer.last_order_name || (selectedCustomer.last_order_id ? `#${selectedCustomer.last_order_id}` : "Chưa có")}
-                  </span>
+
+                <div>
+                  <span className="text-[10px] text-zinc-400 font-medium block">📦 Đơn gần nhất</span>
+                  <div className="font-mono font-medium text-blue-600 dark:text-blue-400 truncate mt-0.5">
+                    {selectedCustomer.last_order_name || (selectedCustomer.last_order_id ? `#${selectedCustomer.last_order_id}` : "Chưa có đơn")}
+                  </div>
                 </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-zinc-500">Ngày tạo hồ sơ:</span>
-                  <span className="text-zinc-700 dark:text-zinc-300">
+
+                <div>
+                  <span className="text-[10px] text-zinc-400 font-medium block">📅 Ngày tạo hồ sơ</span>
+                  <div className="font-medium text-zinc-700 dark:text-zinc-300 mt-0.5">
                     {new Date(selectedCustomer.created_on).toLocaleDateString("vi-VN")}
-                  </span>
+                  </div>
                 </div>
               </div>
-            </div>
 
-            {/* Addresses */}
-            <div className="space-y-2 text-xs">
-              <div className="font-semibold text-zinc-900 dark:text-zinc-100">Địa chỉ giao hàng:</div>
-              {selectedCustomer.addresses && selectedCustomer.addresses.length > 0 ? (
-                <div className="space-y-2 max-h-40 overflow-y-auto">
-                  {selectedCustomer.addresses.map((a) => (
-                    <div
-                      key={a.id}
-                      className="p-3 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-800/30 text-zinc-700 dark:text-zinc-300"
-                    >
-                      <div className="flex items-center justify-between font-medium text-zinc-900 dark:text-zinc-100">
-                        <span>{a.city || a.district || "Địa chỉ"}</span>
-                        {a.default && (
-                          <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-300">
-                            Mặc định
-                          </span>
+              {/* Sổ địa chỉ giao hàng */}
+              <div>
+                <div className="text-xs font-bold text-zinc-700 dark:text-zinc-300 mb-1.5">
+                  Sổ địa chỉ ({selectedCustomer.addresses?.length || 0})
+                </div>
+                {selectedCustomer.addresses && selectedCustomer.addresses.length > 0 ? (
+                  <div className="space-y-2 max-h-44 overflow-y-auto">
+                    {selectedCustomer.addresses.map((a) => (
+                      <div
+                        key={a.id}
+                        className="p-2.5 sm:p-3 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-zinc-700 dark:text-zinc-300 text-xs"
+                      >
+                        <div className="flex items-center justify-between font-semibold text-zinc-900 dark:text-zinc-100">
+                          <span>{a.city || a.district || "Địa chỉ"}</span>
+                          {a.default && (
+                            <span className="px-1.5 py-0.2 rounded text-[9px] font-bold bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-300">
+                              Mặc định
+                            </span>
+                          )}
+                        </div>
+                        <div className="text-[11px] text-zinc-500 mt-0.5">
+                          {[a.address1, a.ward, a.district, a.city].filter(Boolean).join(", ")}
+                        </div>
+                        {a.phone && (
+                          <div className="text-[10px] font-mono text-zinc-400 mt-1">
+                            SĐT nhận: {a.phone}
+                          </div>
                         )}
                       </div>
-                      <div className="text-[11px] text-zinc-500 mt-0.5">
-                        {[a.address1, a.ward, a.district, a.city].filter(Boolean).join(", ")}
-                      </div>
-                      {a.phone && (
-                        <div className="text-[10px] font-mono text-zinc-400 mt-1">
-                          SĐT nhận: {a.phone}
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="p-3 rounded-xl bg-zinc-50 dark:bg-zinc-800/30 text-zinc-400 italic text-center">
-                  Khách hàng chưa lưu sổ địa chỉ
-                </div>
-              )}
+                    ))}
+                  </div>
+                ) : (
+                  <div className="p-3 rounded-xl bg-zinc-50 dark:bg-zinc-800/40 text-zinc-400 italic text-center text-xs">
+                    Khách hàng chưa lưu sổ địa chỉ
+                  </div>
+                )}
+              </div>
             </div>
 
-            {/* Close */}
-            <div className="pt-2 flex justify-end">
+            {/* Modal Footer */}
+            <div className="p-2.5 sm:p-4 border-t border-zinc-100 dark:border-zinc-800 bg-zinc-50/70 dark:bg-zinc-800/40 flex items-center justify-between gap-2 shrink-0">
+              {selectedCustomer.phone ? (
+                <a
+                  href={`tel:${selectedCustomer.phone}`}
+                  className="py-1.5 px-3 rounded-xl border border-blue-200 dark:border-blue-900/60 bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 hover:bg-blue-100 font-semibold text-xs transition flex items-center gap-1.5 cursor-pointer active:scale-95"
+                >
+                  <span>📞</span>
+                  <span>Gọi điện</span>
+                </a>
+              ) : (
+                <div />
+              )}
+
               <button
                 type="button"
                 onClick={() => setSelectedCustomer(null)}
-                className="px-4 py-2 text-xs font-semibold rounded-lg bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 hover:opacity-90 transition"
+                className="py-1.5 px-4 rounded-xl bg-zinc-900 hover:bg-zinc-800 dark:bg-zinc-100 dark:hover:bg-white text-white dark:text-zinc-900 font-bold text-xs transition cursor-pointer active:scale-95"
               >
                 Đóng
               </button>
