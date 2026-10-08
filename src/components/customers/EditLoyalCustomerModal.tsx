@@ -15,40 +15,40 @@ const TIER_OPTIONS: Array<{
   id: LoyalCustomerTier;
   label: string;
   badge: string;
-  defaultDiscount: number;
   icon: string;
+  desc: string;
   colorClass: string;
 }> = [
   {
     id: "standard",
     label: "Thân thiết",
     badge: "🥉 Thân thiết",
-    defaultDiscount: 3,
     icon: "🥉",
+    desc: "Khách hàng mua quen",
     colorClass: "border-blue-300 dark:border-blue-700 bg-blue-50/60 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300",
   },
   {
     id: "silver",
     label: "Hạng Bạc",
     badge: "🥈 Hạng Bạc",
-    defaultDiscount: 5,
     icon: "🥈",
+    desc: "Chi tiêu từ 1.000.000 ₫",
     colorClass: "border-slate-300 dark:border-slate-600 bg-slate-50 dark:bg-slate-800/60 text-slate-700 dark:text-slate-300",
   },
   {
     id: "gold",
     label: "Hạng Vàng",
     badge: "🥇 Hạng Vàng",
-    defaultDiscount: 10,
     icon: "🥇",
+    desc: "Chi tiêu từ 2.000.000 ₫",
     colorClass: "border-amber-300 dark:border-amber-600 bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300",
   },
   {
     id: "diamond",
     label: "Kim Cương",
     badge: "💎 Kim Cương",
-    defaultDiscount: 15,
     icon: "💎",
+    desc: "Chi tiêu từ 5.000.000 ₫",
     colorClass: "border-purple-300 dark:border-purple-600 bg-purple-50 dark:bg-purple-950/40 text-purple-700 dark:text-purple-300",
   },
 ];
@@ -61,25 +61,15 @@ export function EditLoyalCustomerModal({
 }: EditLoyalCustomerModalProps) {
   const { toast } = useToast();
   const [tier, setTier] = useState<LoyalCustomerTier>("silver");
-  const [discountPercent, setDiscountPercent] = useState<number>(5);
   const [notes, setNotes] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
     if (customer) {
       setTier(customer.tier || "standard");
-      setDiscountPercent(customer.discount_percent ?? 5);
       setNotes(customer.notes || "");
     }
   }, [customer, isOpen]);
-
-  const handleTierChange = (selectedTier: LoyalCustomerTier) => {
-    setTier(selectedTier);
-    const opt = TIER_OPTIONS.find((t) => t.id === selectedTier);
-    if (opt && discountPercent === 0) {
-      setDiscountPercent(opt.defaultDiscount);
-    }
-  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -93,7 +83,7 @@ export function EditLoyalCustomerModal({
         body: JSON.stringify({
           sapo_customer_id: customer.sapo_customer_id,
           tier,
-          discount_percent: discountPercent,
+          discount_percent: 0,
           notes,
         }),
       });
@@ -103,7 +93,7 @@ export function EditLoyalCustomerModal({
         throw new Error(json.message || "Không thể cập nhật thông tin khách hàng");
       }
 
-      toast.success(json.message || `Đã cập nhật ưu đãi cho ${customer.name}`);
+      toast.success(json.message || `Đã cập nhật thông tin cho ${customer.name}`);
       onSuccess();
       onClose();
     } catch (err: any) {
@@ -132,10 +122,10 @@ export function EditLoyalCustomerModal({
             </div>
             <div>
               <h3 className="text-sm sm:text-base font-bold text-zinc-900 dark:text-zinc-100">
-                Chỉnh Sửa Ưu Đãi Thân Thiết
+                Chỉnh Sửa Hạng Thẻ & Ghi Chú
               </h3>
               <p className="text-[11px] text-zinc-400">
-                Cập nhật hạng thẻ, chiết khấu và ghi chú riêng
+                Cập nhật hạng thành viên và ghi chú chăm sóc khách hàng
               </p>
             </div>
           </div>
@@ -177,7 +167,7 @@ export function EditLoyalCustomerModal({
                   <button
                     key={t.id}
                     type="button"
-                    onClick={() => handleTierChange(t.id)}
+                    onClick={() => setTier(t.id)}
                     className={`p-2.5 rounded-xl border text-left transition-all cursor-pointer flex items-center justify-between ${
                       isSelected
                         ? `${t.colorClass} border-2 shadow-2xs`
@@ -188,31 +178,13 @@ export function EditLoyalCustomerModal({
                       <span className="text-base">{t.icon}</span>
                       <div>
                         <div className="font-bold text-xs">{t.label}</div>
-                        <div className="text-[10px] opacity-75">Ưu đãi ~{t.defaultDiscount}%</div>
+                        <div className="text-[10px] opacity-75">{t.desc}</div>
                       </div>
                     </div>
                     {isSelected && <span className="text-xs font-bold">✓</span>}
                   </button>
                 );
               })}
-            </div>
-          </div>
-
-          {/* Chiết khấu (%) */}
-          <div>
-            <label className="block text-xs font-semibold text-zinc-700 dark:text-zinc-300 mb-1.5">
-              Mức giảm giá chiết khấu riêng (%)
-            </label>
-            <div className="flex items-center gap-2">
-              <input
-                type="number"
-                min="0"
-                max="100"
-                value={discountPercent}
-                onChange={(e) => setDiscountPercent(Number(e.target.value))}
-                className="w-32 px-3 py-2 text-xs font-mono font-bold rounded-xl border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800 text-zinc-900 dark:text-white focus:ring-2 focus:ring-amber-500 focus:outline-hidden"
-              />
-              <span className="text-xs text-zinc-500">% chiết khấu ưu đãi cho khách</span>
             </div>
           </div>
 

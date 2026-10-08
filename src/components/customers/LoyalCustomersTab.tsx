@@ -377,16 +377,11 @@ export function LoyalCustomersTab({ onRefreshParentLoyalMap }: LoyalCustomersTab
                       </div>
                     </div>
 
-                    {/* Badge Hạng & Chiết khấu */}
+                    {/* Badge Hạng thành viên */}
                     <div className="flex items-center gap-1.5 shrink-0">
                       <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold border ${tierCfg.style}`}>
                         {tierCfg.badge}
                       </span>
-                      {c.discount_percent > 0 && (
-                        <span className="px-1.5 py-0.5 rounded-md text-[10px] font-bold bg-rose-100 text-rose-700 dark:bg-rose-950 dark:text-rose-300">
-                          -{c.discount_percent}%
-                        </span>
-                      )}
                     </div>
                   </div>
 
@@ -438,7 +433,7 @@ export function LoyalCustomersTab({ onRefreshParentLoyalMap }: LoyalCustomersTab
                         onClick={() => setEditingCustomer(c)}
                         className="px-2.5 py-1 text-[11px] font-semibold rounded-lg border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 hover:bg-zinc-100 dark:hover:bg-zinc-700 text-zinc-700 dark:text-zinc-300 transition"
                       >
-                        Sửa ưu đãi
+                        Sửa thẻ
                       </button>
                       <button
                         type="button"
@@ -462,7 +457,7 @@ export function LoyalCustomersTab({ onRefreshParentLoyalMap }: LoyalCustomersTab
                   <tr className="border-b border-zinc-200/80 dark:border-zinc-800 bg-zinc-50/75 dark:bg-zinc-800/40 text-[11px] font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">
                     <th className="py-3 px-3 w-[22%]">Khách hàng</th>
                     <th className="py-3 px-3 w-[13%]">Số điện thoại</th>
-                    <th className="py-3 px-3 w-[16%]">Hạng & Ưu đãi</th>
+                    <th className="py-3 px-3 w-[16%]">Hạng thành viên</th>
                     <th className="py-3 px-3 w-[14%] text-right whitespace-nowrap">Doanh số tích lũy</th>
                     <th className="py-3 px-3 w-[9%] text-center">Đơn hàng</th>
                     <th className="py-3 px-3 w-[14%]">Ghi chú</th>
@@ -520,17 +515,12 @@ export function LoyalCustomersTab({ onRefreshParentLoyalMap }: LoyalCustomersTab
                           )}
                         </td>
 
-                        {/* Hạng thẻ & Ưu đãi */}
+                        {/* Hạng thành viên */}
                         <td className="py-3 px-3">
                           <div className="flex items-center gap-1.5 flex-wrap">
                             <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold border ${tierCfg.style}`}>
                               {tierCfg.badge}
                             </span>
-                            {c.discount_percent > 0 && (
-                              <span className="px-1.5 py-0.5 rounded-md text-[10px] font-bold bg-rose-100 text-rose-700 dark:bg-rose-950 dark:text-rose-300">
-                                -{c.discount_percent}%
-                              </span>
-                            )}
                           </div>
                         </td>
 
@@ -564,7 +554,7 @@ export function LoyalCustomersTab({ onRefreshParentLoyalMap }: LoyalCustomersTab
                               type="button"
                               onClick={() => setEditingCustomer(c)}
                               className="px-2 py-1 rounded-lg border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-700 font-medium text-[11px] transition shadow-2xs cursor-pointer"
-                              title="Chỉnh sửa ưu đãi"
+                              title="Chỉnh sửa hạng thẻ"
                             >
                               Sửa
                             </button>

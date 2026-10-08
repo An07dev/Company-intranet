@@ -230,40 +230,27 @@ export default function CustomersPage() {
             <button
               type="button"
               onClick={() => setActiveTab("all")}
-              className={`flex-1 sm:flex-initial px-3.5 py-1.5 text-xs sm:text-sm font-bold rounded-lg transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
-                activeTab === "all"
-                  ? "bg-white dark:bg-zinc-900 text-zinc-900 dark:text-white shadow-2xs"
-                  : "text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white"
-              }`}
+              className={`flex-1 sm:flex-initial px-3.5 py-1.5 text-xs sm:text-sm font-bold rounded-lg transition-all flex items-center justify-center gap-1.5 cursor-pointer ${activeTab === "all"
+                ? "bg-white dark:bg-zinc-900 text-zinc-900 dark:text-white shadow-2xs"
+                : "text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white"
+                }`}
             >
               <span>👥</span>
               <span>Tất cả khách hàng</span>
-              <span className="px-1.5 py-0.2 rounded-full text-[10px] font-semibold bg-zinc-200 dark:bg-zinc-700 text-zinc-700 dark:text-zinc-300">
-                {totalCount.toLocaleString("vi-VN")}
-              </span>
+
             </button>
 
             {/* Tab 2: Khách hàng thân thiết */}
             <button
               type="button"
               onClick={() => setActiveTab("loyal")}
-              className={`flex-1 sm:flex-initial px-3.5 py-1.5 text-xs sm:text-sm font-bold rounded-lg transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
-                activeTab === "loyal"
-                  ? "bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-2xs font-bold"
-                  : "text-zinc-600 dark:text-zinc-400 hover:text-amber-600 dark:hover:text-amber-400"
-              }`}
+              className={`flex-1 sm:flex-initial px-3.5 py-1.5 text-xs sm:text-sm font-bold rounded-lg transition-all flex items-center justify-center gap-1.5 cursor-pointer ${activeTab === "loyal"
+                ? "bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-2xs font-bold"
+                : "text-zinc-600 dark:text-zinc-400 hover:text-amber-600 dark:hover:text-amber-400"
+                }`}
             >
               <span>⭐</span>
-              <span>Khách hàng thân thiết</span>
-              <span
-                className={`px-1.5 py-0.2 rounded-full text-[10px] font-bold ${
-                  activeTab === "loyal"
-                    ? "bg-amber-700 text-white"
-                    : "bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300"
-                }`}
-              >
-                {loyalCount}
-              </span>
+              <span>Khách thân thiết</span>
             </button>
           </div>
         </div>
@@ -434,13 +421,12 @@ export default function CustomersPage() {
                       <div className="flex items-center justify-between gap-2">
                         <div className="flex items-center gap-2.5 min-w-0">
                           <div
-                            className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs shrink-0 ${
-                              isLoyal
-                                ? "bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300 border border-amber-300 dark:border-amber-700"
-                                : isVip
+                            className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs shrink-0 ${isLoyal
+                              ? "bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300 border border-amber-300 dark:border-amber-700"
+                              : isVip
                                 ? "bg-amber-50 text-amber-700 dark:bg-amber-950/60 dark:text-amber-300"
                                 : "bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-300"
-                            }`}
+                              }`}
                           >
                             {fullName.charAt(0).toUpperCase()}
                           </div>
@@ -592,13 +578,12 @@ export default function CustomersPage() {
                             <td className="py-3 px-3">
                               <div className="flex items-center gap-2.5">
                                 <div
-                                  className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs shrink-0 ${
-                                    isLoyal
-                                      ? "bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300 border border-amber-300 dark:border-amber-700"
-                                      : isVip
+                                  className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs shrink-0 ${isLoyal
+                                    ? "bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300 border border-amber-300 dark:border-amber-700"
+                                    : isVip
                                       ? "bg-amber-50 text-amber-700 dark:bg-amber-950/60 dark:text-amber-300 border border-amber-200 dark:border-amber-800"
                                       : "bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-300"
-                                  }`}
+                                    }`}
                                 >
                                   {fullName.charAt(0).toUpperCase()}
                                 </div>
@@ -964,14 +949,13 @@ export default function CustomersPage() {
                     });
                     setIsAddLoyalModalOpen(true);
                   }}
-                  className={`py-1.5 px-3 rounded-xl border font-semibold text-xs transition flex items-center gap-1.5 cursor-pointer active:scale-95 ${
-                    loyalCustomerMap[selectedCustomer.id]
-                      ? "bg-amber-100 dark:bg-amber-950 text-amber-800 dark:text-amber-200 border-amber-300 dark:border-amber-700"
-                      : "bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-800 hover:bg-amber-100"
-                  }`}
+                  className={`py-1.5 px-3 rounded-xl border font-semibold text-xs transition flex items-center gap-1.5 cursor-pointer active:scale-95 ${loyalCustomerMap[selectedCustomer.id]
+                    ? "bg-amber-100 dark:bg-amber-950 text-amber-800 dark:text-amber-200 border-amber-300 dark:border-amber-700"
+                    : "bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-800 hover:bg-amber-100"
+                    }`}
                 >
                   <span>⭐</span>
-                  <span>{loyalCustomerMap[selectedCustomer.id] ? "Sửa ưu đãi thân thiết" : "+ Thêm vào thân thiết"}</span>
+                  <span>{loyalCustomerMap[selectedCustomer.id] ? "Sửa hạng thân thiết" : "+ Thêm vào thân thiết"}</span>
                 </button>
               </div>
 
