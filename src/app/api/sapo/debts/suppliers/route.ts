@@ -311,7 +311,10 @@ export async function POST(request: NextRequest) {
       status: "success",
     });
 
-    const newTx = sapoTxRes?.transaction || {
+    const returnedTxList = sapoTxRes?.receive_inventory?.transactions || [];
+    const latestTx = returnedTxList.length > 0 ? returnedTxList[returnedTxList.length - 1] : null;
+
+    const newTx = latestTx || sapoTxRes?.transaction || {
       id: Date.now(),
       amount: payAmountNum,
       payment_method_name: "Chuyển khoản",

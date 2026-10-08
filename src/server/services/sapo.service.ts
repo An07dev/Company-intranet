@@ -508,11 +508,15 @@ export const SapoService = {
     return sapoFetch(`/admin/receive_inventories/${receiveInventoryId}/transactions.json`, {
       method: "POST",
       body: JSON.stringify({
-        transaction: {
-          amount: Number(transactionData.amount),
-          payment_method_id: transactionData.payment_method_id || 2192344, // Mặc định Chuyển khoản
-          status: transactionData.status || "success",
-          reference: transactionData.reference || "Thanh toán công nợ từ hệ thống nội bộ",
+        receive_inventory: {
+          transactions: [
+            {
+              amount: Number(transactionData.amount),
+              payment_method_id: transactionData.payment_method_id || 2192344, // Mặc định Chuyển khoản
+              status: transactionData.status || "success",
+              reference: transactionData.reference || "Thanh toán công nợ từ hệ thống nội bộ",
+            },
+          ],
         },
       }),
     });
