@@ -148,8 +148,32 @@ function getChannelMeta(shopUsername?: string) {
   };
 }
 
+// In-memory cache for Shopee/Omnichannel stats (TTL 45 seconds)
+let cachedShopeeStats: {
+  data: ShopeeDashboardStats;
+  timestamp: number;
+} | null = null;
+const CACHE_TTL_MS = 45 * 1000;
+
 export async function GET() {
   try {
+    const now = Date.now();
+    if (cachedShopeeStats && now - cachedShopeeStats.timestamp < CACHE_TTL_MS) {
+      return NextResponse.json<ApiResponse<ShopeeDashboardStats>>(
+        {
+          success: true,
+          data: cachedShopeeStats.data,
+          message: "Tải thống kê Đa kênh & Shopee dashboard thành công (cache)",
+          timestamp: new Date().toISOString(),
+        },
+        {
+          headers: {
+            "Cache-Control": "private, max-age=15, stale-while-revalidate=45",
+          },
+        }
+      );
+    }
+
     await connectToDatabase();
 
     // 1. Lấy dữ liệu thống kê Đơn Hàng Đa Kênh
@@ -331,8 +355,8 @@ export async function GET() {
     });
 
     // 2. Lấy dữ liệu thống kê Sản Phẩm & Lượng bán thực tế từ Đơn Hàng
-    const now = new Date();
-    const d30 = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000).toISOString();
+    const nowDate = new Date();
+    const d30 = new Date(nowDate.getTime() - 30 * 24 * 60 * 60 * 1000).toISOString();
 
     const [
       totalProducts,
@@ -522,12 +546,25 @@ export async function GET() {
       topSellingProducts,
     };
 
-    return NextResponse.json<ApiResponse<ShopeeDashboardStats>>({
-      success: true,
+    // Lưu vào in-memory cache
+    cachedShopeeStats = {
       data: responseData,
-      message: "Tải thống kê Đa kênh & Shopee dashboard thành công",
-      timestamp: new Date().toISOString(),
-    });
+      timestamp: Date.now(),
+    };
+
+    return NextResponse.json<ApiResponse<ShopeeDashboardStats>>(
+      {
+        success: true,
+        data: responseData,
+        message: "Tải thống kê Đa kênh & Shopee dashboard thành công",
+        timestamp: new Date().toISOString(),
+      },
+      {
+        headers: {
+          "Cache-Control": "private, max-age=15, stale-while-revalidate=45",
+        },
+      }
+    );
   } catch (error: any) {
     console.error("[Shopee Dashboard Stats API] Lỗi:", error);
     return NextResponse.json<ApiResponse<null>>(

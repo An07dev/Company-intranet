@@ -57,12 +57,19 @@ export async function GET() {
   try {
     const now = Date.now();
     if (cachedCRMStats && now - cachedCRMStats.timestamp < CACHE_TTL_MS) {
-      return NextResponse.json<ApiResponse<CustomerCRMDashboardStats>>({
-        success: true,
-        data: cachedCRMStats.data,
-        message: "Tải thống kê khách hàng & CRM thành công (cache)",
-        timestamp: new Date().toISOString(),
-      });
+      return NextResponse.json<ApiResponse<CustomerCRMDashboardStats>>(
+        {
+          success: true,
+          data: cachedCRMStats.data,
+          message: "Tải thống kê khách hàng & CRM thành công (cache)",
+          timestamp: new Date().toISOString(),
+        },
+        {
+          headers: {
+            "Cache-Control": "private, max-age=15, stale-while-revalidate=45",
+          },
+        }
+      );
     }
 
     // 1. Lấy dữ liệu từ Sapo Customers & Tổng số đơn hàng trong DB
@@ -267,12 +274,19 @@ export async function GET() {
       timestamp: now,
     };
 
-    return NextResponse.json<ApiResponse<CustomerCRMDashboardStats>>({
-      success: true,
-      data: responseData,
-      message: "Tải thống kê khách hàng & CRM thành công",
-      timestamp: new Date().toISOString(),
-    });
+    return NextResponse.json<ApiResponse<CustomerCRMDashboardStats>>(
+      {
+        success: true,
+        data: responseData,
+        message: "Tải thống kê khách hàng & CRM thành công",
+        timestamp: new Date().toISOString(),
+      },
+      {
+        headers: {
+          "Cache-Control": "private, max-age=15, stale-while-revalidate=45",
+        },
+      }
+    );
   } catch (error: any) {
     console.error("[Customer CRM Dashboard Stats API] Error:", error);
     return NextResponse.json<ApiResponse<null>>(

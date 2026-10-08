@@ -115,15 +115,43 @@ export interface DashboardStatsResponse {
   }>;
 }
 
+// In-memory cache for Stats (TTL 30 seconds)
+let cachedStats: {
+  data: DashboardStatsResponse;
+  timestamp: number;
+} | null = null;
+const CACHE_TTL_MS = 30 * 1000;
+let isSeededChecked = false;
+
 const WEEKDAY_NAMES = ["Chủ Nhật", "Thứ 2", "Thứ 3", "Thứ 4", "Thứ 5", "Thứ 6", "Thứ 7"];
 
 export async function GET() {
   try {
+    const now = Date.now();
+    if (cachedStats && now - cachedStats.timestamp < CACHE_TTL_MS) {
+      return NextResponse.json<ApiResponse<DashboardStatsResponse>>(
+        {
+          success: true,
+          data: cachedStats.data,
+          message: "Tải thống kê dashboard thành công (cache)",
+          timestamp: new Date().toISOString(),
+        },
+        {
+          headers: {
+            "Cache-Control": "private, max-age=15, stale-while-revalidate=45",
+          },
+        }
+      );
+    }
+
     await connectToDatabase();
-    await ensureUsersSeeded();
-    await ensureAttendanceSeeded();
-    await ensureTasksSeeded();
-    await ensureRequestsSeeded();
+    if (!isSeededChecked) {
+      await ensureUsersSeeded();
+      await ensureAttendanceSeeded();
+      await ensureTasksSeeded();
+      await ensureRequestsSeeded();
+      isSeededChecked = true;
+    }
 
     const todayStr = getTodayDateString(0);
 
@@ -560,6 +588,12 @@ export async function GET() {
       punctualityLeaderboard,
     };
 
+    // Lưu vào in-memory cache
+    cachedStats = {
+      data,
+      timestamp: Date.now(),
+    };
+
     const response: ApiResponse<DashboardStatsResponse> = {
       success: true,
       data,
@@ -567,7 +601,11 @@ export async function GET() {
       timestamp: new Date().toISOString(),
     };
 
-    return NextResponse.json(response);
+    return NextResponse.json(response, {
+      headers: {
+        "Cache-Control": "private, max-age=15, stale-while-revalidate=45",
+      },
+    });
   } catch (error) {
     console.error("Lỗi khi tải thống kê dashboard:", error);
     const response: ApiResponse<null> = {

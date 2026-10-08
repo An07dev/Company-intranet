@@ -54,8 +54,32 @@ export interface InventoryDashboardStats {
   };
 }
 
+// In-memory cache for Inventory stats (TTL 45 seconds)
+let cachedInventoryStats: {
+  data: InventoryDashboardStats;
+  timestamp: number;
+} | null = null;
+const CACHE_TTL_MS = 45 * 1000;
+
 export async function GET() {
   try {
+    const now = Date.now();
+    if (cachedInventoryStats && now - cachedInventoryStats.timestamp < CACHE_TTL_MS) {
+      return NextResponse.json<ApiResponse<InventoryDashboardStats>>(
+        {
+          success: true,
+          data: cachedInventoryStats.data,
+          message: "Tải thống kê kho hàng thành công (cache)",
+          timestamp: new Date().toISOString(),
+        },
+        {
+          headers: {
+            "Cache-Control": "private, max-age=15, stale-while-revalidate=45",
+          },
+        }
+      );
+    }
+
     await connectToDatabase();
 
     const [
@@ -222,12 +246,25 @@ export async function GET() {
       },
     };
 
-    return NextResponse.json<ApiResponse<InventoryDashboardStats>>({
-      success: true,
+    // Lưu vào in-memory cache
+    cachedInventoryStats = {
       data: responseData,
-      message: "Tải thống kê kho hàng thành công",
-      timestamp: new Date().toISOString(),
-    });
+      timestamp: Date.now(),
+    };
+
+    return NextResponse.json<ApiResponse<InventoryDashboardStats>>(
+      {
+        success: true,
+        data: responseData,
+        message: "Tải thống kê kho hàng thành công",
+        timestamp: new Date().toISOString(),
+      },
+      {
+        headers: {
+          "Cache-Control": "private, max-age=15, stale-while-revalidate=45",
+        },
+      }
+    );
   } catch (error: any) {
     console.error("[Inventory Dashboard Stats API] Error:", error);
     return NextResponse.json<ApiResponse<null>>(

@@ -160,11 +160,18 @@ export async function GET() {
   try {
     const now = Date.now();
     if (cachedStats && now - cachedStats.timestamp < CACHE_TTL_MS) {
-      return NextResponse.json<ApiResponse<DebtDashboardStats>>({
-        success: true,
-        data: cachedStats.data,
-        timestamp: new Date().toISOString(),
-      });
+      return NextResponse.json<ApiResponse<DebtDashboardStats>>(
+        {
+          success: true,
+          data: cachedStats.data,
+          timestamp: new Date().toISOString(),
+        },
+        {
+          headers: {
+            "Cache-Control": "private, max-age=15, stale-while-revalidate=45",
+          },
+        }
+      );
     }
 
     await connectToDatabase();
@@ -478,11 +485,18 @@ export async function GET() {
       timestamp: now,
     };
 
-    return NextResponse.json<ApiResponse<DebtDashboardStats>>({
-      success: true,
-      data: resultData,
-      timestamp: new Date().toISOString(),
-    });
+    return NextResponse.json<ApiResponse<DebtDashboardStats>>(
+      {
+        success: true,
+        data: resultData,
+        timestamp: new Date().toISOString(),
+      },
+      {
+        headers: {
+          "Cache-Control": "private, max-age=15, stale-while-revalidate=45",
+        },
+      }
+    );
   } catch (error: any) {
     console.error("Lỗi khi tạo dữ liệu thống kê công nợ:", error);
     return NextResponse.json<ApiResponse<null>>(
