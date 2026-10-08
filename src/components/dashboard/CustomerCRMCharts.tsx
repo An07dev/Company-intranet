@@ -19,41 +19,43 @@ export function CustomerCRMCharts({ stats }: CustomerCRMChartsProps) {
   const maxSpent = Math.max(...topCustomers.map((c) => c.totalSpent), 1);
 
   return (
-    <div className="space-y-4 sm:space-y-5">
+    <div className="space-y-3 sm:space-y-5">
       {/* 1. Header phân khu Quản Lý Khách Hàng & CRM */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2.5 pb-2.5 border-b border-zinc-200 dark:border-zinc-800">
-        <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-lg bg-blue-50 dark:bg-blue-950/60 border border-blue-200 dark:border-blue-800/60 flex items-center justify-center text-base">
+      <div className="flex items-center justify-between gap-2 pb-2 sm:pb-2.5 border-b border-zinc-200 dark:border-zinc-800">
+        <div className="flex items-center gap-2 sm:gap-2.5 min-w-0">
+          <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-blue-50 dark:bg-blue-950/60 border border-blue-200 dark:border-blue-800/60 flex items-center justify-center text-sm sm:text-base shrink-0">
             👥
           </div>
-          <div>
-            <h2 className="text-sm sm:text-base font-bold text-zinc-900 dark:text-zinc-100 flex items-center gap-2">
-              <span>Quản Lý Khách Hàng &amp; CRM</span>
-              <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-blue-100 dark:bg-blue-950 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800">
-                {summary.totalCustomers.toLocaleString("vi-VN")} Khách hàng • {summary.vipCustomersCount} VIP
+          <div className="min-w-0">
+            <h2 className="text-xs sm:text-base font-bold text-zinc-900 dark:text-zinc-100 flex items-center gap-1.5 sm:gap-2 truncate">
+              <span className="sm:hidden truncate">Khách Hàng &amp; CRM</span>
+              <span className="hidden sm:inline">Quản Lý Khách Hàng &amp; CRM</span>
+              <span className="text-[10px] font-semibold px-1.5 sm:px-2 py-0.5 rounded-full bg-blue-100 dark:bg-blue-950 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800 shrink-0">
+                {summary.totalCustomers.toLocaleString("vi-VN")} Khách
               </span>
             </h2>
-            <p className="text-xs text-zinc-500 dark:text-zinc-400">
+            <p className="hidden sm:block text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">
               Phân tích chân dung khách hàng, phân hạng chi tiêu VIP và tỷ lệ giữ chân khách quay lại mua hàng
             </p>
           </div>
         </div>
 
         {/* Action Link to Customers Page */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 shrink-0">
           <Link
             href="/dashboard/customers"
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-blue-200 dark:border-blue-800 bg-blue-50/70 dark:bg-blue-950/40 text-xs font-semibold text-blue-700 dark:text-blue-300 hover:bg-blue-100 dark:hover:bg-blue-900/50 transition shadow-2xs cursor-pointer"
+            className="inline-flex items-center gap-1 px-2.5 py-1 sm:py-1.5 rounded-xl border border-blue-200 dark:border-blue-800 bg-blue-50/70 dark:bg-blue-950/40 text-xs font-semibold text-blue-700 dark:text-blue-300 hover:bg-blue-100 dark:hover:bg-blue-900/50 transition shadow-2xs cursor-pointer"
           >
             <span>👤</span>
-            <span>Danh sách khách hàng</span>
+            <span className="sm:hidden">Khách hàng</span>
+            <span className="hidden sm:inline">Danh sách khách hàng</span>
             <span>→</span>
           </Link>
         </div>
       </div>
 
       {/* 2. 4 Thẻ KPI CRM Nổi Bật */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4">
         {/* KPI 1: Tổng tệp khách hàng */}
         <div className="p-3.5 sm:p-4 rounded-xl sm:rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-2xs sm:shadow-sm relative overflow-hidden">
           <div className="flex items-center justify-between">

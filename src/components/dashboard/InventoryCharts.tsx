@@ -18,41 +18,43 @@ export function InventoryCharts({ stats }: InventoryChartsProps) {
   const maxPriceCount = Math.max(...priceBreakdown.map((p) => p.count), 1);
 
   return (
-    <div className="space-y-4 sm:space-y-5">
+    <div className="space-y-3 sm:space-y-5">
       {/* 1. Header phân khu Quản Lý Kho & Tồn Kho */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2.5 pb-2.5 border-b border-zinc-200 dark:border-zinc-800">
-        <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-lg bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-800/60 flex items-center justify-center text-base">
+      <div className="flex items-center justify-between gap-2 pb-2 sm:pb-2.5 border-b border-zinc-200 dark:border-zinc-800">
+        <div className="flex items-center gap-2 sm:gap-2.5 min-w-0">
+          <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-800/60 flex items-center justify-center text-sm sm:text-base shrink-0">
             🏭
           </div>
-          <div>
-            <h2 className="text-sm sm:text-base font-bold text-zinc-900 dark:text-zinc-100 flex items-center gap-2">
-              <span>Quản Lý Kho &amp; Tồn Kho Chi Nhánh</span>
-              <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
-                {summary.totalProducts} Sản phẩm • {summary.totalStock.toLocaleString("vi-VN")} Tồn
+          <div className="min-w-0">
+            <h2 className="text-xs sm:text-base font-bold text-zinc-900 dark:text-zinc-100 flex items-center gap-1.5 sm:gap-2 truncate">
+              <span className="sm:hidden truncate">Kho &amp; Tồn Kho</span>
+              <span className="hidden sm:inline">Quản Lý Kho &amp; Tồn Kho Chi Nhánh</span>
+              <span className="text-[10px] font-semibold px-1.5 sm:px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 shrink-0">
+                {summary.totalStock.toLocaleString("vi-VN")} Tồn
               </span>
             </h2>
-            <p className="text-xs text-zinc-500 dark:text-zinc-400">
+            <p className="hidden sm:block text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">
               Giám sát mức độ sẵn sàng cung ứng hàng hóa, cảnh báo cạn kho và giá trị tài sản lưu kho
             </p>
           </div>
         </div>
 
         {/* Action Link to Inventory Page */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 shrink-0">
           <Link
             href="/dashboard/inventory"
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-emerald-200 dark:border-emerald-800 bg-emerald-50/70 dark:bg-emerald-950/40 text-xs font-semibold text-emerald-700 dark:text-emerald-300 hover:bg-emerald-100 dark:hover:bg-emerald-900/50 transition shadow-2xs cursor-pointer"
+            className="inline-flex items-center gap-1 px-2.5 py-1 sm:py-1.5 rounded-xl border border-emerald-200 dark:border-emerald-800 bg-emerald-50/70 dark:bg-emerald-950/40 text-xs font-semibold text-emerald-700 dark:text-emerald-300 hover:bg-emerald-100 dark:hover:bg-emerald-900/50 transition shadow-2xs cursor-pointer"
           >
             <span>📦</span>
-            <span>Vào kho kiểm kê</span>
+            <span className="sm:hidden">Kiểm kê</span>
+            <span className="hidden sm:inline">Vào kho kiểm kê</span>
             <span>→</span>
           </Link>
         </div>
       </div>
 
       {/* 2. 4 Thẻ KPI Tồn Kho Nổi Bật */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4">
         {/* KPI 1: Tổng giá trị hàng tồn */}
         <div className="p-3.5 sm:p-4 rounded-xl sm:rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-2xs sm:shadow-sm relative overflow-hidden">
           <div className="flex items-center justify-between">

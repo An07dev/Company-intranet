@@ -146,15 +146,14 @@ export default function DashboardPage() {
       {/* =========================================================================
           1. HEADER TỔNG QUAN DASHBOARD
          ========================================================================= */}
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2 sm:gap-4 pb-2.5 sm:pb-4 border-b border-zinc-200 dark:border-zinc-800">
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2 sm:gap-4 pb-2 sm:pb-3 border-b border-zinc-200 dark:border-zinc-800">
         <div className="space-y-1 sm:space-y-1.5 w-full md:w-auto">
           {/* Hàng 1: Badge Ngày tháng & Nút Làm Mới trên Mobile */}
           <div className="flex items-center justify-between gap-2 w-full">
-            <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] sm:text-xs font-medium bg-zinc-100 dark:bg-zinc-800 text-zinc-800 dark:text-zinc-200">
-              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-              <span>Bảng Điều Khiển Tổng Hợp</span>
-              <span className="text-zinc-300 dark:text-zinc-600">•</span>
-              <span className="font-mono text-zinc-500 dark:text-zinc-400 capitalize">{todayDisplay}</span>
+            <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] sm:text-xs font-medium bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse shrink-0" />
+              <span className="hidden sm:inline font-semibold">Bảng Điều Khiển •</span>
+              <span className="font-mono capitalize">{todayDisplay}</span>
             </div>
 
             {/* Nút Làm Mới hiển thị cùng hàng trên Mobile */}
@@ -163,7 +162,7 @@ export default function DashboardPage() {
                 type="button"
                 onClick={fetchDashboardStats}
                 disabled={refreshing}
-                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-[11px] font-medium text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 cursor-pointer transition-colors shadow-2xs disabled:opacity-50"
+                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-xs font-medium text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 cursor-pointer transition-colors shadow-2xs disabled:opacity-50"
                 title="Làm mới số liệu"
               >
                 <svg
@@ -174,18 +173,18 @@ export default function DashboardPage() {
                 >
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                 </svg>
-                <span>{refreshing ? "..." : "Làm mới"}</span>
+                <span className="text-[11px]">{refreshing ? "..." : "Làm mới"}</span>
               </button>
             </div>
           </div>
 
           {/* Hàng 2: Lời chào buổi sáng */}
           <div className="flex items-center gap-2 flex-wrap">
-            <h1 className="text-base sm:text-2xl lg:text-3xl font-extrabold tracking-tight text-zinc-900 dark:text-zinc-100">
+            <h1 className="text-sm sm:text-2xl lg:text-3xl font-bold sm:font-extrabold tracking-tight text-zinc-900 dark:text-zinc-100">
               {greeting}, {user.name}
             </h1>
             {user.role && !user.name.toLowerCase().includes((USER_ROLE_LABELS[user.role as UserRole] || user.role).toLowerCase()) && (
-              <span className="px-2 py-0.5 rounded-full text-[10px] sm:text-xs font-semibold bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300 border border-blue-200 dark:border-blue-800">
+              <span className="px-1.5 py-0.2 sm:px-2 sm:py-0.5 rounded-full text-[10px] sm:text-xs font-semibold bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300 border border-blue-200 dark:border-blue-800">
                 {USER_ROLE_LABELS[user.role as UserRole] || user.role}
               </span>
             )}
@@ -222,7 +221,7 @@ export default function DashboardPage() {
           2. THANH TAB ĐIỀU HƯỚNG NHANH TRÊN MOBILE (lg:hidden)
          ========================================================================= */}
       <div className="lg:hidden">
-        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none -mx-3.5 px-3.5 text-xs">
+        <div className="flex items-center gap-1 overflow-x-auto pb-1 scrollbar-none -mx-3.5 px-3.5 text-xs">
           {[
             { id: "all", label: "Tất cả", icon: "🌟" },
             { id: "ecommerce", label: "Đơn Đa Kênh", icon: "🛍️" },
@@ -240,7 +239,7 @@ export default function DashboardPage() {
                 key={tab.id}
                 type="button"
                 onClick={() => setMobileTab(tab.id as typeof mobileTab)}
-                className={`px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition cursor-pointer flex items-center gap-1.5 shrink-0 ${
+                className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold whitespace-nowrap transition cursor-pointer flex items-center gap-1 shrink-0 ${
                   isActive
                     ? "bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 shadow-xs"
                     : "bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-700"
@@ -262,7 +261,7 @@ export default function DashboardPage() {
           <LoadingSection text="Đang đồng bộ số liệu Đa Kênh, Kho Hàng, CRM và Nhân Sự..." size="md" />
         </div>
       ) : (
-        <div className="space-y-6 sm:space-y-9">
+        <div className="space-y-5 sm:space-y-9">
           {/* =========================================================================
               PHÂN KHU 1: THƯƠNG MẠI ĐIỆN TỬ & ĐƠN HÀNG ĐA KÊNH (OMNICHANNEL & SHOPEE)
              ========================================================================= */}
@@ -270,43 +269,43 @@ export default function DashboardPage() {
             <div
               className={`${
                 mobileTab === "all" || mobileTab === "ecommerce" ? "block" : "hidden"
-              } lg:block space-y-4 sm:space-y-5`}
+              } lg:block space-y-3 sm:space-y-5`}
             >
               {/* Tiêu đề phân khu & Quick Action Links */}
-              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2.5 pb-2.5 border-b border-zinc-200 dark:border-zinc-800">
-                <div className="flex items-center gap-2.5">
-                  <div className="w-8 h-8 rounded-lg bg-orange-50 dark:bg-orange-950/60 border border-orange-200 dark:border-orange-800/60 flex items-center justify-center text-base">
+              <div className="flex items-center justify-between gap-2 pb-2 sm:pb-2.5 border-b border-zinc-200 dark:border-zinc-800">
+                <div className="flex items-center gap-2 sm:gap-2.5 min-w-0">
+                  <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-orange-50 dark:bg-orange-950/60 border border-orange-200 dark:border-orange-800/60 flex items-center justify-center text-sm sm:text-base shrink-0">
                     🛍️
                   </div>
-                  <div>
-                    <h2 className="text-sm sm:text-base font-bold text-zinc-900 dark:text-zinc-100 flex items-center gap-2">
-                      <span>Thương Mại Điện Tử &amp; Đơn Hàng Đa Kênh</span>
-                      <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-orange-100 dark:bg-orange-950 text-orange-700 dark:text-orange-300 border border-orange-200 dark:border-orange-800">
-                        {shopeeStats.summary.totalOrders.toLocaleString("vi-VN")} đơn • {shopeeStats.channelBreakdown?.length || 9} Kênh bán
+                  <div className="min-w-0">
+                    <h2 className="text-xs sm:text-base font-bold text-zinc-900 dark:text-zinc-100 flex items-center gap-1.5 sm:gap-2 truncate">
+                      <span className="sm:hidden truncate">Đơn Hàng Đa Kênh</span>
+                      <span className="hidden sm:inline">Thương Mại Điện Tử &amp; Đơn Hàng Đa Kênh</span>
+                      <span className="text-[10px] font-semibold px-1.5 sm:px-2 py-0.5 rounded-full bg-orange-100 dark:bg-orange-950 text-orange-700 dark:text-orange-300 border border-orange-200 dark:border-orange-800 shrink-0">
+                        {shopeeStats.summary.totalOrders.toLocaleString("vi-VN")} đơn
                       </span>
                     </h2>
-                    <p className="text-xs text-zinc-500 dark:text-zinc-400">
+                    <p className="hidden sm:block text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">
                       Báo cáo trực quan tình hình kinh doanh, phân bổ đơn hàng và doanh số bán hàng đa sàn (Shopee, TikTok, Lazada, POS, Zalo, FB)
                     </p>
                   </div>
                 </div>
 
-                {/* Quick Action Navigation Buttons */}
-                <div className="flex items-center gap-1.5 flex-wrap">
+                {/* Quick Action Navigation Buttons: 1 link gọn gàng trên Mobile, đầy đủ trên Desktop */}
+                <div className="flex items-center gap-1.5 shrink-0">
                   <Link
                     href="/dashboard/orders"
-                    className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl border border-orange-200 dark:border-orange-800/80 bg-orange-50/60 dark:bg-orange-950/40 text-xs font-semibold text-orange-700 dark:text-orange-300 hover:bg-orange-100 dark:hover:bg-orange-900/50 transition shadow-2xs cursor-pointer"
+                    className="inline-flex items-center gap-1 px-2.5 py-1 sm:py-1.5 rounded-xl border border-orange-200 dark:border-orange-800/80 bg-orange-50/60 dark:bg-orange-950/40 text-xs font-semibold text-orange-700 dark:text-orange-300 hover:bg-orange-100 dark:hover:bg-orange-900/50 transition shadow-2xs cursor-pointer"
                   >
                     <span>📑</span>
-                    <span>Đơn Hàng Đa Kênh</span>
-                    <span className="text-[10px] font-mono px-1 rounded bg-white dark:bg-zinc-800">
-                      {shopeeStats.summary.totalOrders.toLocaleString("vi-VN")}
-                    </span>
+                    <span className="sm:hidden">Chi tiết</span>
+                    <span className="hidden sm:inline">Đơn Hàng Đa Kênh</span>
+                    <span>→</span>
                   </Link>
 
                   <Link
                     href="/dashboard/inventory"
-                    className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-xs font-medium text-zinc-700 dark:text-zinc-300 hover:text-orange-600 hover:border-orange-200 dark:hover:border-orange-800 transition shadow-2xs"
+                    className="hidden sm:inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-xs font-medium text-zinc-700 dark:text-zinc-300 hover:text-orange-600 hover:border-orange-200 dark:hover:border-orange-800 transition shadow-2xs"
                   >
                     <span>📦</span>
                     <span>Kho Hàng</span>
@@ -314,15 +313,15 @@ export default function DashboardPage() {
 
                   <Link
                     href="/dashboard/customers"
-                    className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-xs font-medium text-zinc-700 dark:text-zinc-300 hover:text-orange-600 hover:border-orange-200 dark:hover:border-orange-800 transition shadow-2xs"
+                    className="hidden sm:inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-xs font-medium text-zinc-700 dark:text-zinc-300 hover:text-orange-600 hover:border-orange-200 dark:hover:border-orange-800 transition shadow-2xs"
                   >
                     <span>👥</span>
-                    <span>Khách Hàng CRM</span>
+                    <span>Khách Hàng</span>
                   </Link>
 
                   <Link
                     href="/dashboard/webhooks"
-                    className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-xs font-medium text-zinc-700 dark:text-zinc-300 hover:text-orange-600 hover:border-orange-200 dark:hover:border-orange-800 transition shadow-2xs"
+                    className="hidden lg:inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-xs font-medium text-zinc-700 dark:text-zinc-300 hover:text-orange-600 hover:border-orange-200 dark:hover:border-orange-800 transition shadow-2xs"
                   >
                     <span>⚡</span>
                     <span>Webhook Sapo</span>
@@ -331,7 +330,7 @@ export default function DashboardPage() {
                   {(user?.role === "admin" || user?.role === "director") && (
                     <Link
                       href="/dashboard/shopee-logs"
-                      className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-xs font-medium text-zinc-700 dark:text-zinc-300 hover:text-orange-600 hover:border-orange-200 dark:hover:border-orange-800 transition shadow-2xs"
+                      className="hidden lg:inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-xs font-medium text-zinc-700 dark:text-zinc-300 hover:text-orange-600 hover:border-orange-200 dark:hover:border-orange-800 transition shadow-2xs"
                     >
                       <span>📊</span>
                       <span>Nhật ký</span>
@@ -341,76 +340,76 @@ export default function DashboardPage() {
               </div>
 
               {/* 4 Thẻ KPI Đơn Hàng Đa Kênh Nổi Bật (Chuẩn khớp trang /dashboard/orders) */}
-              <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4">
                 {/* KPI 1: Tổng đơn hàng đa kênh */}
-                <div className="p-4 rounded-xl sm:rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-2xs sm:shadow-sm relative overflow-hidden">
+                <div className="p-2.5 sm:p-4 rounded-xl sm:rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-2xs sm:shadow-sm relative overflow-hidden flex flex-col justify-between">
                   <div className="flex items-center justify-between">
-                    <span className="text-xs font-medium text-zinc-500 dark:text-zinc-400">
-                      Tổng đơn hàng đa kênh
+                    <span className="text-[11px] sm:text-xs font-medium text-zinc-500 dark:text-zinc-400 truncate">
+                      Tổng đơn đa kênh
                     </span>
-                    <div className="w-7 h-7 rounded-lg bg-orange-50 dark:bg-orange-950 text-orange-600 dark:text-orange-300 flex items-center justify-center text-xs">
+                    <div className="w-6 h-6 sm:w-7 sm:h-7 rounded-lg bg-orange-50 dark:bg-orange-950 text-orange-600 dark:text-orange-300 flex items-center justify-center text-xs shrink-0">
                       📦
                     </div>
                   </div>
-                  <div className="text-xl sm:text-2xl font-black font-mono mt-1 text-zinc-900 dark:text-zinc-100">
+                  <div className="text-xs sm:text-base lg:text-xl xl:text-2xl font-bold sm:font-black font-mono mt-0.5 sm:mt-1 text-zinc-900 dark:text-zinc-100 truncate">
                     {shopeeStats.summary.totalOrders.toLocaleString("vi-VN")}
                   </div>
-                  <div className="text-[11px] text-zinc-400 mt-1 truncate">
-                    Ghi nhận từ {shopeeStats.channelBreakdown?.length || 9} kênh sàn &amp; POS
+                  <div className="text-[10px] sm:text-[11px] text-zinc-400 mt-0.5 sm:mt-1 truncate">
+                    {shopeeStats.channelBreakdown?.length || 9} kênh sàn &amp; POS
                   </div>
                 </div>
 
                 {/* KPI 2: Tổng doanh thu bán hàng */}
-                <div className="p-4 rounded-xl sm:rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-2xs sm:shadow-sm relative overflow-hidden">
+                <div className="p-2.5 sm:p-4 rounded-xl sm:rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-2xs sm:shadow-sm relative overflow-hidden flex flex-col justify-between">
                   <div className="flex items-center justify-between">
-                    <span className="text-xs font-medium text-zinc-500 dark:text-zinc-400">
-                      Tổng doanh thu bán hàng
+                    <span className="text-[11px] sm:text-xs font-medium text-zinc-500 dark:text-zinc-400 truncate">
+                      Tổng doanh thu
                     </span>
-                    <div className="w-7 h-7 rounded-lg bg-emerald-50 dark:bg-emerald-950 text-emerald-600 dark:text-emerald-400 flex items-center justify-center text-xs">
+                    <div className="w-6 h-6 sm:w-7 sm:h-7 rounded-lg bg-emerald-50 dark:bg-emerald-950 text-emerald-600 dark:text-emerald-400 flex items-center justify-center text-xs shrink-0">
                       💰
                     </div>
                   </div>
-                  <div className="text-xl sm:text-2xl font-black font-mono mt-1 text-emerald-600 dark:text-emerald-400 truncate" title={`₫${shopeeStats.summary.totalRevenue.toLocaleString("vi-VN")}`}>
+                  <div className="text-xs sm:text-base lg:text-xl xl:text-2xl font-bold sm:font-black font-mono mt-0.5 sm:mt-1 text-emerald-600 dark:text-emerald-400 truncate" title={`₫${shopeeStats.summary.totalRevenue.toLocaleString("vi-VN")}`}>
                     ₫{shopeeStats.summary.totalRevenue.toLocaleString("vi-VN")}
                   </div>
-                  <div className="text-[11px] text-emerald-600/80 dark:text-emerald-400/80 mt-1 truncate font-medium">
-                    Doanh thu toàn bộ lịch sử đơn
+                  <div className="text-[10px] sm:text-[11px] text-emerald-600/80 dark:text-emerald-400/80 mt-0.5 sm:mt-1 truncate font-medium">
+                    Toàn bộ lịch sử đơn
                   </div>
                 </div>
 
                 {/* KPI 3: Chờ chuẩn bị & đóng gói */}
-                <div className="p-4 rounded-xl sm:rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-2xs sm:shadow-sm relative overflow-hidden">
+                <div className="p-2.5 sm:p-4 rounded-xl sm:rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-2xs sm:shadow-sm relative overflow-hidden flex flex-col justify-between">
                   <div className="flex items-center justify-between">
-                    <span className="text-xs font-medium text-zinc-500 dark:text-zinc-400">
-                      Chờ xử lý / Đóng gói
+                    <span className="text-[11px] sm:text-xs font-medium text-zinc-500 dark:text-zinc-400 truncate">
+                      Chờ đóng gói
                     </span>
-                    <div className="w-7 h-7 rounded-lg bg-amber-50 dark:bg-amber-950 text-amber-600 dark:text-amber-400 flex items-center justify-center text-xs">
+                    <div className="w-6 h-6 sm:w-7 sm:h-7 rounded-lg bg-amber-50 dark:bg-amber-950 text-amber-600 dark:text-amber-400 flex items-center justify-center text-xs shrink-0">
                       ⏳
                     </div>
                   </div>
-                  <div className="text-xl sm:text-2xl font-black font-mono mt-1 text-amber-600 dark:text-amber-400">
+                  <div className="text-xs sm:text-base lg:text-xl xl:text-2xl font-bold sm:font-black font-mono mt-0.5 sm:mt-1 text-amber-600 dark:text-amber-400 truncate">
                     {shopeeStats.summary.processingOrders.toLocaleString("vi-VN")}
                   </div>
-                  <div className="text-[11px] text-zinc-400 mt-1 truncate">
-                    Cần xác nhận &amp; chuẩn bị xuất kho
+                  <div className="text-[10px] sm:text-[11px] text-zinc-400 mt-0.5 sm:mt-1 truncate">
+                    Cần chuẩn bị xuất kho
                   </div>
                 </div>
 
                 {/* KPI 4: Đã giao thành công */}
-                <div className="p-4 rounded-xl sm:rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-2xs sm:shadow-sm relative overflow-hidden">
+                <div className="p-2.5 sm:p-4 rounded-xl sm:rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-2xs sm:shadow-sm relative overflow-hidden flex flex-col justify-between">
                   <div className="flex items-center justify-between">
-                    <span className="text-xs font-medium text-zinc-500 dark:text-zinc-400">
+                    <span className="text-[11px] sm:text-xs font-medium text-zinc-500 dark:text-zinc-400 truncate">
                       Đã giao thành công
                     </span>
-                    <div className="w-7 h-7 rounded-lg bg-indigo-50 dark:bg-indigo-950 text-indigo-600 dark:text-indigo-400 flex items-center justify-center text-xs">
+                    <div className="w-6 h-6 sm:w-7 sm:h-7 rounded-lg bg-indigo-50 dark:bg-indigo-950 text-indigo-600 dark:text-indigo-400 flex items-center justify-center text-xs shrink-0">
                       🚚
                     </div>
                   </div>
-                  <div className="text-xl sm:text-2xl font-black font-mono mt-1 text-indigo-600 dark:text-indigo-400">
+                  <div className="text-xs sm:text-base lg:text-xl xl:text-2xl font-bold sm:font-black font-mono mt-0.5 sm:mt-1 text-indigo-600 dark:text-indigo-400 truncate">
                     {shopeeStats.summary.deliveredOrders.toLocaleString("vi-VN")}
                   </div>
-                  <div className="text-[11px] text-indigo-600/80 dark:text-indigo-400/80 mt-1 truncate font-medium">
-                    Tỷ lệ hoàn tất: {shopeeStats.summary.deliveredRate}% (₫{Math.round(shopeeStats.summary.deliveredRevenue / 1000000).toLocaleString("vi-VN")}M)
+                  <div className="text-[10px] sm:text-[11px] text-indigo-600/80 dark:text-indigo-400/80 mt-0.5 sm:mt-1 truncate font-medium">
+                    Hoàn tất: {shopeeStats.summary.deliveredRate}%
                   </div>
                 </div>
               </div>
@@ -491,7 +490,7 @@ export default function DashboardPage() {
                   <span>⏱️</span>
                   <span>Chuyên Cần &amp; Quản Lý Nhân Sự</span>
                 </h2>
-                <p className="text-xs text-zinc-500 dark:text-zinc-400">
+                <p className="hidden sm:block text-xs text-zinc-500 dark:text-zinc-400">
                   Dữ liệu chấm công hàng ngày, tỷ lệ đúng giờ và tiến độ thực thi công việc nội bộ
                 </p>
               </div>
