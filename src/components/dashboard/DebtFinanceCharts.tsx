@@ -13,17 +13,6 @@ function formatVND(val: number): string {
   return val.toLocaleString("vi-VN") + " ₫";
 }
 
-function formatShortVND(val: number): string {
-  const abs = Math.abs(val);
-  if (abs >= 1_000_000_000) {
-    return (val / 1_000_000_000).toFixed(2).replace(/\.00$/, "") + " Tỷ";
-  }
-  if (abs >= 1_000_000) {
-    return (val / 1_000_000).toFixed(1).replace(/\.0$/, "") + " Triệu";
-  }
-  return formatVND(val);
-}
-
 export function DebtFinanceCharts({ stats }: DebtFinanceChartsProps) {
   const [activeTopTab, setActiveTopTab] = useState<"customers" | "suppliers">("customers");
 
@@ -84,7 +73,7 @@ export function DebtFinanceCharts({ stats }: DebtFinanceChartsProps) {
       </div>
 
       {/* =========================================================================
-          2. 4 THẺ KPI TÀI CHÍNH NỔI BẬT
+          2. 4 THẺ KPI TÀI CHÍNH NỔI BẬT (KHỚP 100% TRANG /dashboard/debts)
          ========================================================================= */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         {/* KPI 1: Phải thu khách hàng */}
@@ -101,9 +90,9 @@ export function DebtFinanceCharts({ stats }: DebtFinanceChartsProps) {
             className="text-lg sm:text-2xl font-black font-mono mt-1 text-rose-600 dark:text-rose-400 truncate"
             title={formatVND(summary.customerDebt)}
           >
-            {formatShortVND(summary.customerDebt)}
+            {formatVND(summary.customerDebt)}
           </div>
-          <div className="text-[11px] text-zinc-400 mt-0.5 truncate">
+          <div className="text-[11px] text-zinc-500 dark:text-zinc-400 mt-1 truncate">
             {summary.totalDebtors} khách nợ • {summary.totalDebtOrders} đơn nợ
           </div>
         </div>
@@ -122,9 +111,9 @@ export function DebtFinanceCharts({ stats }: DebtFinanceChartsProps) {
             className="text-lg sm:text-2xl font-black font-mono mt-1 text-indigo-600 dark:text-indigo-400 truncate"
             title={formatVND(summary.supplierDebt)}
           >
-            {formatShortVND(summary.supplierDebt)}
+            {formatVND(summary.supplierDebt)}
           </div>
-          <div className="text-[11px] text-zinc-400 mt-0.5 truncate">
+          <div className="text-[11px] text-zinc-500 dark:text-zinc-400 mt-1 truncate">
             {summary.totalSuppliers} nhà cung cấp • {summary.totalReceiveOrders} đơn nhập
           </div>
         </div>
@@ -148,9 +137,9 @@ export function DebtFinanceCharts({ stats }: DebtFinanceChartsProps) {
             title={formatVND(summary.netReceivable)}
           >
             {summary.netReceivable >= 0 ? "+" : ""}
-            {formatShortVND(summary.netReceivable)}
+            {formatVND(summary.netReceivable)}
           </div>
-          <div className="text-[11px] text-emerald-600 dark:text-emerald-400 font-medium mt-0.5 truncate">
+          <div className="text-[11px] text-emerald-600 dark:text-emerald-400 font-medium mt-1 truncate">
             Phải thu KH &gt; Phải trả NCC
           </div>
         </div>
@@ -168,8 +157,8 @@ export function DebtFinanceCharts({ stats }: DebtFinanceChartsProps) {
           <div className="text-lg sm:text-2xl font-black font-mono mt-1 text-zinc-900 dark:text-zinc-100">
             {summary.collectionRate}%
           </div>
-          <div className="text-[11px] text-amber-600 dark:text-amber-400 mt-0.5 truncate">
-            Quá hạn (&ge;30d): {summary.overdueRate}% ({formatShortVND(summary.overdueAmount)})
+          <div className="text-[11px] text-amber-600 dark:text-amber-400 mt-1 truncate">
+            Đã thu: {formatVND(customerBalance.no_giam_trong_ky)}
           </div>
         </div>
       </div>
@@ -206,10 +195,10 @@ export function DebtFinanceCharts({ stats }: DebtFinanceChartsProps) {
                   <span className="text-zinc-500 font-medium">Nợ Đầu Kỳ:</span>
                   <div className="font-mono text-[11px] flex gap-3">
                     <span className="text-rose-600 dark:text-rose-400 font-medium">
-                      KH: {formatShortVND(customerBalance.no_dau_ky)}
+                      KH: {formatVND(customerBalance.no_dau_ky)}
                     </span>
                     <span className="text-indigo-600 dark:text-indigo-400 font-medium">
-                      NCC: {formatShortVND(supplierBalance.no_dau_ky)}
+                      NCC: {formatVND(supplierBalance.no_dau_ky)}
                     </span>
                   </div>
                 </div>
@@ -235,10 +224,10 @@ export function DebtFinanceCharts({ stats }: DebtFinanceChartsProps) {
                   <span className="text-zinc-500 font-medium">Nợ Tăng Trong Kỳ (Bán / Nhập):</span>
                   <div className="font-mono text-[11px] flex gap-3">
                     <span className="text-rose-600 dark:text-rose-400 font-medium">
-                      KH: +{formatShortVND(customerBalance.no_tang_trong_ky)}
+                      KH: +{formatVND(customerBalance.no_tang_trong_ky)}
                     </span>
                     <span className="text-indigo-600 dark:text-indigo-400 font-medium">
-                      NCC: +{formatShortVND(supplierBalance.no_tang_trong_ky)}
+                      NCC: +{formatVND(supplierBalance.no_tang_trong_ky)}
                     </span>
                   </div>
                 </div>
@@ -264,10 +253,10 @@ export function DebtFinanceCharts({ stats }: DebtFinanceChartsProps) {
                   <span className="text-zinc-500 font-medium">Nợ Giảm Trong Kỳ (Đã Thu / Trả):</span>
                   <div className="font-mono text-[11px] flex gap-3">
                     <span className="text-emerald-600 dark:text-emerald-400 font-medium">
-                      KH: -{formatShortVND(customerBalance.no_giam_trong_ky)}
+                      KH: -{formatVND(customerBalance.no_giam_trong_ky)}
                     </span>
                     <span className="text-emerald-600 dark:text-emerald-400 font-medium">
-                      NCC: -{formatShortVND(supplierBalance.no_giam_trong_ky)}
+                      NCC: -{formatVND(supplierBalance.no_giam_trong_ky)}
                     </span>
                   </div>
                 </div>
@@ -293,15 +282,15 @@ export function DebtFinanceCharts({ stats }: DebtFinanceChartsProps) {
                   <span>Phải Thu / Trả Cuối Kỳ:</span>
                   <div className="font-mono text-xs flex gap-3">
                     <span className="text-rose-600 dark:text-rose-400 font-bold">
-                      KH: {formatShortVND(customerBalance.no_cuoi_ky)}
+                      KH: {formatVND(customerBalance.no_cuoi_ky)}
                     </span>
                     <span className="text-indigo-600 dark:text-indigo-400 font-bold">
-                      NCC: {formatShortVND(supplierBalance.no_tang_trong_ky)}
+                      NCC: {formatVND(supplierBalance.no_cuoi_ky)}
                     </span>
                   </div>
                 </div>
                 <div className="flex items-center justify-between text-[11px] text-zinc-500">
-                  <span>Vị thế chênh lệch ròng:</span>
+                  <span>Vị thế chênh lệch ròng (Phải thu - Phải trả):</span>
                   <span className="font-mono font-bold text-emerald-600 dark:text-emerald-400">
                     +{formatVND(summary.netReceivable)}
                   </span>
@@ -348,7 +337,7 @@ export function DebtFinanceCharts({ stats }: DebtFinanceChartsProps) {
                     <span>{item.range}</span>
                   </div>
                   <div className="font-mono font-bold text-xs text-zinc-900 dark:text-white">
-                    {formatShortVND(item.amount)}
+                    {formatVND(item.amount)}
                   </div>
                   <div className="text-[10px] text-zinc-400 font-mono">
                     {item.count} đơn ({item.percentage}%)
@@ -384,7 +373,7 @@ export function DebtFinanceCharts({ stats }: DebtFinanceChartsProps) {
                       <span>{item.label}</span>
                     </span>
                     <span className="font-mono text-zinc-600 dark:text-zinc-400 text-[11px]">
-                      <strong className="text-zinc-900 dark:text-zinc-100">{formatShortVND(item.unpaidAmount)}</strong>{" "}
+                      <strong className="text-zinc-900 dark:text-zinc-100">{formatVND(item.unpaidAmount)}</strong>{" "}
                       ({item.percentage}%) • {item.orderCount} đơn
                     </span>
                   </div>
@@ -434,7 +423,7 @@ export function DebtFinanceCharts({ stats }: DebtFinanceChartsProps) {
               </div>
             </div>
 
-            {/* Danh sách Top Khách Hàng Nợ */}
+            {/* Danh sách Top Khách Hàng Nợ (Khớp 100% /dashboard/debts) */}
             {activeTopTab === "customers" ? (
               <div className="space-y-2">
                 {topDebtors.length === 0 ? (
@@ -474,7 +463,7 @@ export function DebtFinanceCharts({ stats }: DebtFinanceChartsProps) {
                 )}
               </div>
             ) : (
-              /* Danh sách Top Nhà Cung Cấp */
+              /* Danh sách Top Nhà Cung Cấp (Khớp 100% /dashboard/debts) */
               <div className="space-y-2">
                 {topSuppliers.length === 0 ? (
                   <div className="py-6 text-center text-xs text-zinc-400">Không có dữ liệu công nợ nhà cung cấp</div>

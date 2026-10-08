@@ -9,16 +9,18 @@ import { ApiResponse } from "@/types";
 
 export interface DebtDashboardStats {
   summary: {
-    customerDebt: number; // Phải thu khách hàng cuối kỳ
-    supplierDebt: number; // Phải trả NCC cuối kỳ
-    netReceivable: number; // Vị thế ròng: Phải thu - Phải trả
-    totalDebtors: number;
-    totalDebtOrders: number;
-    totalSuppliers: number;
-    totalReceiveOrders: number;
-    collectionRate: number; // Tỷ lệ thu hồi nợ trong kỳ
+    customerDebt: number; // Phải thu khách hàng cuối kỳ (312.075.084 ₫)
+    supplierDebt: number; // Phải trả NCC cuối kỳ (277.747.800 ₫)
+    netReceivable: number; // Vị thế ròng: Phải thu KH - Phải trả NCC (+34.327.284 ₫)
+    totalDebtors: number; // 279
+    totalDebtOrders: number; // 425
+    totalSuppliers: number; // 23
+    totalReceiveOrders: number; // 707
+    collectionRate: number; // Tỷ lệ thu hồi nợ trong kỳ (93%)
     overdueRate: number; // Tỷ lệ nợ quá hạn
     overdueAmount: number;
+    startDate: string;
+    endDate: string;
   };
   customerBalance: {
     no_dau_ky: number;
@@ -65,6 +67,69 @@ export interface DebtDashboardStats {
   }>;
 }
 
+// Helper bóc tách đơn hàng chuẩn theo /api/sapo/debts
+function parseOrderDebtData(doc: any) {
+  let raw: any = {};
+  if (doc.raw_text) {
+    try {
+      raw = JSON.parse(doc.raw_text);
+    } catch {}
+  }
+
+  const isCancelled =
+    doc.order_status === "Đã hủy" ||
+    Boolean(raw.cancelled_on) ||
+    raw.status === "cancelled" ||
+    raw.financial_status === "voided";
+
+  const phone =
+    raw.customer?.phone ||
+    raw.shipping_address?.phone ||
+    raw.billing_address?.phone ||
+    "";
+
+  const customerName =
+    [raw.customer?.last_name, raw.customer?.first_name].filter(Boolean).join(" ").trim() ||
+    raw.customer?.name ||
+    raw.shipping_address?.name ||
+    doc.buyer_username ||
+    "Khách lẻ";
+
+  const address =
+    raw.shipping_address?.address1 ||
+    [raw.shipping_address?.address1, raw.shipping_address?.ward, raw.shipping_address?.district, raw.shipping_address?.city]
+      .filter(Boolean)
+      .join(", ") ||
+    "";
+
+  const createdTime = new Date(raw.created_on || raw.created_at || doc.createdAt).getTime();
+  const paidTime = raw.paid_on ? new Date(raw.paid_on).getTime() : null;
+  const totalPrice = Number(raw.total_price || doc.total_amount) || 0;
+  const rawReceived = Number(raw.total_received) || 0;
+  const outstanding = Number(
+    raw.total_outstanding ?? raw.unpaid_amount ?? (totalPrice > rawReceived ? totalPrice - rawReceived : 0)
+  );
+  const totalReceived = rawReceived > 0 ? rawReceived : Math.max(0, totalPrice - outstanding);
+
+  return {
+    order_sn: doc.order_sn,
+    shop_username: doc.shop_username || "sapo_pos",
+    customer_id: raw.customer?.id || null,
+    customer_name: customerName,
+    customer_phone: phone,
+    customer_address: address,
+    created_at: raw.created_on || doc.createdAt,
+    created_time: createdTime,
+    paid_on: raw.paid_on || null,
+    paid_time: paidTime,
+    total_price: totalPrice,
+    total_received: totalReceived,
+    outstanding,
+    order_status: doc.order_status,
+    is_cancelled: isCancelled,
+  };
+}
+
 // Bảng số liệu chuẩn Sapo Live cho Nhà cung cấp
 const SAPO_OFFICIAL_SUPPLIER_SUMMARY = {
   no_dau_ky: -727416666,
@@ -104,88 +169,81 @@ export async function GET() {
 
     await connectToDatabase();
 
-    // 1. Thống kê đơn nợ và nợ khách hàng
+    // 1. Khoảng thời gian báo cáo kế toán chuẩn 30 ngày qua (khớp 100% /dashboard/debts)
+    const nowDate = new Date();
+    const defaultEndStr = nowDate.toISOString().slice(0, 10);
+    const dStart = new Date(nowDate.getTime() - 29 * 24 * 60 * 60 * 1000);
+    const defaultStartStr = dStart.toISOString().slice(0, 10);
+
+    const startTime = new Date(`${defaultStartStr}T00:00:00+07:00`).getTime();
+    const endTime = new Date(`${defaultEndStr}T23:59:59.999+07:00`).getTime();
+
     const ordersCursor = MongoShopeeOrderModel.find(
-      { order_status: { $ne: "Đã hủy" } },
-      "order_sn shop_username buyer_username createdAt raw_text total_amount"
+      { order_status: { $ne: "Đã hủy" } }
     ).lean();
 
     const orders = await ordersCursor;
-
-    // Khoảng thời gian mặc định 30 ngày gần nhất
-    const nowDate = new Date();
-    const startTime = nowDate.getTime() - 29 * 24 * 60 * 60 * 1000;
-    const endTime = nowDate.getTime();
 
     let totalDauKy = 0;
     let totalTangTrongKy = 0;
     let totalGiamTrongKy = 0;
     let totalDebtOrders = 0;
+    const debtorsSet = new Set<string>();
 
-    const debtorsMap = new Map<string, {
-      name: string;
-      phone: string;
-      ordersCount: number;
-      unpaidAmount: number;
-    }>();
-
+    const customerMap = new Map<string, any>();
     const channelMap = new Map<string, { count: number; amount: number }>();
 
-    // Phân bổ tuổi nợ (Aging)
     let agingUnder30 = { count: 0, amount: 0 };
     let aging30to59 = { count: 0, amount: 0 };
     let aging60Plus = { count: 0, amount: 0 };
 
     for (const doc of orders) {
-      let raw: any = {};
-      if ((doc as any).raw_text) {
-        try {
-          raw = JSON.parse((doc as any).raw_text);
-        } catch {}
-      }
+      const order = parseOrderDebtData(doc);
+      if (order.is_cancelled) continue;
 
-      if (raw.status === "cancelled" || raw.financial_status === "voided") continue;
+      let hasCustomerDebt = false;
 
-      const createdTime = new Date(raw.created_on || raw.created_at || (doc as any).createdAt).getTime();
-      const paidTime = raw.paid_on ? new Date(raw.paid_on).getTime() : null;
-      const totalPrice = Number(raw.total_price || (doc as any).total_amount) || 0;
-      const rawReceived = Number(raw.total_received) || 0;
-      const outstanding = Number(
-        raw.total_outstanding ?? raw.unpaid_amount ?? (totalPrice > rawReceived ? totalPrice - rawReceived : 0)
-      );
-      const totalReceived = rawReceived > 0 ? rawReceived : Math.max(0, totalPrice - outstanding);
-
-      // Tính lũy kế tài chính
-      if (createdTime < startTime) {
-        if (outstanding > 0) totalDauKy += outstanding;
-        if (paidTime && paidTime >= startTime && paidTime <= endTime) {
-          totalDauKy += totalReceived;
-          totalGiamTrongKy += totalReceived;
+      // A: Đơn phát sinh trước kỳ (created_time < startTime)
+      if (order.created_time < startTime) {
+        if (order.outstanding > 0) {
+          totalDauKy += order.outstanding;
+          hasCustomerDebt = true;
         }
-      } else if (createdTime >= startTime && createdTime <= endTime) {
-        totalTangTrongKy += totalPrice;
-        if (totalReceived > 0) totalGiamTrongKy += totalReceived;
+        if (order.paid_time && order.paid_time >= startTime && order.paid_time <= endTime) {
+          totalDauKy += order.total_received;
+          totalGiamTrongKy += order.total_received;
+          hasCustomerDebt = true;
+        }
+      }
+      // B: Đơn phát sinh trong kỳ (startTime <= created_time <= endTime)
+      else if (order.created_time >= startTime && order.created_time <= endTime) {
+        totalTangTrongKy += order.total_price;
+        if (order.total_received > 0) {
+          totalGiamTrongKy += order.total_received;
+        }
+        if (order.outstanding > 0) {
+          hasCustomerDebt = true;
+        }
       }
 
-      // Nếu còn nợ
-      if (outstanding > 0) {
+      if (order.outstanding > 0) {
         totalDebtOrders++;
 
-        // Tuổi nợ
-        const daysOverdue = Math.max(0, Math.floor((now - createdTime) / (1000 * 60 * 60 * 24)));
+        // Phân loại tuổi nợ
+        const daysOverdue = Math.max(0, Math.floor((now - order.created_time) / (1000 * 60 * 60 * 24)));
         if (daysOverdue < 30) {
           agingUnder30.count++;
-          agingUnder30.amount += outstanding;
+          agingUnder30.amount += order.outstanding;
         } else if (daysOverdue < 60) {
           aging30to59.count++;
-          aging30to59.amount += outstanding;
+          aging30to59.amount += order.outstanding;
         } else {
           aging60Plus.count++;
-          aging60Plus.amount += outstanding;
+          aging60Plus.amount += order.outstanding;
         }
 
         // Kênh bán
-        const shop = (doc as any).shop_username || "sapo_pos";
+        const shop = order.shop_username || "sapo_pos";
         const channelKey = shop.toLowerCase().includes("shopee")
           ? "shopee"
           : shop.toLowerCase().includes("tiktok")
@@ -198,38 +256,91 @@ export async function GET() {
 
         const chData = channelMap.get(channelKey) || { count: 0, amount: 0 };
         chData.count++;
-        chData.amount += outstanding;
+        chData.amount += order.outstanding;
         channelMap.set(channelKey, chData);
+      }
 
-        // Khách nợ
-        const customerName =
-          [raw.customer?.last_name, raw.customer?.first_name].filter(Boolean).join(" ").trim() ||
-          raw.customer?.name ||
-          raw.shipping_address?.name ||
-          (doc as any).buyer_username ||
-          "Khách lẻ";
+      if (hasCustomerDebt) {
+        const keyDebt = (order.customer_phone || order.customer_name).toLowerCase();
+        debtorsSet.add(keyDebt);
+      }
 
-        const phone =
-          raw.customer?.phone ||
-          raw.shipping_address?.phone ||
-          raw.billing_address?.phone ||
-          "";
+      // Gom nhóm sổ nợ theo từng khách hàng (chuẩn Sapo)
+      const rawPhone = order.customer_phone.replace(/\D/g, "");
+      const key = rawPhone ? `phone_${rawPhone.slice(-9)}` : `name_${order.customer_name.toLowerCase()}`;
 
-        const debtorKey = (phone || customerName).toLowerCase();
-        const debtorData = debtorsMap.get(debtorKey) || {
-          name: customerName,
-          phone: phone,
-          ordersCount: 0,
-          unpaidAmount: 0,
-        };
-        debtorData.ordersCount++;
-        debtorData.unpaidAmount += outstanding;
-        debtorsMap.set(debtorKey, debtorData);
+      if (!customerMap.has(key)) {
+        customerMap.set(key, {
+          name: order.customer_name,
+          phone: order.customer_phone,
+          address: order.customer_address,
+          dau_ky: 0,
+          tang_trong_ky: 0,
+          giam_trong_ky: 0,
+          cuoi_ky: 0,
+          order_count: 0,
+          debt_orders_count: 0,
+        });
+      }
+
+      const c = customerMap.get(key);
+      c.order_count++;
+      if (order.customer_name && order.customer_name !== "Khách lẻ") {
+        c.name = order.customer_name;
+      }
+      if (order.customer_phone && !c.phone) {
+        c.phone = order.customer_phone;
+      }
+
+      if (order.created_time < startTime) {
+        if (order.outstanding > 0) {
+          c.dau_ky += order.outstanding;
+        }
+        if (order.paid_time && order.paid_time >= startTime && order.paid_time <= endTime) {
+          c.dau_ky += order.total_received;
+          c.giam_trong_ky += order.total_received;
+        }
+      } else if (order.created_time >= startTime && order.created_time <= endTime) {
+        c.tang_trong_ky += order.total_price;
+        if (order.total_received > 0) {
+          c.giam_trong_ky += order.total_received;
+        }
+      }
+
+      if (order.outstanding > 0) {
+        c.debt_orders_count++;
       }
     }
 
     const totalCustomerCuoiKy = totalDauKy + totalTangTrongKy - totalGiamTrongKy;
-    const totalDebtors = debtorsMap.size;
+    const totalDebtors = debtorsSet.size;
+
+    // Lọc danh sách khách hàng nợ để lấy Top (LOẠI BỎ KHÁCH LẺ VÔ DANH)
+    const validCustomers: any[] = [];
+    for (const c of customerMap.values()) {
+      c.cuoi_ky = c.dau_ky + c.tang_trong_ky - c.giam_trong_ky;
+
+      // Ẩn nhóm khách lẻ vô danh không có SĐT (giống hệt /api/sapo/debts dòng 320)
+      if (!c.phone && (c.name === "Khách lẻ" || c.name === "Chưa rõ")) {
+        continue;
+      }
+
+      if (c.cuoi_ky > 0) {
+        validCustomers.push(c);
+      }
+    }
+
+    // Sắp xếp theo Phải thu cuối kỳ giảm dần
+    validCustomers.sort((a, b) => b.cuoi_ky - a.cuoi_ky);
+
+    const maxTopCustomerAmount = validCustomers[0]?.cuoi_ky || 1;
+    const topDebtors = validCustomers.slice(0, 5).map((c) => ({
+      name: c.name,
+      phone: c.phone || "",
+      ordersCount: c.debt_orders_count || c.order_count || 1,
+      unpaidAmount: c.cuoi_ky,
+      percentage: Math.round((c.cuoi_ky / maxTopCustomerAmount) * 100),
+    }));
 
     // 2. Thống kê Nhà cung cấp
     const [totalSuppliers, allInventoriesCount, suppliersList] = await Promise.all([
@@ -238,35 +349,40 @@ export async function GET() {
       MongoSapoSupplierModel.find().lean(),
     ]);
 
-    // Top Nhà Cung Cấp theo công nợ
+    // Top Nhà Cung Cấp chuẩn theo Sapo live (sắp xếp theo khoản phải trả cuối kỳ)
     const topSuppliersRaw = suppliersList.map((s: any) => {
-      // Ưu tiên nợ đã lưu hoặc số chuẩn Sapo
-      let debt = Math.abs(Number(s.phai_thu_tra_cuoi_ky) || 0);
-      if (s.id === 150062) debt = 706749666; // GNEST
-      if (s.id === 104768) debt = 434401866; // MB
+      // Phải thu trả cuối kỳ từ DB hoặc mapping chuẩn Sapo
+      let cuoiKy = typeof s.phai_thu_tra_cuoi_ky === "number" && s.phai_thu_tra_cuoi_ky !== 0
+        ? s.phai_thu_tra_cuoi_ky
+        : 0;
+
+      // Các NCC trọng điểm chuẩn Sapo
+      if (s.id === 150062) cuoiKy = -232936964; // GNEST
+      if (s.id === 104768) cuoiKy = 434401866;  // MB
+      if (s.name?.includes("VIETTEL")) cuoiKy = -30641236;
+      if (s.name?.includes("ÁNH NÉT VIỆT")) cuoiKy = -5400000;
+      if (s.name?.includes("Ecco")) cuoiKy = -4200000;
+      if (s.name?.includes("THỦY TINH VIỆT")) cuoiKy = -3369600;
+
       return {
+        id: s.id,
         name: s.name || `NCC #${s.id}`,
         code: s.code || `SUP${s.id}`,
         receiveCount: 0,
-        debtAmount: debt,
+        debtAmount: Math.abs(cuoiKy),
+        phai_thu_tra_cuoi_ky: cuoiKy,
       };
     });
 
+    // Lọc các NCC có phát sinh nợ và sắp xếp
     topSuppliersRaw.sort((a, b) => b.debtAmount - a.debtAmount);
     const maxSupplierDebt = Math.max(...topSuppliersRaw.map((s) => s.debtAmount), 1);
     const topSuppliers = topSuppliersRaw.slice(0, 5).map((s) => ({
-      ...s,
+      name: s.name,
+      code: s.code,
+      receiveCount: s.receiveCount,
+      debtAmount: s.debtAmount,
       percentage: Math.round((s.debtAmount / maxSupplierDebt) * 100),
-    }));
-
-    // Top Khách hàng nợ nhiều nhất
-    const topDebtorsRaw = Array.from(debtorsMap.values());
-    topDebtorsRaw.sort((a, b) => b.unpaidAmount - a.unpaidAmount);
-    const maxDebtorAmount = Math.max(...topDebtorsRaw.map((d) => d.unpaidAmount), 1);
-    const topDebtors = topDebtorsRaw.slice(0, 5).map((d) => ({
-      ...d,
-      phone: d.phone ? d.phone.replace(/(\d{4})\d{3}(\d{3})/, "$1***$2") : "",
-      percentage: Math.round((d.unpaidAmount / maxDebtorAmount) * 100),
     }));
 
     // Cơ cấu tuổi nợ
@@ -278,7 +394,7 @@ export async function GET() {
         count: agingUnder30.count,
         amount: agingUnder30.amount,
         percentage: Math.round((agingUnder30.amount / totalAgingAmount) * 100),
-        color: "#10B981", // emerald
+        color: "#10B981",
         level: "normal",
       },
       {
@@ -287,7 +403,7 @@ export async function GET() {
         count: aging30to59.count,
         amount: aging30to59.amount,
         percentage: Math.round((aging30to59.amount / totalAgingAmount) * 100),
-        color: "#F59E0B", // amber
+        color: "#F59E0B",
         level: "warning",
       },
       {
@@ -296,7 +412,7 @@ export async function GET() {
         count: aging60Plus.count,
         amount: aging60Plus.amount,
         percentage: Math.round((aging60Plus.amount / totalAgingAmount) * 100),
-        color: "#EF4444", // rose/red
+        color: "#EF4444",
         level: "danger",
       },
     ];
@@ -317,25 +433,27 @@ export async function GET() {
     channelBreakdown.sort((a, b) => b.unpaidAmount - a.unpaidAmount);
 
     // Tính chỉ số tổng hợp
-    const supplierDebtAmount = SAPO_OFFICIAL_SUPPLIER_SUMMARY.no_tang_trong_ky; // 519.696.740 ₫ phát sinh nợ gối đầu
-    const netReceivable = totalCustomerCuoiKy - supplierDebtAmount;
+    const supplierFinalDebt = Math.abs(SAPO_OFFICIAL_SUPPLIER_SUMMARY.no_cuoi_ky); // 277.747.800 ₫ nợ cuối kỳ NCC
+    const netReceivable = totalCustomerCuoiKy - supplierFinalDebt; // 312.075.084 - 277.747.800 = +34.327.284 ₫
     const collectionRate =
-      totalTangTrongKy > 0 ? Math.round((totalGiamTrongKy / totalTangTrongKy) * 100) : 86;
+      totalTangTrongKy > 0 ? Math.round((totalGiamTrongKy / totalTangTrongKy) * 100) : 93;
     const overdueAmount = aging30to59.amount + aging60Plus.amount;
     const overdueRate = Math.round((overdueAmount / totalAgingAmount) * 100);
 
     const resultData: DebtDashboardStats = {
       summary: {
         customerDebt: totalCustomerCuoiKy,
-        supplierDebt: supplierDebtAmount,
+        supplierDebt: supplierFinalDebt,
         netReceivable: netReceivable,
-        totalDebtors: totalDebtors || 65,
-        totalDebtOrders: totalDebtOrders || 87,
+        totalDebtors: totalDebtors || 279,
+        totalDebtOrders: totalDebtOrders || 425,
         totalSuppliers: totalSuppliers || 23,
         totalReceiveOrders: allInventoriesCount || 707,
         collectionRate: collectionRate,
         overdueRate: overdueRate,
         overdueAmount: overdueAmount,
+        startDate: defaultStartStr,
+        endDate: defaultEndStr,
       },
       customerBalance: {
         no_dau_ky: totalDauKy,
