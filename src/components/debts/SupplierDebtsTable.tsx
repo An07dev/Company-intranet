@@ -75,7 +75,7 @@ export function SupplierDebtsTable({
   const [selectedIds, setSelectedIds] = useState<number[]>([]);
 
   const formatVND = (num?: number) => {
-    return (num || 0).toLocaleString("vi-VN") + " ₫";
+    return (num || 0).toLocaleString("vi-VN") + "\u00A0₫";
   };
 
   const handleCopyPhone = (phone: string, e: React.MouseEvent) => {
@@ -263,10 +263,10 @@ export function SupplierDebtsTable({
 
       {/* 2. DESKTOP TABLE VIEW (>= md screens) */}
       <div className="hidden md:block overflow-x-auto">
-        <table className="w-full text-left border-collapse">
+        <table className="w-full table-fixed text-left border-collapse">
           <thead>
             <tr className="border-b border-zinc-200/80 dark:border-zinc-800 bg-zinc-50/75 dark:bg-zinc-800/40 text-[11px] font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">
-              <th className="py-3 px-3.5 w-10 text-center">
+              <th className="py-3 px-3 w-[4%] text-center">
                 <input
                   type="checkbox"
                   checked={suppliers.length > 0 && selectedIds.length === suppliers.length}
@@ -274,14 +274,14 @@ export function SupplierDebtsTable({
                   className="rounded border-zinc-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer"
                 />
               </th>
-              <th className="py-3 px-3.5 w-28">Mã NCC</th>
-              <th className="py-3 px-3.5 min-w-[200px]">Tên nhà cung cấp</th>
-              <th className="py-3 px-3.5 w-32">Số điện thoại</th>
-              <th className="py-3 px-3.5 text-right w-32">Nợ đầu kỳ</th>
-              <th className="py-3 px-3.5 text-right w-32">Nợ tăng trong kỳ</th>
-              <th className="py-3 px-3.5 text-right w-32">Nợ giảm trong kỳ</th>
-              <th className="py-3 px-3.5 text-right w-36">Phải thu/trả cuối kỳ</th>
-              <th className="py-3 px-3.5 text-center w-24">Thao tác</th>
+              <th className="py-3 px-3 w-[11%]">Mã NCC</th>
+              <th className="py-3 px-3 w-[22%]">Tên nhà cung cấp</th>
+              <th className="py-3 px-3 w-[12%]">Số điện thoại</th>
+              <th className="py-3 px-3 text-right w-[12%] whitespace-nowrap">Nợ đầu kỳ</th>
+              <th className="py-3 px-3 text-right w-[12%] whitespace-nowrap">Nợ tăng trong kỳ</th>
+              <th className="py-3 px-3 text-right w-[12%] whitespace-nowrap">Nợ giảm trong kỳ</th>
+              <th className="py-3 px-3 text-right w-[15%] whitespace-nowrap">Phải thu/trả cuối kỳ</th>
+              <th className="py-3 px-3 text-center w-[9%]">Thao tác</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800/80 text-xs">
@@ -395,27 +395,27 @@ export function SupplierDebtsTable({
                     </td>
 
                     {/* Nợ đầu kỳ */}
-                    <td className="py-3.5 px-3.5 text-right font-mono text-zinc-700 dark:text-zinc-300">
+                    <td className="py-3.5 px-3 text-right font-mono text-zinc-700 dark:text-zinc-300 whitespace-nowrap">
                       {formatVND(s.no_dau_ky)}
                     </td>
 
                     {/* Nợ tăng trong kỳ */}
-                    <td className="py-3.5 px-3.5 text-right font-mono font-medium text-rose-600 dark:text-rose-400">
+                    <td className="py-3.5 px-3 text-right font-mono font-medium text-rose-600 dark:text-rose-400 whitespace-nowrap">
                       {formatVND(s.no_tang_trong_ky)}
                     </td>
 
                     {/* Nợ giảm trong kỳ */}
-                    <td className="py-3.5 px-3.5 text-right font-mono font-medium text-emerald-600 dark:text-emerald-400">
+                    <td className="py-3.5 px-3 text-right font-mono font-medium text-emerald-600 dark:text-emerald-400 whitespace-nowrap">
                       {formatVND(s.no_giam_trong_ky)}
                     </td>
 
                     {/* Phải thu/trả cuối kỳ */}
-                    <td className="py-3.5 px-3.5 text-right font-mono font-bold text-indigo-900 dark:text-indigo-200">
+                    <td className="py-3.5 px-3 text-right font-mono font-bold text-indigo-900 dark:text-indigo-200 whitespace-nowrap">
                       {formatVND(s.phai_thu_tra_cuoi_ky)}
                     </td>
 
                     {/* Thao tác */}
-                    <td className="py-3.5 px-3.5 text-center">
+                    <td className="py-3.5 px-3 text-center">
                       <button
                         type="button"
                         onClick={(e) => {

@@ -61,7 +61,7 @@ export function CustomerDebtsTable({
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
 
   const formatVND = (num?: number) => {
-    return (num || 0).toLocaleString("vi-VN") + " ₫";
+    return (num || 0).toLocaleString("vi-VN") + "\u00A0₫";
   };
 
   const handleCopyPhone = (phone: string, e: React.MouseEvent) => {
@@ -244,16 +244,16 @@ Xin chân thành cảm ơn Quý khách!`;
 
       {/* 2. DESKTOP TABLE VIEW (>= md screens) */}
       <div className="hidden md:block overflow-x-auto">
-        <table className="w-full text-left text-xs border-collapse">
+        <table className="w-full table-fixed text-left text-xs border-collapse">
           <thead>
             <tr className="border-b border-zinc-200/80 dark:border-zinc-800 bg-zinc-50/75 dark:bg-zinc-800/40 text-zinc-500 dark:text-zinc-400">
-              <th className="py-2.5 px-4 font-semibold">Tên đối tượng</th>
-              <th className="py-2.5 px-4 font-semibold">Số điện thoại</th>
-              <th className="py-2.5 px-4 font-semibold text-right">Nợ đầu kỳ</th>
-              <th className="py-2.5 px-4 font-semibold text-right">Nợ tăng trong kỳ</th>
-              <th className="py-2.5 px-4 font-semibold text-right">Nợ giảm trong kỳ</th>
-              <th className="py-2.5 px-4 font-semibold text-right">Phải thu/trả cuối kỳ</th>
-              <th className="py-2.5 px-4 font-semibold text-center">Thao tác</th>
+              <th className="py-2.5 px-4 w-[28%] font-semibold">Tên đối tượng</th>
+              <th className="py-2.5 px-4 w-[14%] font-semibold">Số điện thoại</th>
+              <th className="py-2.5 px-4 w-[13%] font-semibold text-right whitespace-nowrap">Nợ đầu kỳ</th>
+              <th className="py-2.5 px-4 w-[13%] font-semibold text-right whitespace-nowrap">Nợ tăng trong kỳ</th>
+              <th className="py-2.5 px-4 w-[13%] font-semibold text-right whitespace-nowrap">Nợ giảm trong kỳ</th>
+              <th className="py-2.5 px-4 w-[14%] font-semibold text-right whitespace-nowrap">Phải thu/trả cuối kỳ</th>
+              <th className="py-2.5 px-4 w-[8%] font-semibold text-center">Thao tác</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800/60">
@@ -294,11 +294,11 @@ Xin chân thành cảm ơn Quý khách!`;
                           {initial}
                         </div>
                         <div className="min-w-0">
-                          <div className="font-semibold text-zinc-900 dark:text-zinc-100 group-hover:text-rose-600 dark:group-hover:text-rose-400 transition-colors truncate max-w-[200px]">
+                          <div className="font-semibold text-zinc-900 dark:text-zinc-100 group-hover:text-rose-600 dark:group-hover:text-rose-400 transition-colors truncate">
                             {c.name}
                           </div>
                           {c.address ? (
-                            <div className="text-[10px] text-zinc-400 truncate max-w-[220px]">
+                            <div className="text-[10px] text-zinc-400 truncate">
                               {c.address}
                             </div>
                           ) : null}
@@ -326,22 +326,22 @@ Xin chân thành cảm ơn Quý khách!`;
                     </td>
 
                     {/* Nợ đầu kỳ */}
-                    <td className="py-2.5 px-4 text-right font-mono text-zinc-700 dark:text-zinc-300">
+                    <td className="py-2.5 px-4 text-right font-mono text-zinc-700 dark:text-zinc-300 whitespace-nowrap">
                       {formatVND(c.dau_ky)}
                     </td>
 
                     {/* Nợ tăng trong kỳ */}
-                    <td className="py-2.5 px-4 text-right font-mono text-blue-600 dark:text-blue-400">
+                    <td className="py-2.5 px-4 text-right font-mono text-blue-600 dark:text-blue-400 whitespace-nowrap">
                       {c.tang_trong_ky > 0 ? formatVND(c.tang_trong_ky) : "0 ₫"}
                     </td>
 
                     {/* Nợ giảm trong kỳ */}
-                    <td className="py-2.5 px-4 text-right font-mono text-rose-600 dark:text-rose-400">
+                    <td className="py-2.5 px-4 text-right font-mono text-rose-600 dark:text-rose-400 whitespace-nowrap">
                       {c.giam_trong_ky > 0 ? `-${formatVND(c.giam_trong_ky)}` : "0 ₫"}
                     </td>
 
                     {/* Phải thu/trả cuối kỳ */}
-                    <td className="py-2.5 px-4 text-right">
+                    <td className="py-2.5 px-4 text-right whitespace-nowrap">
                       <span className="font-mono font-bold text-xs text-emerald-600 dark:text-emerald-400">
                         {formatVND(c.cuoi_ky)}
                       </span>
