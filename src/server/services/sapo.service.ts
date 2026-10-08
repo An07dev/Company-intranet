@@ -468,5 +468,55 @@ export const SapoService = {
       method: "DELETE",
     });
   },
+
+  /**
+   * Lấy danh sách phiếu nhập kho (Receive Inventories) từ Sapo
+   */
+  async getReceiveInventories(page = 1, limit = 250, queryParams = ""): Promise<{ receive_inventories: any[] }> {
+    const extra = queryParams ? `&${queryParams.replace(/^\?/, "")}` : "";
+    return sapoFetch<{ receive_inventories: any[] }>(`/admin/receive_inventories.json?page=${page}&limit=${limit}${extra}`);
+  },
+
+  /**
+   * Lấy chi tiết một phiếu nhập kho từ Sapo
+   */
+  async getReceiveInventory(id: number | string): Promise<{ receive_inventory: any }> {
+    return sapoFetch<{ receive_inventory: any }>(`/admin/receive_inventories/${id}.json`);
+  },
+
+  /**
+   * Lấy danh sách phiếu trả hàng nhà cung cấp (Supplier Returns) từ Sapo
+   */
+  async getSupplierReturns(page = 1, limit = 250, queryParams = ""): Promise<{ supplier_returns: any[] }> {
+    const extra = queryParams ? `&${queryParams.replace(/^\?/, "")}` : "";
+    return sapoFetch<{ supplier_returns: any[] }>(`/admin/supplier_returns.json?page=${page}&limit=${limit}${extra}`);
+  },
+
+  /**
+   * Tạo giao dịch thanh toán cho phiếu nhập kho trên Sapo
+   */
+  async createReceiveInventoryTransaction(
+    receiveInventoryId: number | string,
+    transactionData: {
+      amount: number;
+      payment_method_id?: number;
+      payment_method_name?: string;
+      reference?: string;
+      status?: "success" | "pending";
+    }
+  ): Promise<any> {
+    return sapoFetch(`/admin/receive_inventories/${receiveInventoryId}/transactions.json`, {
+      method: "POST",
+      body: JSON.stringify({
+        transaction: {
+          amount: Number(transactionData.amount),
+          payment_method_id: transactionData.payment_method_id || 2192344, // Mặc định Chuyển khoản
+          status: transactionData.status || "success",
+          reference: transactionData.reference || "Thanh toán công nợ từ hệ thống nội bộ",
+        },
+      }),
+    });
+  },
 };
+
 

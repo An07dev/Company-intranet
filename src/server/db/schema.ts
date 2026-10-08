@@ -745,5 +745,143 @@ export const MongoProductImageModel: Model<IProductImageDocument> =
   mongoose.models.ProductImage ||
   mongoose.model<IProductImageDocument>("ProductImage", ProductImageSchema);
 
+// ==========================================
+// SAPO SUPPLIERS & RECEIVE INVENTORIES SCHEMAS
+// ==========================================
+
+export interface ISapoSupplierDocument {
+  id: number;
+  code: string;
+  name: string;
+  phone?: string | null;
+  email?: string | null;
+  tax_number?: string | null;
+  status: string;
+  address1?: string | null;
+  raw_text?: string;
+  created_on?: string;
+  updated_on?: string;
+}
+
+const SapoSupplierSchema = new Schema<ISapoSupplierDocument>(
+  {
+    id: { type: Number, required: true, unique: true, index: true },
+    code: { type: String, required: true, index: true },
+    name: { type: String, required: true, index: true },
+    phone: { type: String, index: true },
+    email: { type: String },
+    tax_number: { type: String },
+    status: { type: String, default: "active", index: true },
+    address1: { type: String },
+    raw_text: { type: String },
+    created_on: { type: String },
+    updated_on: { type: String },
+  },
+  { timestamps: false, versionKey: false, collection: "sapo_suppliers" }
+);
+
+export const MongoSapoSupplierModel: Model<ISapoSupplierDocument> =
+  mongoose.models.SapoSupplier ||
+  mongoose.model<ISapoSupplierDocument>("SapoSupplier", SapoSupplierSchema, "sapo_suppliers");
+
+export interface ISapoReceiveInventoryDocument {
+  id: number;
+  code: string;
+  supplier_id: number;
+  supplier_name: string;
+  supplier_code?: string;
+  total_price: number;
+  subtotal_price: number;
+  transaction_status: string;
+  receipt_status: string;
+  status: string;
+  received_on: string;
+  created_on: string;
+  transactions?: Array<{
+    id: number;
+    amount: number;
+    payment_method_name?: string;
+    status: string;
+    processed_on?: string;
+    created_on?: string;
+  }>;
+  line_items?: Array<{
+    product_id: number;
+    variant_id: number;
+    name: string;
+    quantity: number;
+    price: number;
+    line_amount: number;
+    sku?: string;
+  }>;
+  raw_text?: string;
+}
+
+const SapoReceiveInventorySchema = new Schema<ISapoReceiveInventoryDocument>(
+  {
+    id: { type: Number, required: true, unique: true, index: true },
+    code: { type: String, required: true, index: true },
+    supplier_id: { type: Number, required: true, index: true },
+    supplier_name: { type: String, required: true, index: true },
+    supplier_code: { type: String, index: true },
+    total_price: { type: Number, default: 0 },
+    subtotal_price: { type: Number, default: 0 },
+    transaction_status: { type: String, index: true },
+    receipt_status: { type: String, index: true },
+    status: { type: String, default: "active", index: true },
+    received_on: { type: String, index: true },
+    created_on: { type: String, index: true },
+    transactions: { type: [Schema.Types.Mixed], default: [] },
+    line_items: { type: [Schema.Types.Mixed], default: [] },
+    raw_text: { type: String },
+  },
+  { timestamps: false, versionKey: false, collection: "sapo_receive_inventories" }
+);
+
+SapoReceiveInventorySchema.index({ supplier_id: 1, received_on: -1 });
+
+export const MongoSapoReceiveInventoryModel: Model<ISapoReceiveInventoryDocument> =
+  mongoose.models.SapoReceiveInventory ||
+  mongoose.model<ISapoReceiveInventoryDocument>("SapoReceiveInventory", SapoReceiveInventorySchema, "sapo_receive_inventories");
+
+export interface ISapoSupplierReturnDocument {
+  id: number;
+  code: string;
+  receive_inventory_id?: number;
+  receive_inventory_code?: string;
+  supplier_id: number;
+  supplier_name: string;
+  subtotal: number;
+  status: string;
+  refund_status: string;
+  returned_on: string;
+  created_on: string;
+  raw_text?: string;
+}
+
+const SapoSupplierReturnSchema = new Schema<ISapoSupplierReturnDocument>(
+  {
+    id: { type: Number, required: true, unique: true, index: true },
+    code: { type: String, required: true, index: true },
+    receive_inventory_id: { type: Number, index: true },
+    receive_inventory_code: { type: String },
+    supplier_id: { type: Number, required: true, index: true },
+    supplier_name: { type: String, required: true },
+    subtotal: { type: Number, default: 0 },
+    status: { type: String, index: true },
+    refund_status: { type: String },
+    returned_on: { type: String, index: true },
+    created_on: { type: String, index: true },
+    raw_text: { type: String },
+  },
+  { timestamps: false, versionKey: false, collection: "sapo_supplier_returns" }
+);
+
+SapoSupplierReturnSchema.index({ supplier_id: 1, returned_on: -1 });
+
+export const MongoSapoSupplierReturnModel: Model<ISapoSupplierReturnDocument> =
+  mongoose.models.SapoSupplierReturn ||
+  mongoose.model<ISapoSupplierReturnDocument>("SapoSupplierReturn", SapoSupplierReturnSchema, "sapo_supplier_returns");
+
 
 

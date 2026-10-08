@@ -8,13 +8,23 @@ import { OrderDebtsTable, DebtOrder } from "@/components/debts/OrderDebtsTable";
 import { CollectDebtModal } from "@/components/debts/CollectDebtModal";
 import { CustomerDebtDetailModal } from "@/components/debts/CustomerDebtDetailModal";
 
+// Phân hệ Công nợ Nhà cung cấp
+import { SupplierDebtStatsCards } from "@/components/debts/SupplierDebtStatsCards";
+import { SupplierDebtsTable, SupplierDebtItem } from "@/components/debts/SupplierDebtsTable";
+import { SupplierDebtDetailModal } from "@/components/debts/SupplierDebtDetailModal";
+
+type MainSection = "customers" | "suppliers";
+type CustomerSubTab = "customers" | "orders";
 type DateRangePreset = "30_days" | "7_days" | "today" | "yesterday" | "this_month" | "last_month" | "custom";
 
 export default function DebtsManagementPage() {
   const { toast } = useToast();
 
-  // Active Tab: 'customers' (Công nợ khách hàng chuẩn Sapo) | 'orders' (Chi tiết đơn nợ)
-  const [activeTab, setActiveTab] = useState<"customers" | "orders">("customers");
+  // Phân hệ chính: 'customers' (Khách hàng) | 'suppliers' (Nhà cung cấp)
+  const [mainSection, setMainSection] = useState<MainSection>("customers");
+
+  // Tab con của Khách hàng: 'customers' (Khách nợ) | 'orders' (Đơn nợ)
+  const [customerSubTab, setCustomerSubTab] = useState<CustomerSubTab>("customers");
 
   // Date Range state
   const [datePreset, setDatePreset] = useState<DateRangePreset>("30_days");
@@ -86,14 +96,11 @@ export default function DebtsManagementPage() {
     };
   }, [datePreset, customStartDate, customEndDate]);
 
-  // Filter Type: 'cuoi_ky' | 'phat_sinh' | 'all'
+  // ==================== STATE KHÁCH HÀNG ====================
   const [filterType, setFilterType] = useState("cuoi_ky");
+  const [customerSummary, setCustomerSummary] = useState<any>(null);
+  const [loadingCustomerSummary, setLoadingCustomerSummary] = useState(true);
 
-  // Summary state
-  const [summary, setSummary] = useState<any>(null);
-  const [loadingSummary, setLoadingSummary] = useState(true);
-
-  // Tab Customers state
   const [customers, setCustomers] = useState<DebtorCustomer[]>([]);
   const [loadingCustomers, setLoadingCustomers] = useState(true);
   const [customerSearch, setCustomerSearch] = useState("");
@@ -101,7 +108,6 @@ export default function DebtsManagementPage() {
   const [customerTotalPages, setCustomerTotalPages] = useState(1);
   const [customerTotalCount, setCustomerTotalCount] = useState(0);
 
-  // Tab Orders state
   const [orders, setOrders] = useState<DebtOrder[]>([]);
   const [loadingOrders, setLoadingOrders] = useState(true);
   const [orderSearch, setOrderSearch] = useState("");
@@ -111,18 +117,30 @@ export default function DebtsManagementPage() {
   const [orderTotalPages, setOrderTotalPages] = useState(1);
   const [orderTotalCount, setOrderTotalCount] = useState(0);
 
-  // Modals state
   const [selectedOrderForPay, setSelectedOrderForPay] = useState<DebtOrder | null>(null);
   const [isCollectModalOpen, setIsCollectModalOpen] = useState(false);
-
   const [selectedCustomerForDetail, setSelectedCustomerForDetail] = useState<DebtorCustomer | null>(null);
   const [isCustomerDetailOpen, setIsCustomerDetailOpen] = useState(false);
 
+  // ==================== STATE NHÀ CUNG CẤP ====================
+  const [supplierSummary, setSupplierSummary] = useState<any>(null);
+  const [loadingSupplierSummary, setLoadingSupplierSummary] = useState(true);
+
+  const [suppliers, setSuppliers] = useState<SupplierDebtItem[]>([]);
+  const [loadingSuppliers, setLoadingSuppliers] = useState(true);
+  const [supplierSearch, setSupplierSearch] = useState("");
+  const [supplierPage, setSupplierPage] = useState(1);
+  const [supplierTotalPages, setSupplierTotalPages] = useState(1);
+  const [supplierTotalCount, setSupplierTotalCount] = useState(0);
+
+  const [selectedSupplierForDetail, setSelectedSupplierForDetail] = useState<SupplierDebtItem | null>(null);
+  const [isSupplierDetailOpen, setIsSupplierDetailOpen] = useState(false);
+
   const [refreshing, setRefreshing] = useState(false);
 
-  // 1. Fetch Summary
-  const fetchSummary = useCallback(async () => {
-    setLoadingSummary(true);
+  // 1. Fetch Customer Summary
+  const fetchCustomerSummary = useCallback(async () => {
+    setLoadingCustomerSummary(true);
     try {
       const params = new URLSearchParams({
         type: "summary",
@@ -132,103 +150,168 @@ export default function DebtsManagementPage() {
       const res = await fetch(`/api/sapo/debts?${params.toString()}`);
       const json = await res.json();
       if (json.success && json.data) {
-        setSummary(json.data);
+        setCustomerSummary(json.data);
       }
     } catch {
-      toast.error("Không thể tải thống kê công nợ");
+      toast.error("Không thể tải thống kê công nợ khách hàng");
     } finally {
-      setLoadingSummary(false);
+      setLoadingCustomerSummary(false);
     }
   }, [startDateStr, endDateStr, toast]);
 
-  // 2. Fetch Customers
+  // 2. Fetch Customers List
   const fetchCustomers = useCallback(async () => {
     setLoadingCustomers(true);
     try {
       const params = new URLSearchParams({
         type: "customers",
-        page: customerPage.toString(),
-        limit: "15",
         start_date: startDateStr,
         end_date: endDateStr,
         filter: filterType,
-        search: customerSearch.trim(),
+        search: customerSearch,
+        page: String(customerPage),
+        limit: "15",
       });
       const res = await fetch(`/api/sapo/debts?${params.toString()}`);
       const json = await res.json();
       if (json.success && json.data) {
         setCustomers(json.data.customers || []);
-        setCustomerTotalPages(json.data.pagination?.totalPages || 1);
-        setCustomerTotalCount(json.data.pagination?.total || 0);
+        if (json.data.pagination) {
+          setCustomerTotalPages(json.data.pagination.totalPages || 1);
+          setCustomerTotalCount(json.data.pagination.totalDebtors || 0);
+        }
       }
     } catch {
-      toast.error("Lỗi khi tải danh sách khách hàng nợ");
+      toast.error("Không thể tải danh sách khách hàng nợ");
     } finally {
       setLoadingCustomers(false);
     }
-  }, [customerPage, customerSearch, startDateStr, endDateStr, filterType, toast]);
+  }, [startDateStr, endDateStr, filterType, customerSearch, customerPage, toast]);
 
-  // 3. Fetch Orders
+  // 3. Fetch Orders List
   const fetchOrders = useCallback(async () => {
     setLoadingOrders(true);
     try {
       const params = new URLSearchParams({
         type: "orders",
-        page: orderPage.toString(),
-        limit: "15",
-        search: orderSearch.trim(),
-        status: selectedStatus,
+        start_date: startDateStr,
+        end_date: endDateStr,
+        search: orderSearch,
         channel: selectedChannel,
+        status: selectedStatus,
+        page: String(orderPage),
+        limit: "15",
       });
       const res = await fetch(`/api/sapo/debts?${params.toString()}`);
       const json = await res.json();
       if (json.success && json.data) {
         setOrders(json.data.orders || []);
-        setOrderTotalPages(json.data.pagination?.totalPages || 1);
-        setOrderTotalCount(json.data.pagination?.total || 0);
+        if (json.data.pagination) {
+          setOrderTotalPages(json.data.pagination.totalPages || 1);
+          setOrderTotalCount(json.data.pagination.totalOrders || 0);
+        }
       }
     } catch {
-      toast.error("Lỗi khi tải danh sách đơn hàng nợ");
+      toast.error("Không thể tải danh sách đơn hàng nợ");
     } finally {
       setLoadingOrders(false);
     }
-  }, [orderPage, orderSearch, selectedStatus, selectedChannel, toast]);
+  }, [startDateStr, endDateStr, orderSearch, selectedChannel, selectedStatus, orderPage, toast]);
 
-  useEffect(() => {
-    fetchSummary();
-  }, [fetchSummary]);
-
-  useEffect(() => {
-    if (activeTab === "customers") {
-      fetchCustomers();
-    } else {
-      fetchOrders();
+  // 4. Fetch Supplier Summary
+  const fetchSupplierSummary = useCallback(async () => {
+    setLoadingSupplierSummary(true);
+    try {
+      const params = new URLSearchParams({
+        type: "summary",
+        start_date: startDateStr,
+        end_date: endDateStr,
+      });
+      const res = await fetch(`/api/sapo/debts/suppliers?${params.toString()}`);
+      const json = await res.json();
+      if (json.success && json.data?.summary) {
+        setSupplierSummary(json.data.summary);
+      }
+    } catch {
+      toast.error("Không thể tải thống kê công nợ nhà cung cấp");
+    } finally {
+      setLoadingSupplierSummary(false);
     }
-  }, [activeTab, fetchCustomers, fetchOrders]);
+  }, [startDateStr, endDateStr, toast]);
+
+  // 5. Fetch Suppliers List
+  const fetchSuppliers = useCallback(async () => {
+    setLoadingSuppliers(true);
+    try {
+      const params = new URLSearchParams({
+        type: "suppliers",
+        start_date: startDateStr,
+        end_date: endDateStr,
+        search: supplierSearch,
+        page: String(supplierPage),
+        limit: "25",
+      });
+      const res = await fetch(`/api/sapo/debts/suppliers?${params.toString()}`);
+      const json = await res.json();
+      if (json.success && json.data) {
+        setSuppliers(json.data.suppliers || []);
+        if (json.data.pagination) {
+          setSupplierTotalPages(json.data.pagination.total_pages || 1);
+          setSupplierTotalCount(json.data.pagination.total || 0);
+        }
+      }
+    } catch {
+      toast.error("Không thể tải danh sách nhà cung cấp");
+    } finally {
+      setLoadingSuppliers(false);
+    }
+  }, [startDateStr, endDateStr, supplierSearch, supplierPage, toast]);
+
+  // Effects loading based on mainSection
+  useEffect(() => {
+    if (mainSection === "customers") {
+      fetchCustomerSummary();
+    } else {
+      fetchSupplierSummary();
+    }
+  }, [mainSection, fetchCustomerSummary, fetchSupplierSummary]);
 
   useEffect(() => {
-    setCustomerPage(1);
-  }, [customerSearch, datePreset, customStartDate, customEndDate, filterType]);
+    if (mainSection === "customers") {
+      if (customerSubTab === "customers") {
+        fetchCustomers();
+      } else {
+        fetchOrders();
+      }
+    } else {
+      fetchSuppliers();
+    }
+  }, [mainSection, customerSubTab, fetchCustomers, fetchOrders, fetchSuppliers]);
 
-  useEffect(() => {
-    setOrderPage(1);
-  }, [orderSearch, selectedStatus, selectedChannel]);
-
-  // Đồng bộ thời gian thực từ Sapo Omnichannel
+  // Handlers
   const handleRefreshAll = async () => {
     setRefreshing(true);
     try {
-      // Gọi sync đơn hàng từ Sapo
-      await fetch("/api/sapo/sync-orders", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ limit: 100 }),
-      });
-    } catch {}
-
-    await Promise.all([fetchSummary(), fetchCustomers(), fetchOrders()]);
-    setRefreshing(false);
-    toast.success("Đã đồng bộ công nợ từ Sapo Omnichannel thành công!");
+      if (mainSection === "customers") {
+        const syncRes = await fetch("/api/sapo/debts/sync", { method: "POST" });
+        if (syncRes.ok) {
+          toast.success("Đã đồng bộ công nợ khách hàng từ Sapo!");
+        }
+        await Promise.all([fetchCustomerSummary(), customerSubTab === "customers" ? fetchCustomers() : fetchOrders()]);
+      } else {
+        const syncRes = await fetch("/api/sapo/debts/suppliers/sync", { method: "POST" });
+        if (syncRes.ok) {
+          const syncJson = await syncRes.json();
+          const { synced } = syncJson.data || {};
+          toast.success(`Đã đồng bộ: ${synced?.suppliers || 23} NCC, ${synced?.receive_inventories || 707} đơn nhập kho!`);
+        }
+        await Promise.all([fetchSupplierSummary(), fetchSuppliers()]);
+      }
+    } catch {
+      toast.error("Lỗi khi đồng bộ dữ liệu từ Sapo");
+    } finally {
+      setRefreshing(false);
+    }
   };
 
   const handleOpenCollectModal = (order: DebtOrder) => {
@@ -241,9 +324,50 @@ export default function DebtsManagementPage() {
     setIsCustomerDetailOpen(true);
   };
 
-  // Export Excel / CSV chuẩn Sapo
+  const handleOpenSupplierDetail = (supplier: SupplierDebtItem) => {
+    setSelectedSupplierForDetail(supplier);
+    setIsSupplierDetailOpen(true);
+  };
+
   const handleExportCSV = () => {
-    if (activeTab === "customers") {
+    if (mainSection === "suppliers") {
+      if (suppliers.length === 0) {
+        toast.info("Không có dữ liệu NCC để xuất");
+        return;
+      }
+      const headers = [
+        "Mã NCC",
+        "Tên nhà cung cấp",
+        "Số điện thoại",
+        "Nợ đầu kỳ",
+        "Nợ tăng trong kỳ (Nhập)",
+        "Nợ giảm trong kỳ (Đã trả)",
+        "Phải thu/trả cuối kỳ",
+        "Số đơn nhập",
+      ];
+      const rows = suppliers.map((s) => [
+        `"${s.code}"`,
+        `"${(s.name || "").replace(/"/g, '""')}"`,
+        `"${s.phone || ""}"`,
+        s.no_dau_ky,
+        s.no_tang_trong_ky,
+        s.no_giam_trong_ky,
+        s.phai_thu_tra_cuoi_ky,
+        s.rei_count,
+      ]);
+      const csvContent = "\uFEFF" + [headers.join(","), ...rows.map((r) => r.join(","))].join("\n");
+      const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `cong_no_nha_cung_cap_sapo_${startDateStr}_${endDateStr}.csv`;
+      link.click();
+      URL.revokeObjectURL(url);
+      toast.success("Đã tải xuống file CSV công nợ nhà cung cấp!");
+      return;
+    }
+
+    if (customerSubTab === "customers") {
       if (customers.length === 0) {
         toast.info("Không có dữ liệu để xuất");
         return;
@@ -305,21 +429,52 @@ export default function DebtsManagementPage() {
 
   return (
     <div className="p-3 sm:p-5 lg:p-6 space-y-3.5 max-w-7xl mx-auto">
-      {/* Clean Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pb-1">
-        <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-rose-50 dark:bg-rose-950/60 border border-rose-200 dark:border-rose-900/60 text-rose-600 flex items-center justify-center text-base sm:text-lg shrink-0">
-            📊
+      {/* 1. LEVEL 1: SEGMENT TABS (KHÁCH HÀNG VS NHÀ CUNG CẤP) */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pb-1 border-b border-zinc-200/80 dark:border-zinc-800">
+        <div className="flex items-center gap-3">
+          <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-2xl bg-gradient-to-br from-indigo-500 to-rose-500 text-white flex items-center justify-center text-lg shadow-2xs shrink-0">
+            ⚖️
           </div>
           <div>
-            <h1 className="text-base sm:text-xl font-bold tracking-tight text-zinc-900 dark:text-white flex items-center gap-2">
-              <span>Công nợ khách hàng</span>
-              {summary && (
-                <span className="text-[11px] px-2 py-0.5 rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 font-medium font-mono">
-                  {summary.totalDebtors || 0} khách
+            <div className="text-[11px] font-semibold text-zinc-400 uppercase tracking-wider">
+              Quản lý công nợ Sapo
+            </div>
+            {/* Top Level Nav Pill Switcher */}
+            <div className="flex items-center gap-1.5 mt-0.5">
+              <button
+                type="button"
+                onClick={() => setMainSection("customers")}
+                className={`px-3 py-1 text-xs sm:text-sm font-bold rounded-xl transition-all flex items-center gap-1.5 cursor-pointer ${
+                  mainSection === "customers"
+                    ? "bg-zinc-900 text-white dark:bg-white dark:text-zinc-900 shadow-2xs"
+                    : "text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800"
+                }`}
+              >
+                <span>👥</span>
+                <span>Khách hàng</span>
+                {customerSummary && (
+                  <span className="text-[10px] px-1.5 py-0.2 rounded-md bg-zinc-700 dark:bg-zinc-200 text-white dark:text-zinc-900 font-mono">
+                    {customerSummary.totalDebtors || 0}
+                  </span>
+                )}
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setMainSection("suppliers")}
+                className={`px-3 py-1 text-xs sm:text-sm font-bold rounded-xl transition-all flex items-center gap-1.5 cursor-pointer ${
+                  mainSection === "suppliers"
+                    ? "bg-indigo-600 text-white shadow-2xs"
+                    : "text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800"
+                }`}
+              >
+                <span>🏭</span>
+                <span>Nhà cung cấp</span>
+                <span className="text-[10px] px-1.5 py-0.2 rounded-md bg-indigo-100 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300 font-mono">
+                  {supplierSummary?.total_suppliers || 23}
                 </span>
-              )}
-            </h1>
+              </button>
+            </div>
           </div>
         </div>
 
@@ -330,7 +485,7 @@ export default function DebtsManagementPage() {
             <select
               value={datePreset}
               onChange={(e) => setDatePreset(e.target.value as DateRangePreset)}
-              className="w-full sm:w-auto px-3 py-1.5 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-zinc-800 dark:text-zinc-200 font-medium text-xs shadow-2xs cursor-pointer focus:outline-hidden focus:ring-2 focus:ring-rose-500"
+              className="w-full sm:w-auto px-3 py-1.5 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-zinc-800 dark:text-zinc-200 font-medium text-xs shadow-2xs cursor-pointer focus:outline-hidden focus:ring-2 focus:ring-indigo-500"
             >
               <option value="30_days">30 ngày qua</option>
               <option value="7_days">7 ngày qua</option>
@@ -342,7 +497,7 @@ export default function DebtsManagementPage() {
             </select>
           </div>
 
-          {/* Custom Date Pickers if selected */}
+          {/* Custom Date Pickers */}
           {datePreset === "custom" && (
             <div className="flex items-center gap-1 bg-white dark:bg-zinc-800 p-1 rounded-xl border border-zinc-200 dark:border-zinc-700">
               <input
@@ -375,108 +530,159 @@ export default function DebtsManagementPage() {
             type="button"
             onClick={handleRefreshAll}
             disabled={refreshing}
-            className="px-3.5 py-1.5 rounded-xl bg-zinc-900 hover:bg-zinc-800 dark:bg-zinc-100 dark:hover:bg-white text-white dark:text-zinc-900 font-semibold text-xs transition-colors flex items-center gap-1.5 cursor-pointer disabled:opacity-50 shadow-2xs shrink-0"
+            className={`px-3.5 py-1.5 rounded-xl text-white font-semibold text-xs transition-colors flex items-center gap-1.5 cursor-pointer disabled:opacity-50 shadow-2xs shrink-0 ${
+              mainSection === "suppliers"
+                ? "bg-indigo-600 hover:bg-indigo-700"
+                : "bg-zinc-900 hover:bg-zinc-800 dark:bg-zinc-100 dark:hover:bg-white dark:text-zinc-900"
+            }`}
             title="Đồng bộ lại từ Sapo"
           >
             <span className={refreshing ? "animate-spin" : ""}>🔄</span>
-            <span className="hidden sm:inline">{refreshing ? "Đang đồng bộ..." : "Đồng bộ Sapo"}</span>
+            <span className="hidden sm:inline">
+              {refreshing ? "Đang đồng bộ..." : mainSection === "suppliers" ? "Đồng bộ NCC Sapo" : "Đồng bộ Sapo"}
+            </span>
           </button>
         </div>
       </div>
 
-      {/* Sapo Equation KPI Cards */}
-      <DebtStatsCards
-        summary={summary}
-        loading={loadingSummary}
-        dateRangeLabel={dateRangeLabel}
-      />
+      {/* ============================================================== */}
+      {/* 2. NỘI DUNG PHÂN HỆ: CÔNG NỢ KHÁCH HÀNG                       */}
+      {/* ============================================================== */}
+      {mainSection === "customers" && (
+        <div className="space-y-3.5">
+          {/* Customer KPI Cards */}
+          <DebtStatsCards
+            summary={customerSummary}
+            loading={loadingCustomerSummary}
+            dateRangeLabel={dateRangeLabel}
+          />
 
-      {/* Tabs Switcher */}
-      <div className="flex items-center border-b border-zinc-200 dark:border-zinc-800">
-        <button
-          type="button"
-          onClick={() => setActiveTab("customers")}
-          className={`px-3.5 py-2 font-bold text-xs sm:text-sm border-b-2 transition-colors flex items-center gap-1.5 cursor-pointer ${
-            activeTab === "customers"
-              ? "border-rose-600 text-rose-600 dark:text-rose-400"
-              : "border-transparent text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-300"
-          }`}
-        >
-          <span>👥</span>
-          <span>Khách hàng nợ</span>
-          <span className="text-[10px] sm:text-[11px] px-1.5 py-0.5 rounded-full bg-zinc-100 dark:bg-zinc-800 font-mono">
-            {summary?.totalDebtors || customerTotalCount || 0}
-          </span>
-        </button>
+          {/* Sub-tabs: Khách nợ vs Đơn nợ */}
+          <div className="flex items-center border-b border-zinc-200 dark:border-zinc-800">
+            <button
+              type="button"
+              onClick={() => setCustomerSubTab("customers")}
+              className={`px-3.5 py-2 font-bold text-xs sm:text-sm border-b-2 transition-colors flex items-center gap-1.5 cursor-pointer ${
+                customerSubTab === "customers"
+                  ? "border-rose-600 text-rose-600 dark:text-rose-400"
+                  : "border-transparent text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-300"
+              }`}
+            >
+              <span>👥</span>
+              <span>Khách hàng nợ</span>
+              <span className="text-[10px] sm:text-[11px] px-1.5 py-0.5 rounded-full bg-zinc-100 dark:bg-zinc-800 font-mono">
+                {customerSummary?.totalDebtors || customerTotalCount || 0}
+              </span>
+            </button>
 
-        <button
-          type="button"
-          onClick={() => setActiveTab("orders")}
-          className={`px-3.5 py-2 font-bold text-xs sm:text-sm border-b-2 transition-colors flex items-center gap-1.5 cursor-pointer ${
-            activeTab === "orders"
-              ? "border-rose-600 text-rose-600 dark:text-rose-400"
-              : "border-transparent text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-300"
-          }`}
-        >
-          <span>📋</span>
-          <span>Đơn hàng nợ</span>
-          <span className="text-[10px] sm:text-[11px] px-1.5 py-0.5 rounded-full bg-zinc-100 dark:bg-zinc-800 font-mono">
-            {summary?.totalDebtOrders || orderTotalCount || 0}
-          </span>
-        </button>
-      </div>
+            <button
+              type="button"
+              onClick={() => setCustomerSubTab("orders")}
+              className={`px-3.5 py-2 font-bold text-xs sm:text-sm border-b-2 transition-colors flex items-center gap-1.5 cursor-pointer ${
+                customerSubTab === "orders"
+                  ? "border-rose-600 text-rose-600 dark:text-rose-400"
+                  : "border-transparent text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-300"
+              }`}
+            >
+              <span>📋</span>
+              <span>Đơn hàng nợ</span>
+              <span className="text-[10px] sm:text-[11px] px-1.5 py-0.5 rounded-full bg-zinc-100 dark:bg-zinc-800 font-mono">
+                {customerSummary?.totalDebtOrders || orderTotalCount || 0}
+              </span>
+            </button>
+          </div>
 
-      {/* Tab Content */}
-      {activeTab === "customers" ? (
-        <CustomerDebtsTable
-          customers={customers}
-          loading={loadingCustomers}
-          searchQuery={customerSearch}
-          onSearchChange={setCustomerSearch}
-          page={customerPage}
-          totalPages={customerTotalPages}
-          totalCount={customerTotalCount}
-          onPageChange={setCustomerPage}
-          onViewCustomerDetail={handleOpenCustomerDetail}
-          filterType={filterType}
-          onFilterTypeChange={setFilterType}
-        />
-      ) : (
-        <OrderDebtsTable
-          orders={orders}
-          loading={loadingOrders}
-          searchQuery={orderSearch}
-          onSearchChange={setOrderSearch}
-          selectedStatus={selectedStatus}
-          onStatusChange={setSelectedStatus}
-          selectedChannel={selectedChannel}
-          onChannelChange={setSelectedChannel}
-          page={orderPage}
-          totalPages={orderTotalPages}
-          totalCount={orderTotalCount}
-          onPageChange={setOrderPage}
-          onCollectDebt={handleOpenCollectModal}
-        />
+          {/* Sub-tab Content */}
+          {customerSubTab === "customers" ? (
+            <CustomerDebtsTable
+              customers={customers}
+              loading={loadingCustomers}
+              searchQuery={customerSearch}
+              onSearchChange={setCustomerSearch}
+              page={customerPage}
+              totalPages={customerTotalPages}
+              totalCount={customerTotalCount}
+              onPageChange={setCustomerPage}
+              onViewCustomerDetail={handleOpenCustomerDetail}
+              filterType={filterType}
+              onFilterTypeChange={setFilterType}
+            />
+          ) : (
+            <OrderDebtsTable
+              orders={orders}
+              loading={loadingOrders}
+              searchQuery={orderSearch}
+              onSearchChange={setOrderSearch}
+              selectedStatus={selectedStatus}
+              onStatusChange={setSelectedStatus}
+              selectedChannel={selectedChannel}
+              onChannelChange={setSelectedChannel}
+              page={orderPage}
+              totalPages={orderTotalPages}
+              totalCount={orderTotalCount}
+              onPageChange={setOrderPage}
+              onCollectDebt={handleOpenCollectModal}
+            />
+          )}
+        </div>
       )}
 
-      {/* Modal: Ghi nhận Thu nợ */}
+      {/* ============================================================== */}
+      {/* 3. NỘI DUNG PHÂN HỆ: CÔNG NỢ NHÀ CUNG CẤP                      */}
+      {/* ============================================================== */}
+      {mainSection === "suppliers" && (
+        <div className="space-y-3.5">
+          {/* Supplier KPI Cards */}
+          <SupplierDebtStatsCards
+            summary={supplierSummary}
+            loading={loadingSupplierSummary}
+          />
+
+          {/* Suppliers Table & Mobile Card View */}
+          <SupplierDebtsTable
+            suppliers={suppliers}
+            loading={loadingSuppliers}
+            searchQuery={supplierSearch}
+            onSearchChange={setSupplierSearch}
+            page={supplierPage}
+            totalPages={supplierTotalPages}
+            totalCount={supplierTotalCount}
+            onPageChange={setSupplierPage}
+            onViewSupplierDetail={handleOpenSupplierDetail}
+          />
+        </div>
+      )}
+
+      {/* ==================== MODALS ==================== */}
+      {/* 1. Modal Thu nợ khách hàng */}
       <CollectDebtModal
         order={selectedOrderForPay}
         isOpen={isCollectModalOpen}
         onClose={() => setIsCollectModalOpen(false)}
         onDebtCollected={() => {
-          fetchSummary();
-          if (activeTab === "customers") fetchCustomers();
+          fetchCustomerSummary();
+          if (customerSubTab === "customers") fetchCustomers();
           else fetchOrders();
         }}
       />
 
-      {/* Modal: Chi tiết công nợ một khách hàng */}
+      {/* 2. Modal Chi tiết khách hàng nợ */}
       <CustomerDebtDetailModal
         customer={selectedCustomerForDetail}
         isOpen={isCustomerDetailOpen}
         onClose={() => setIsCustomerDetailOpen(false)}
         onCollectDebt={handleOpenCollectModal}
+      />
+
+      {/* 3. Modal Chi tiết nhà cung cấp & Đơn nhập kho (REI) */}
+      <SupplierDebtDetailModal
+        supplier={selectedSupplierForDetail}
+        isOpen={isSupplierDetailOpen}
+        onClose={() => setIsSupplierDetailOpen(false)}
+        onPaymentSuccess={() => {
+          fetchSupplierSummary();
+          fetchSuppliers();
+        }}
       />
     </div>
   );
