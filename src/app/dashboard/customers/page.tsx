@@ -150,8 +150,9 @@ export default function CustomersPage() {
   return (
     <div className="w-full px-3 sm:px-6 lg:px-8 py-3.5 sm:py-5 space-y-3 sm:space-y-4 max-w-[1650px] mx-auto min-h-screen">
       {/* 1. Header Card */}
-      <div className="bg-white dark:bg-zinc-900 p-3.5 sm:p-5 rounded-2xl border border-zinc-200 dark:border-zinc-800 shadow-2xs sm:shadow-sm space-y-3.5">
-        <div className="flex items-center justify-between gap-3">
+      <div className="bg-white dark:bg-zinc-900 p-3.5 sm:p-4 rounded-2xl border border-zinc-200 dark:border-zinc-800 shadow-2xs sm:shadow-sm">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          {/* Bên trái: Icon, Breadcrumb & Tiêu đề */}
           <div className="flex items-center gap-2.5 min-w-0">
             <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-blue-500/10 dark:bg-blue-500/20 text-blue-600 dark:text-blue-400 flex items-center justify-center text-lg sm:text-xl shrink-0">
               👥
@@ -163,10 +164,10 @@ export default function CustomersPage() {
                 <span className="text-zinc-900 dark:text-zinc-100 font-medium">Khách hàng đa kênh</span>
               </div>
               <div className="flex items-center gap-2">
-                <h1 className="text-base sm:text-xl font-bold text-zinc-900 dark:text-white leading-tight truncate">
+                <h1 className="text-base sm:text-lg lg:text-xl font-bold text-zinc-900 dark:text-white leading-tight truncate">
                   Quản lý Khách hàng & CRM
                 </h1>
-                <span className="hidden sm:inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-blue-100 dark:bg-blue-950 text-blue-700 dark:text-blue-300">
+                <span className="hidden lg:inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-blue-100 dark:bg-blue-950 text-blue-700 dark:text-blue-300">
                   {totalCount.toLocaleString("vi-VN")} khách
                 </span>
               </div>
@@ -176,7 +177,50 @@ export default function CustomersPage() {
             </div>
           </div>
 
-          {/* Desktop Toolbar */}
+          {/* Ở giữa: 2 TAB TRÊN CÙNG HÀNG TIÊU ĐỀ (PC / Desktop View) */}
+          <div className="hidden sm:flex items-center gap-1.5 p-1 bg-zinc-100 dark:bg-zinc-800/80 rounded-xl border border-zinc-200/80 dark:border-zinc-700/80 shrink-0">
+            {/* Tab 1: Tất cả khách hàng */}
+            <button
+              type="button"
+              onClick={() => setActiveTab("all")}
+              className={`px-3.5 py-1.5 text-xs sm:text-sm font-bold rounded-lg transition-all flex items-center gap-1.5 cursor-pointer ${
+                activeTab === "all"
+                  ? "bg-white dark:bg-zinc-900 text-zinc-900 dark:text-white shadow-2xs"
+                  : "text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white"
+              }`}
+            >
+              <span>👥</span>
+              <span>Tất cả khách hàng</span>
+              <span className="px-1.5 py-0.2 rounded-full text-[10px] font-semibold bg-zinc-200 dark:bg-zinc-700 text-zinc-700 dark:text-zinc-300">
+                {totalCount.toLocaleString("vi-VN")}
+              </span>
+            </button>
+
+            {/* Tab 2: Khách hàng thân thiết */}
+            <button
+              type="button"
+              onClick={() => setActiveTab("loyal")}
+              className={`px-3.5 py-1.5 text-xs sm:text-sm font-bold rounded-lg transition-all flex items-center gap-1.5 cursor-pointer ${
+                activeTab === "loyal"
+                  ? "bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-2xs font-bold"
+                  : "text-zinc-600 dark:text-zinc-400 hover:text-amber-600 dark:hover:text-amber-400"
+              }`}
+            >
+              <span>⭐</span>
+              <span>Khách thân thiết</span>
+              <span
+                className={`px-1.5 py-0.2 rounded-full text-[10px] font-bold ${
+                  activeTab === "loyal"
+                    ? "bg-amber-700 text-white"
+                    : "bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300"
+                }`}
+              >
+                {loyalCount}
+              </span>
+            </button>
+          </div>
+
+          {/* Bên phải: Nút Làm mới & Xem đơn hàng (Desktop) */}
           <div className="hidden sm:flex items-center gap-2 shrink-0">
             <button
               type="button"
@@ -200,57 +244,54 @@ export default function CustomersPage() {
           </div>
         </div>
 
-        {/* Mobile Toolbar (sm:hidden) */}
-        <div className="sm:hidden pt-2.5 border-t border-zinc-100 dark:border-zinc-800/80 flex items-center gap-2">
-          <Link
-            href="/dashboard/orders"
-            className="flex-1 py-2 px-3 text-xs font-bold rounded-xl bg-blue-600 hover:bg-blue-700 text-white shadow-2xs flex items-center justify-center gap-1.5 active:scale-[0.98] transition cursor-pointer text-center"
-          >
-            <span>📦</span>
-            <span>Xem đơn hàng</span>
-          </Link>
-          <button
-            type="button"
-            onClick={() => {
-              fetchCustomers(page, activeQuery);
-              fetchLoyalMap();
-            }}
-            disabled={loading}
-            className="py-2 px-3 text-xs font-semibold rounded-xl border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-200 active:scale-95 transition flex items-center gap-1.5 cursor-pointer disabled:opacity-50 shrink-0"
-          >
-            <span className={loading ? "animate-spin" : ""}>🔄</span>
-            <span>Làm mới</span>
-          </button>
-        </div>
-
-        {/* TAB SWITCHER */}
-        <div className="pt-2 border-t border-zinc-100 dark:border-zinc-800 flex items-center gap-2">
-          <div className="flex items-center gap-1.5 p-1 bg-zinc-100 dark:bg-zinc-800/80 rounded-xl border border-zinc-200/80 dark:border-zinc-700/80 w-full sm:w-auto">
-            {/* Tab 1: Tất cả khách hàng */}
+        {/* Mobile View: Tab Switcher & Toolbar (sm:hidden) */}
+        <div className="sm:hidden pt-3 border-t border-zinc-100 dark:border-zinc-800 space-y-2.5">
+          <div className="flex items-center gap-1.5 p-1 bg-zinc-100 dark:bg-zinc-800/80 rounded-xl border border-zinc-200/80 dark:border-zinc-700/80 w-full">
             <button
               type="button"
               onClick={() => setActiveTab("all")}
-              className={`flex-1 sm:flex-initial px-3.5 py-1.5 text-xs sm:text-sm font-bold rounded-lg transition-all flex items-center justify-center gap-1.5 cursor-pointer ${activeTab === "all"
-                ? "bg-white dark:bg-zinc-900 text-zinc-900 dark:text-white shadow-2xs"
-                : "text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white"
-                }`}
+              className={`flex-1 px-3 py-1.5 text-xs font-bold rounded-lg transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+                activeTab === "all"
+                  ? "bg-white dark:bg-zinc-900 text-zinc-900 dark:text-white shadow-2xs"
+                  : "text-zinc-600 dark:text-zinc-400"
+              }`}
             >
               <span>👥</span>
               <span>Tất cả khách hàng</span>
-
             </button>
-
-            {/* Tab 2: Khách hàng thân thiết */}
             <button
               type="button"
               onClick={() => setActiveTab("loyal")}
-              className={`flex-1 sm:flex-initial px-3.5 py-1.5 text-xs sm:text-sm font-bold rounded-lg transition-all flex items-center justify-center gap-1.5 cursor-pointer ${activeTab === "loyal"
-                ? "bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-2xs font-bold"
-                : "text-zinc-600 dark:text-zinc-400 hover:text-amber-600 dark:hover:text-amber-400"
-                }`}
+              className={`flex-1 px-3 py-1.5 text-xs font-bold rounded-lg transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+                activeTab === "loyal"
+                  ? "bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-2xs font-bold"
+                  : "text-zinc-600 dark:text-zinc-400"
+              }`}
             >
               <span>⭐</span>
               <span>Khách thân thiết</span>
+            </button>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <Link
+              href="/dashboard/orders"
+              className="flex-1 py-2 px-3 text-xs font-bold rounded-xl bg-blue-600 hover:bg-blue-700 text-white shadow-2xs flex items-center justify-center gap-1.5 active:scale-[0.98] transition cursor-pointer text-center"
+            >
+              <span>📦</span>
+              <span>Xem đơn hàng</span>
+            </Link>
+            <button
+              type="button"
+              onClick={() => {
+                fetchCustomers(page, activeQuery);
+                fetchLoyalMap();
+              }}
+              disabled={loading}
+              className="py-2 px-3 text-xs font-semibold rounded-xl border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-200 active:scale-95 transition flex items-center gap-1.5 cursor-pointer disabled:opacity-50 shrink-0"
+            >
+              <span className={loading ? "animate-spin" : ""}>🔄</span>
+              <span>Làm mới</span>
             </button>
           </div>
         </div>
