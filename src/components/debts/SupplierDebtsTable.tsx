@@ -185,18 +185,18 @@ export function SupplierDebtsTable({
       <div className="block md:hidden divide-y divide-zinc-100 dark:divide-zinc-800">
         {loading ? (
           Array.from({ length: 4 }).map((_, i) => (
-            <div key={i} className="p-3.5 space-y-2.5 animate-pulse">
-              <div className="flex items-center gap-2.5">
-                <div className="w-9 h-9 rounded-xl bg-zinc-200 dark:bg-zinc-800"></div>
-                <div className="flex-1 space-y-1.5">
-                  <div className="h-4 bg-zinc-200 dark:bg-zinc-800 rounded-sm w-3/4"></div>
-                  <div className="h-3 bg-zinc-100 dark:bg-zinc-800/60 rounded-sm w-1/3"></div>
+            <div key={i} className="p-3 space-y-2 animate-pulse">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-xl bg-zinc-200 dark:bg-zinc-800"></div>
+                  <div className="space-y-1">
+                    <div className="h-3.5 bg-zinc-200 dark:bg-zinc-800 rounded w-28"></div>
+                    <div className="h-2.5 bg-zinc-200 dark:bg-zinc-800 rounded w-16"></div>
+                  </div>
                 </div>
+                <div className="h-4 bg-zinc-200 dark:bg-zinc-800 rounded w-20"></div>
               </div>
-              <div className="grid grid-cols-2 gap-2 pt-1">
-                <div className="h-10 bg-zinc-100 dark:bg-zinc-800/50 rounded-xl"></div>
-                <div className="h-10 bg-zinc-100 dark:bg-zinc-800/50 rounded-xl"></div>
-              </div>
+              <div className="h-3 bg-zinc-100 dark:bg-zinc-800/40 rounded w-3/4"></div>
             </div>
           ))
         ) : suppliers.length === 0 ? (
@@ -212,13 +212,13 @@ export function SupplierDebtsTable({
               <div
                 key={s.id}
                 onClick={() => onViewSupplierDetail(s)}
-                className="p-3.5 hover:bg-zinc-50 dark:hover:bg-zinc-800/50 active:bg-zinc-100 dark:active:bg-zinc-800 transition-colors cursor-pointer space-y-3"
+                className="p-3 hover:bg-zinc-50 dark:hover:bg-zinc-800/50 active:bg-zinc-100 dark:active:bg-zinc-800 transition-colors cursor-pointer space-y-2"
               >
-                {/* Top: Avatar, Name, Code & Phone */}
+                {/* Top: Avatar, Name, Code, Phone & Final Balance */}
                 <div className="flex items-start justify-between gap-2.5">
                   <div className="flex items-center gap-2.5 min-w-0">
                     <div
-                      className={`w-9 h-9 rounded-xl flex items-center justify-center text-xs font-bold shrink-0 ${avatarColor}`}
+                      className={`w-8 h-8 rounded-xl flex items-center justify-center text-xs font-bold shrink-0 ${avatarColor}`}
                     >
                       {initials}
                     </div>
@@ -235,6 +235,7 @@ export function SupplierDebtsTable({
                             type="button"
                             onClick={(e) => handleCopyPhone(s.phone!, e)}
                             className="inline-flex items-center gap-1 hover:text-zinc-800 dark:hover:text-zinc-200 transition-colors"
+                            title="Sao chép SĐT"
                           >
                             <span>{s.phone}</span>
                             <svg className="w-2.5 h-2.5 text-zinc-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -246,62 +247,48 @@ export function SupplierDebtsTable({
                     </div>
                   </div>
 
-                  <span className="text-[10px] px-2 py-0.5 rounded-lg bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 font-mono shrink-0">
-                    {s.rei_count} đơn nhập
-                  </span>
-                </div>
-
-                {/* Grid 4 chỉ số tài chính trên Mobile */}
-                <div className="grid grid-cols-2 gap-2 bg-zinc-50 dark:bg-zinc-800/40 p-2.5 rounded-xl border border-zinc-100 dark:border-zinc-800/60">
-                  <div>
-                    <div className="text-[10px] text-zinc-400">Nợ đầu kỳ</div>
-                    <div className={`text-xs font-mono ${getTableCellClass(s.no_dau_ky, "dau")}`}>
-                      {formatTableCell(s.no_dau_ky, "dau")}
-                    </div>
-                  </div>
-
-                  <div>
-                    <div className="text-[10px] text-zinc-400">Nợ tăng trong kỳ</div>
-                    <div className={`text-xs font-mono ${getTableCellClass(s.no_tang_trong_ky, "tang")}`}>
-                      {formatTableCell(s.no_tang_trong_ky, "tang")}
-                    </div>
-                  </div>
-
-                  <div>
-                    <div className="text-[10px] text-zinc-400">Nợ giảm trong kỳ</div>
-                    <div className={`text-xs font-mono ${getTableCellClass(s.no_giam_trong_ky, "giam")}`}>
-                      {formatTableCell(s.no_giam_trong_ky, "giam")}
-                    </div>
-                  </div>
-
-                  <div>
-                    <div className="text-[10px] text-zinc-400 font-semibold">Phải thu/trả cuối kỳ</div>
-                    <div className={`text-xs font-mono ${getTableCellClass(s.phai_thu_tra_cuoi_ky, "cuoi")}`}>
+                  {/* Cuối kỳ: Phải trả NCC */}
+                  <div className="text-right shrink-0">
+                    <div className="text-[10px] text-zinc-400 uppercase font-semibold">Phải trả</div>
+                    <div className={`text-xs sm:text-sm font-mono ${getTableCellClass(s.phai_thu_tra_cuoi_ky, "cuoi")}`}>
                       {formatTableCell(s.phai_thu_tra_cuoi_ky, "cuoi")}
                     </div>
                   </div>
                 </div>
 
-                {/* Footer card: Trạng thái & nút Xem */}
-                <div className="flex items-center justify-between pt-1">
-                  <div className="text-[11px] text-zinc-400">
-                    {s.pending_count > 0 ? (
-                      <span className="text-amber-600 dark:text-amber-400 font-medium">
-                        Còn {s.pending_count} đơn chưa thanh toán
+                {/* Bottom line: Brief financial flow + Status & Chevron */}
+                <div className="flex items-center justify-between pt-1 border-t border-zinc-100 dark:border-zinc-800/60 text-[11px]">
+                  <div className="flex items-center gap-1.5 text-[10px] sm:text-[11px] font-mono text-zinc-500 truncate">
+                    {s.no_tang_trong_ky > 0 && (
+                      <span className="text-rose-600 dark:text-rose-400">
+                        +{formatTableCell(s.no_tang_trong_ky, "tang")}
                       </span>
-                    ) : (
-                      <span className="text-emerald-600 dark:text-emerald-400 font-medium">
-                        ✓ Đã tất toán đủ đơn
+                    )}
+                    {s.no_tang_trong_ky > 0 && s.no_giam_trong_ky > 0 && <span>•</span>}
+                    {s.no_giam_trong_ky > 0 && (
+                      <span className="text-emerald-600 dark:text-emerald-400">
+                        -{formatTableCell(s.no_giam_trong_ky, "giam")}
                       </span>
+                    )}
+                    {s.no_tang_trong_ky === 0 && s.no_giam_trong_ky === 0 && (
+                      <span>Đầu kỳ: {formatTableCell(s.no_dau_ky, "dau")}</span>
                     )}
                   </div>
 
-                  <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-indigo-600 dark:text-indigo-400">
-                    Xem sổ chi tiết
-                    <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <div className="flex items-center gap-2 shrink-0">
+                    {s.pending_count > 0 ? (
+                      <span className="text-[10px] px-1.5 py-0.5 rounded-md bg-amber-50 dark:bg-amber-950 text-amber-700 dark:text-amber-400 font-medium">
+                        Còn {s.pending_count} đơn
+                      </span>
+                    ) : (
+                      <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-medium">
+                        ✓ Đã tất toán
+                      </span>
+                    )}
+                    <svg className="w-3.5 h-3.5 text-zinc-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                     </svg>
-                  </span>
+                  </div>
                 </div>
               </div>
             );

@@ -136,18 +136,18 @@ Xin chân thành cảm ơn Quý khách!`;
       <div className="block md:hidden divide-y divide-zinc-100 dark:divide-zinc-800">
         {loading ? (
           Array.from({ length: 4 }).map((_, i) => (
-            <div key={i} className="p-3.5 space-y-2.5 animate-pulse">
-              <div className="flex items-center gap-2.5">
-                <div className="w-8 h-8 rounded-full bg-zinc-200 dark:bg-zinc-800"></div>
-                <div className="space-y-1 flex-1">
-                  <div className="h-3.5 bg-zinc-200 dark:bg-zinc-800 rounded w-32"></div>
-                  <div className="h-2.5 bg-zinc-200 dark:bg-zinc-800 rounded w-20"></div>
+            <div key={i} className="p-3 space-y-2 animate-pulse">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-full bg-zinc-200 dark:bg-zinc-800"></div>
+                  <div className="space-y-1">
+                    <div className="h-3.5 bg-zinc-200 dark:bg-zinc-800 rounded w-28"></div>
+                    <div className="h-2.5 bg-zinc-200 dark:bg-zinc-800 rounded w-16"></div>
+                  </div>
                 </div>
+                <div className="h-4 bg-zinc-200 dark:bg-zinc-800 rounded w-20"></div>
               </div>
-              <div className="grid grid-cols-2 gap-2 p-2 bg-zinc-50 dark:bg-zinc-800/40 rounded-xl">
-                <div className="h-4 bg-zinc-200 dark:bg-zinc-800 rounded"></div>
-                <div className="h-4 bg-zinc-200 dark:bg-zinc-800 rounded"></div>
-              </div>
+              <div className="h-3 bg-zinc-100 dark:bg-zinc-800/40 rounded w-3/4"></div>
             </div>
           ))
         ) : customers.length === 0 ? (
@@ -163,25 +163,26 @@ Xin chân thành cảm ơn Quý khách!`;
               <div
                 key={c.phone || c.name}
                 onClick={() => onViewCustomerDetail(c)}
-                className="p-3.5 hover:bg-zinc-50 dark:hover:bg-zinc-800/40 transition-colors active:bg-zinc-100"
+                className="p-3 hover:bg-zinc-50 dark:hover:bg-zinc-800/40 transition-colors active:bg-zinc-100 cursor-pointer space-y-2"
               >
-                {/* Header: Name + Phone */}
-                <div className="flex items-start justify-between gap-2 mb-2">
+                {/* Header: Name, Phone & Final Balance */}
+                <div className="flex items-start justify-between gap-2">
                   <div className="flex items-center gap-2.5 min-w-0">
                     <div className="w-8 h-8 rounded-full bg-gradient-to-br from-rose-500 to-orange-500 text-white flex items-center justify-center font-bold text-xs shrink-0 shadow-2xs">
                       {initial}
                     </div>
                     <div className="min-w-0">
-                      <div className="font-bold text-xs text-zinc-900 dark:text-zinc-100 truncate">
+                      <div className="font-bold text-xs sm:text-sm text-zinc-900 dark:text-zinc-100 truncate">
                         {c.name}
                       </div>
                       {c.phone && (
-                        <div className="flex items-center gap-1.5 text-[11px] text-zinc-500 font-mono mt-0.5">
+                        <div className="flex items-center gap-1 text-[11px] text-zinc-500 font-mono mt-0.5">
                           <span>{c.phone}</span>
                           <button
                             type="button"
                             onClick={(e) => handleCopyPhone(c.phone, e)}
                             className="text-zinc-400 hover:text-zinc-600 p-0.5"
+                            title="Sao chép SĐT"
                           >
                             📋
                           </button>
@@ -190,50 +191,58 @@ Xin chân thành cảm ơn Quý khách!`;
                     </div>
                   </div>
 
-                  {/* Actions */}
-                  <div className="flex items-center gap-1 shrink-0" onClick={(e) => e.stopPropagation()}>
-                    <button
-                      type="button"
-                      onClick={() => onViewCustomerDetail(c)}
-                      className="px-2.5 py-1 rounded-lg border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 font-medium text-[11px]"
-                    >
-                      Chi tiết
-                    </button>
-                    <button
-                      type="button"
-                      onClick={(e) => handleCopyStatement(c, e)}
-                      className={`px-2 py-1 rounded-lg font-medium text-[11px] border ${
-                        isCopied
-                          ? "bg-emerald-50 dark:bg-emerald-950/60 border-emerald-300 text-emerald-700 dark:text-emerald-300"
-                          : "bg-blue-50 dark:bg-blue-950/60 border-blue-200 dark:border-blue-900 text-blue-700 dark:text-blue-300"
-                      }`}
-                    >
-                      {isCopied ? "✓" : "Zalo"}
-                    </button>
+                  {/* Cuối kỳ (Phải thu) */}
+                  <div className="text-right shrink-0">
+                    <div className="text-[10px] text-zinc-400 uppercase font-semibold">Phải thu</div>
+                    <div className="font-mono font-black text-xs sm:text-sm text-emerald-600 dark:text-emerald-400">
+                      {formatVND(c.cuoi_ky)}
+                    </div>
                   </div>
                 </div>
 
-                {/* Financial 2x2 Grid */}
-                <div className="grid grid-cols-2 gap-1.5 p-2 bg-zinc-50 dark:bg-zinc-800/40 rounded-xl text-[11px] font-mono">
-                  <div className="flex justify-between">
-                    <span className="text-zinc-500 text-[10px]">Đầu kỳ:</span>
-                    <span className="text-zinc-700 dark:text-zinc-300">{formatVND(c.dau_ky)}</span>
+                {/* Sub row: Brief breakdown + Action buttons */}
+                <div className="flex items-center justify-between gap-2 pt-1 border-t border-zinc-100 dark:border-zinc-800/60 text-[11px]">
+                  {/* Compact flow indicator */}
+                  <div className="flex items-center gap-1.5 text-[10px] sm:text-[11px] text-zinc-500 dark:text-zinc-400 font-mono truncate">
+                    {c.tang_trong_ky > 0 && (
+                      <span className="text-blue-600 dark:text-blue-400">
+                        +{formatVND(c.tang_trong_ky)}
+                      </span>
+                    )}
+                    {c.tang_trong_ky > 0 && c.giam_trong_ky > 0 && <span>•</span>}
+                    {c.giam_trong_ky > 0 && (
+                      <span className="text-rose-600 dark:text-rose-400">
+                        -{formatVND(c.giam_trong_ky)}
+                      </span>
+                    )}
+                    {c.tang_trong_ky === 0 && c.giam_trong_ky === 0 && (
+                      <span>Đầu kỳ: {formatVND(c.dau_ky)}</span>
+                    )}
                   </div>
-                  <div className="flex justify-between">
-                    <span className="text-zinc-500 text-[10px]">Tăng:</span>
-                    <span className="text-blue-600 dark:text-blue-400">
-                      {c.tang_trong_ky > 0 ? `+${formatVND(c.tang_trong_ky)}` : "0 ₫"}
-                    </span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-zinc-500 text-[10px]">Giảm:</span>
-                    <span className="text-rose-600 dark:text-rose-400">
-                      {c.giam_trong_ky > 0 ? `-${formatVND(c.giam_trong_ky)}` : "0 ₫"}
-                    </span>
-                  </div>
-                  <div className="flex justify-between font-bold">
-                    <span className="text-emerald-700 dark:text-emerald-400 text-[10px]">Cuối kỳ:</span>
-                    <span className="text-emerald-600 dark:text-emerald-400">{formatVND(c.cuoi_ky)}</span>
+
+                  {/* Actions */}
+                  <div className="flex items-center gap-1.5 shrink-0" onClick={(e) => e.stopPropagation()}>
+                    <button
+                      type="button"
+                      onClick={(e) => handleCopyStatement(c, e)}
+                      className={`px-2 py-0.5 rounded-lg font-medium text-[11px] border transition cursor-pointer ${
+                        isCopied
+                          ? "bg-emerald-50 dark:bg-emerald-950/60 border-emerald-300 text-emerald-700 dark:text-emerald-300"
+                          : "bg-blue-50 dark:bg-blue-950/60 border-blue-200 dark:border-blue-900 text-blue-700 dark:text-blue-300 hover:bg-blue-100"
+                      }`}
+                      title="Gửi báo cáo nợ qua Zalo"
+                    >
+                      {isCopied ? "✓ Đã chép" : "Zalo"}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => onViewCustomerDetail(c)}
+                      className="text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 p-0.5"
+                    >
+                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                      </svg>
+                    </button>
                   </div>
                 </div>
               </div>

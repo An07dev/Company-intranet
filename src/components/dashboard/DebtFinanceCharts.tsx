@@ -43,30 +43,31 @@ export function DebtFinanceCharts({ stats }: DebtFinanceChartsProps) {
          ========================================================================= */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2.5 pb-2.5 border-b border-zinc-200 dark:border-zinc-800">
         <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-lg bg-indigo-50 dark:bg-indigo-950/60 border border-indigo-200 dark:border-indigo-800/60 flex items-center justify-center text-base">
+          <div className="w-8 h-8 rounded-lg bg-indigo-50 dark:bg-indigo-950/60 border border-indigo-200 dark:border-indigo-800/60 flex items-center justify-center text-base shrink-0">
             ⚖️
           </div>
           <div>
-            <h2 className="text-sm sm:text-base font-bold text-zinc-900 dark:text-zinc-100 flex items-center gap-2">
+            <h2 className="text-sm sm:text-base font-bold text-zinc-900 dark:text-zinc-100 flex items-center gap-1.5 sm:gap-2 flex-wrap">
               <span>Quản Lý Công Nợ Sapo</span>
               <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-indigo-100 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800">
-                {summary.totalDebtors} Khách nợ • {summary.totalSuppliers} Nhà cung cấp
+                {summary.totalDebtors} Khách nợ • {summary.totalSuppliers} NCC
               </span>
             </h2>
-            <p className="text-xs text-zinc-500 dark:text-zinc-400">
+            <p className="hidden sm:block text-xs text-zinc-500 dark:text-zinc-400">
               Giám sát cân đối tài chính, nợ phải thu khách hàng, nợ phải trả nhà cung cấp và rủi ro tuổi nợ
             </p>
           </div>
         </div>
 
         {/* Action Link tới trang sổ nợ chi tiết */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 self-start sm:self-auto">
           <Link
             href="/dashboard/debts"
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-indigo-200 dark:border-indigo-800 bg-indigo-50/70 dark:bg-indigo-950/40 text-xs font-semibold text-indigo-700 dark:text-indigo-300 hover:bg-indigo-100 dark:hover:bg-indigo-900/50 transition shadow-2xs cursor-pointer"
+            className="inline-flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-xl border border-indigo-200 dark:border-indigo-800 bg-indigo-50/70 dark:bg-indigo-950/40 text-xs font-semibold text-indigo-700 dark:text-indigo-300 hover:bg-indigo-100 dark:hover:bg-indigo-900/50 transition shadow-2xs cursor-pointer"
           >
             <span>📑</span>
-            <span>Vào sổ nợ chi tiết</span>
+            <span className="hidden sm:inline">Vào sổ nợ chi tiết</span>
+            <span className="sm:hidden">Sổ nợ</span>
             <span>→</span>
           </Link>
         </div>
@@ -75,61 +76,63 @@ export function DebtFinanceCharts({ stats }: DebtFinanceChartsProps) {
       {/* =========================================================================
           2. 4 THẺ KPI TÀI CHÍNH NỔI BẬT (KHỚP 100% TRANG /dashboard/debts)
          ========================================================================= */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4">
         {/* KPI 1: Phải thu khách hàng */}
-        <div className="p-3.5 sm:p-4 rounded-xl sm:rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-2xs sm:shadow-sm relative overflow-hidden">
+        <div className="p-2.5 sm:p-4 rounded-xl sm:rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-2xs sm:shadow-sm relative overflow-hidden flex flex-col justify-between">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-medium text-zinc-500 dark:text-zinc-400">
+            <span className="text-[11px] sm:text-xs font-medium text-zinc-500 dark:text-zinc-400 truncate">
               Phải thu khách hàng
             </span>
-            <div className="w-7 h-7 rounded-lg bg-rose-50 dark:bg-rose-950 text-rose-600 dark:text-rose-300 flex items-center justify-center text-xs">
+            <div className="w-6 h-6 sm:w-7 sm:h-7 rounded-lg bg-rose-50 dark:bg-rose-950 text-rose-600 dark:text-rose-300 flex items-center justify-center text-xs shrink-0">
               👥
             </div>
           </div>
           <div
-            className="text-lg sm:text-2xl font-black font-mono mt-1 text-rose-600 dark:text-rose-400 truncate"
+            className="text-xs sm:text-base lg:text-xl xl:text-2xl font-bold sm:font-black font-mono mt-1 text-rose-600 dark:text-rose-400 truncate"
             title={formatVND(summary.customerDebt)}
           >
             {formatVND(summary.customerDebt)}
           </div>
-          <div className="text-[11px] text-zinc-500 dark:text-zinc-400 mt-1 truncate">
-            {summary.totalDebtors} khách nợ • {summary.totalDebtOrders} đơn nợ
+          <div className="text-[10px] sm:text-[11px] text-zinc-500 dark:text-zinc-400 mt-0.5 sm:mt-1 truncate">
+            <span className="hidden sm:inline">{summary.totalDebtors} khách nợ • {summary.totalDebtOrders} đơn nợ</span>
+            <span className="sm:hidden">{summary.totalDebtors} khách nợ</span>
           </div>
         </div>
 
         {/* KPI 2: Phải trả nhà cung cấp */}
-        <div className="p-3.5 sm:p-4 rounded-xl sm:rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-2xs sm:shadow-sm relative overflow-hidden">
+        <div className="p-2.5 sm:p-4 rounded-xl sm:rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-2xs sm:shadow-sm relative overflow-hidden flex flex-col justify-between">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-medium text-zinc-500 dark:text-zinc-400">
+            <span className="text-[11px] sm:text-xs font-medium text-zinc-500 dark:text-zinc-400 truncate">
               Phải trả nhà cung cấp
             </span>
-            <div className="w-7 h-7 rounded-lg bg-indigo-50 dark:bg-indigo-950 text-indigo-600 dark:text-indigo-300 flex items-center justify-center text-xs">
+            <div className="w-6 h-6 sm:w-7 sm:h-7 rounded-lg bg-indigo-50 dark:bg-indigo-950 text-indigo-600 dark:text-indigo-300 flex items-center justify-center text-xs shrink-0">
               🏭
             </div>
           </div>
           <div
-            className="text-lg sm:text-2xl font-black font-mono mt-1 text-indigo-600 dark:text-indigo-400 truncate"
+            className="text-xs sm:text-base lg:text-xl xl:text-2xl font-bold sm:font-black font-mono mt-1 text-indigo-600 dark:text-indigo-400 truncate"
             title={formatVND(summary.supplierDebt)}
           >
             {formatVND(summary.supplierDebt)}
           </div>
-          <div className="text-[11px] text-zinc-500 dark:text-zinc-400 mt-1 truncate">
-            {summary.totalSuppliers} nhà cung cấp • {summary.totalReceiveOrders} đơn nhập
+          <div className="text-[10px] sm:text-[11px] text-zinc-500 dark:text-zinc-400 mt-0.5 sm:mt-1 truncate">
+            <span className="hidden sm:inline">{summary.totalSuppliers} nhà cung cấp • {summary.totalReceiveOrders} đơn nhập</span>
+            <span className="sm:hidden">{summary.totalSuppliers} NCC</span>
           </div>
         </div>
 
         {/* KPI 3: Vị thế công nợ ròng */}
-        <div className="p-3.5 sm:p-4 rounded-xl sm:rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-2xs sm:shadow-sm relative overflow-hidden">
+        <div className="p-2.5 sm:p-4 rounded-xl sm:rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-2xs sm:shadow-sm relative overflow-hidden flex flex-col justify-between">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-medium text-zinc-500 dark:text-zinc-400">
-              Công nợ ròng (Phải thu ròng)
+            <span className="text-[11px] sm:text-xs font-medium text-zinc-500 dark:text-zinc-400 truncate">
+              Công nợ ròng
             </span>
-            <div className="w-7 h-7 rounded-lg bg-emerald-50 dark:bg-emerald-950 text-emerald-600 dark:text-emerald-300 flex items-center justify-center text-xs">
+            <div className="w-6 h-6 sm:w-7 sm:h-7 rounded-lg bg-emerald-50 dark:bg-emerald-950 text-emerald-600 dark:text-emerald-300 flex items-center justify-center text-xs shrink-0">
               💰
             </div>
           </div>
           <div
-            className={`text-lg sm:text-2xl font-black font-mono mt-1 truncate ${
+            className={`text-xs sm:text-base lg:text-xl xl:text-2xl font-bold sm:font-black font-mono mt-1 truncate ${
               summary.netReceivable >= 0
                 ? "text-emerald-600 dark:text-emerald-400"
                 : "text-rose-600 dark:text-rose-400"
@@ -139,26 +142,28 @@ export function DebtFinanceCharts({ stats }: DebtFinanceChartsProps) {
             {summary.netReceivable >= 0 ? "+" : ""}
             {formatVND(summary.netReceivable)}
           </div>
-          <div className="text-[11px] text-emerald-600 dark:text-emerald-400 font-medium mt-1 truncate">
-            Phải thu KH &gt; Phải trả NCC
+          <div className="text-[10px] sm:text-[11px] text-emerald-600 dark:text-emerald-400 font-medium mt-0.5 sm:mt-1 truncate">
+            <span className="hidden sm:inline">Phải thu KH &gt; Phải trả NCC</span>
+            <span className="sm:hidden">Thu &gt; Trả</span>
           </div>
         </div>
 
         {/* KPI 4: Tỷ lệ thu hồi & Nợ quá hạn */}
-        <div className="p-3.5 sm:p-4 rounded-xl sm:rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-2xs sm:shadow-sm relative overflow-hidden">
+        <div className="p-2.5 sm:p-4 rounded-xl sm:rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-2xs sm:shadow-sm relative overflow-hidden flex flex-col justify-between">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-medium text-zinc-500 dark:text-zinc-400">
-              Hiệu suất thu hồi nợ
+            <span className="text-[11px] sm:text-xs font-medium text-zinc-500 dark:text-zinc-400 truncate">
+              Hiệu suất thu nợ
             </span>
-            <div className="w-7 h-7 rounded-lg bg-amber-50 dark:bg-amber-950 text-amber-600 dark:text-amber-300 flex items-center justify-center text-xs">
+            <div className="w-6 h-6 sm:w-7 sm:h-7 rounded-lg bg-amber-50 dark:bg-amber-950 text-amber-600 dark:text-amber-300 flex items-center justify-center text-xs shrink-0">
               ⚡
             </div>
           </div>
-          <div className="text-lg sm:text-2xl font-black font-mono mt-1 text-zinc-900 dark:text-zinc-100">
+          <div className="text-xs sm:text-base lg:text-xl xl:text-2xl font-bold sm:font-black font-mono mt-1 text-zinc-900 dark:text-zinc-100">
             {summary.collectionRate}%
           </div>
-          <div className="text-[11px] text-amber-600 dark:text-amber-400 mt-1 truncate">
-            Đã thu: {formatVND(customerBalance.no_giam_trong_ky)}
+          <div className="text-[10px] sm:text-[11px] text-amber-600 dark:text-amber-400 mt-0.5 sm:mt-1 truncate">
+            <span className="hidden sm:inline">Đã thu: {formatVND(customerBalance.no_giam_trong_ky)}</span>
+            <span className="sm:hidden">Đã thu {formatVND(customerBalance.no_giam_trong_ky)}</span>
           </div>
         </div>
       </div>
@@ -326,20 +331,20 @@ export function DebtFinanceCharts({ stats }: DebtFinanceChartsProps) {
             </div>
 
             {/* Thống kê chi tiết 3 khoảng tuổi nợ */}
-            <div className="grid grid-cols-3 gap-2 pt-1">
+            <div className="grid grid-cols-3 gap-1.5 sm:gap-2 pt-1">
               {agingBreakdown.map((item, idx) => (
                 <div
                   key={idx}
-                  className="p-2.5 rounded-xl border border-zinc-100 dark:border-zinc-800/80 bg-zinc-50/60 dark:bg-zinc-800/30 text-center space-y-1"
+                  className="p-1.5 sm:p-2.5 rounded-xl border border-zinc-100 dark:border-zinc-800/80 bg-zinc-50/60 dark:bg-zinc-800/30 text-center space-y-0.5 sm:space-y-1"
                 >
-                  <div className="flex items-center justify-center gap-1 text-[11px] font-semibold text-zinc-700 dark:text-zinc-300">
-                    <span className="w-2 h-2 rounded-full" style={{ backgroundColor: item.color }}></span>
-                    <span>{item.range}</span>
+                  <div className="flex items-center justify-center gap-1 text-[10px] sm:text-[11px] font-semibold text-zinc-700 dark:text-zinc-300">
+                    <span className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full shrink-0" style={{ backgroundColor: item.color }}></span>
+                    <span className="truncate">{item.range}</span>
                   </div>
-                  <div className="font-mono font-bold text-xs text-zinc-900 dark:text-white">
+                  <div className="font-mono font-bold text-[10px] sm:text-xs text-zinc-900 dark:text-white truncate">
                     {formatVND(item.amount)}
                   </div>
-                  <div className="text-[10px] text-zinc-400 font-mono">
+                  <div className="text-[9px] sm:text-[10px] text-zinc-400 font-mono">
                     {item.count} đơn ({item.percentage}%)
                   </div>
                 </div>
