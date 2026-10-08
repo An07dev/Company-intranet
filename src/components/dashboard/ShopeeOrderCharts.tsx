@@ -94,11 +94,12 @@ export function ShopeeOrderCharts({
               href="/dashboard/orders"
               className="text-xs text-orange-600 dark:text-orange-400 hover:underline font-semibold inline-flex items-center gap-1 cursor-pointer"
             >
-              <span>Xem bảng đơn hàng</span>
+              <span className="sm:hidden">Bảng đơn</span>
+              <span className="hidden sm:inline">Xem bảng đơn hàng</span>
               <span>→</span>
             </Link>
           </div>
-          <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-1">
+          <p className="hidden sm:block text-xs text-zinc-500 dark:text-zinc-400 mt-1">
             Tỷ lệ đơn hàng theo trạng thái đã giao, chờ đóng gói và hủy đơn trên toàn hệ thống
           </p>
         </div>

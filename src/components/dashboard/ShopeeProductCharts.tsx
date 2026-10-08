@@ -47,24 +47,24 @@ export function ShopeeProductCharts({
   return (
     <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 sm:gap-6">
       {/* 1. TỒN KHO & PHÂN BỔ KHOẢNG GIÁ SẢN PHẨM */}
-      <div className="lg:col-span-5 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-4 sm:p-5 shadow-xs flex flex-col justify-between">
+      <div className="lg:col-span-5 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl sm:rounded-2xl p-3.5 sm:p-5 shadow-xs flex flex-col justify-between">
         <div>
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <span className="text-base sm:text-lg">📦</span>
-              <h3 className="text-sm sm:text-base font-bold text-zinc-900 dark:text-zinc-100">
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
+              <span className="text-base sm:text-lg shrink-0">📦</span>
+              <h3 className="text-xs sm:text-base font-bold text-zinc-900 dark:text-zinc-100 truncate">
                 Tồn Kho &amp; Phân Khúc Giá
               </h3>
             </div>
             <Link
               href="/dashboard/shopee-products"
-              className="text-xs text-orange-600 dark:text-orange-400 hover:underline font-medium inline-flex items-center gap-1"
+              className="text-xs text-orange-600 dark:text-orange-400 hover:underline font-medium inline-flex items-center gap-1 shrink-0"
             >
-              <span>Kho sản phẩm</span>
+              <span>Kho SP</span>
               <span>→</span>
             </Link>
           </div>
-          <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-1">
+          <p className="hidden sm:block text-xs text-zinc-500 dark:text-zinc-400 mt-1">
             Tình trạng sẵn có hàng và phổ giá của danh mục sản phẩm
           </p>
         </div>
@@ -145,26 +145,27 @@ export function ShopeeProductCharts({
       </div>
 
       {/* 2. TOP 5 SẢN PHẨM BÁN CHẠY NHẤT (30 NGÀY) */}
-      <div className="lg:col-span-7 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-4 sm:p-5 shadow-xs flex flex-col justify-between">
+      <div className="lg:col-span-7 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl sm:rounded-2xl p-3.5 sm:p-5 shadow-xs flex flex-col justify-between">
         <div>
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <span className="text-base sm:text-lg">🔥</span>
-              <h3 className="text-sm sm:text-base font-bold text-zinc-900 dark:text-zinc-100">
-                Top Sản Phẩm Bán Chạy (30 Ngày Qua)
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
+              <span className="text-base sm:text-lg shrink-0">🔥</span>
+              <h3 className="text-xs sm:text-base font-bold text-zinc-900 dark:text-zinc-100 truncate">
+                <span className="sm:hidden">Top Bán Chạy (30 Ngày)</span>
+                <span className="hidden sm:inline">Top Sản Phẩm Bán Chạy (30 Ngày Qua)</span>
               </h3>
             </div>
-            <span className="text-[11px] px-2.5 py-0.5 rounded-full bg-orange-100 dark:bg-orange-950 text-orange-700 dark:text-orange-300 font-semibold font-mono">
-              Tổng {totalSales30d.toLocaleString("vi-VN")} đã bán
+            <span className="text-[10px] sm:text-[11px] px-2 py-0.5 rounded-full bg-orange-100 dark:bg-orange-950 text-orange-700 dark:text-orange-300 font-semibold font-mono shrink-0 whitespace-nowrap">
+              <span className="hidden sm:inline">Tổng </span>{totalSales30d.toLocaleString("vi-VN")} đã bán
             </span>
           </div>
-          <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-1">
-            Xếp hạng các mặt hàng có lượng bán cao nhất trong chu kỳ 30 ngày trên Shopee & Đa Kênh
+          <p className="hidden sm:block text-xs text-zinc-500 dark:text-zinc-400 mt-1">
+            Xếp hạng các mặt hàng có lượng bán cao nhất trong chu kỳ 30 ngày trên Shopee &amp; Đa Kênh
           </p>
         </div>
 
         {/* Danh sách Top 5 sản phẩm */}
-        <div className="my-4 divide-y divide-zinc-100 dark:divide-zinc-800">
+        <div className="my-3 sm:my-4 divide-y divide-zinc-100 dark:divide-zinc-800">
           {topSellingProducts.length === 0 ? (
             <div className="py-8 text-center text-xs text-zinc-400">Chưa có dữ liệu lượt bán</div>
           ) : (
@@ -182,16 +183,16 @@ export function ShopeeProductCharts({
               ];
 
               return (
-                <div key={prod.id || idx} className="py-2.5 first:pt-0 last:pb-0 flex items-center gap-3">
+                <div key={prod.id || idx} className="py-2 sm:py-2.5 first:pt-0 last:pb-0 flex items-start gap-2.5 sm:gap-3">
                   {/* Rank badge */}
                   <div
-                    className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-black shrink-0 border ${badgeColors[idx] || badgeColors[3]}`}
+                    className={`w-5 h-5 sm:w-6 sm:h-6 rounded-full flex items-center justify-center text-[10px] sm:text-xs font-black shrink-0 border mt-0.5 ${badgeColors[idx] || badgeColors[3]}`}
                   >
                     {rank}
                   </div>
 
                   {/* Thumbnail ảnh sản phẩm */}
-                  <div className="w-10 h-10 rounded-lg bg-zinc-100 dark:bg-zinc-800 overflow-hidden shrink-0 border border-zinc-200 dark:border-zinc-700 flex items-center justify-center">
+                  <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-lg bg-zinc-100 dark:bg-zinc-800 overflow-hidden shrink-0 border border-zinc-200 dark:border-zinc-700 flex items-center justify-center mt-0.5">
                     {prod.image ? (
                       <img
                         src={prod.image}
@@ -205,34 +206,35 @@ export function ShopeeProductCharts({
                   </div>
 
                   {/* Chi tiết tên, giá và thanh doanh số */}
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between gap-2">
-                      <h4
-                        className="text-xs font-semibold text-zinc-900 dark:text-zinc-100 truncate hover:text-orange-600 cursor-pointer"
-                        title={prod.name}
-                      >
-                        {prod.name}
-                      </h4>
-                      <span className="text-xs font-bold font-mono text-orange-600 dark:text-orange-400 shrink-0">
-                        {prod.sales_30d.toLocaleString("vi-VN")} đã bán
-                      </span>
-                    </div>
+                  <div className="flex-1 min-w-0 space-y-1">
+                    {/* Dòng 1: Tên sản phẩm hiển thị trọn vẹn, không bị mất text */}
+                    <h4
+                      className="text-xs sm:text-sm font-semibold text-zinc-900 dark:text-zinc-100 line-clamp-2 leading-snug hover:text-orange-600 cursor-pointer"
+                      title={prod.name}
+                    >
+                      {prod.name}
+                    </h4>
 
-                    <div className="flex items-center justify-between text-[11px] text-zinc-500 dark:text-zinc-400 mt-0.5">
-                      <span className="font-mono text-zinc-600 dark:text-zinc-300">
+                    {/* Dòng 2: Giá & Thống kê bán/tồn */}
+                    <div className="flex items-center justify-between text-[11px] text-zinc-500 dark:text-zinc-400 gap-1.5 flex-wrap">
+                      <span className="font-mono text-zinc-700 dark:text-zinc-300 font-medium text-[10px] sm:text-[11px]">
                         {prod.price_display}
                       </span>
-                      <span className="font-mono text-[10px]">
+                      <div className="flex items-center gap-1.5 font-mono text-[10px] sm:text-[11px] shrink-0">
+                        <span className="font-bold text-orange-600 dark:text-orange-400">
+                          {prod.sales_30d.toLocaleString("vi-VN")} đã bán
+                        </span>
+                        <span className="text-zinc-300 dark:text-zinc-600">•</span>
                         {prod.stock > 0 ? (
                           <span className="text-emerald-600 dark:text-emerald-400">Còn {prod.stock.toLocaleString("vi-VN")}</span>
                         ) : (
                           <span className="text-rose-500 font-semibold">Hết hàng</span>
                         )}
-                      </span>
+                      </div>
                     </div>
 
-                    {/* Progress bar so sánh */}
-                    <div className="w-full bg-zinc-100 dark:bg-zinc-800 h-1.5 rounded-full overflow-hidden mt-1.5">
+                    {/* Dòng 3: Progress bar so sánh */}
+                    <div className="w-full bg-zinc-100 dark:bg-zinc-800 h-1 sm:h-1.5 rounded-full overflow-hidden mt-1">
                       <div
                         style={{ width: `${barWidth}%` }}
                         className="h-full bg-gradient-to-r from-orange-400 to-amber-500 rounded-full transition-all duration-500"
@@ -246,13 +248,15 @@ export function ShopeeProductCharts({
         </div>
 
         {/* Footer info */}
-        <div className="pt-3 border-t border-zinc-100 dark:border-zinc-800 flex items-center justify-between text-[11px] text-zinc-500">
-          <span>Dữ liệu thực tế cập nhật từ Kênh Bán Hàng Sapo &amp; Shopee</span>
+        <div className="pt-2.5 sm:pt-3 border-t border-zinc-100 dark:border-zinc-800 flex items-center justify-between text-[10px] sm:text-[11px] text-zinc-500 gap-2">
+          <span className="hidden sm:inline">Dữ liệu thực tế cập nhật từ Kênh Bán Hàng Sapo &amp; Shopee</span>
+          <span className="sm:hidden text-zinc-400 truncate">Đồng bộ tự động</span>
           <Link
             href="/dashboard/shopee-products"
-            className="text-orange-600 dark:text-orange-400 hover:underline font-medium"
+            className="text-orange-600 dark:text-orange-400 hover:underline font-medium shrink-0"
           >
-            Quản lý toàn bộ {totalProducts} sản phẩm →
+            <span className="sm:hidden">Xem {totalProducts} SP →</span>
+            <span className="hidden sm:inline">Quản lý toàn bộ {totalProducts} sản phẩm →</span>
           </Link>
         </div>
       </div>
