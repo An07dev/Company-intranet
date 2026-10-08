@@ -396,11 +396,12 @@ export function ShopeeOrderDetailModal({
           )}
         </div>
 
-        {/* Footer */}
-        <div className="p-2.5 sm:p-4 border-t border-zinc-100 dark:border-zinc-800 bg-zinc-50/70 dark:bg-zinc-800/40 space-y-2 shrink-0">
-          {/* Hàng nút nghiệp vụ Sapo (Chỉ hiển thị nếu có hành động khả dụng) */}
-          {order.order_status !== "Đã hủy" && (
-            <div className="flex items-center gap-2">
+        {/* Footer (1 dòng tối ưu tuyệt đối, không rớt hàng) */}
+        <div className="p-2.5 sm:p-3.5 border-t border-zinc-100 dark:border-zinc-800 bg-zinc-50/70 dark:bg-zinc-800/40 shrink-0">
+          <div className="flex items-center justify-between gap-1.5 sm:gap-2 flex-nowrap overflow-x-auto no-scrollbar">
+            {/* Cụm nút thao tác bên trái */}
+            <div className="flex items-center gap-1 sm:gap-1.5 flex-nowrap shrink-0">
+              {/* Nút Hủy đơn Sapo */}
               {order.order_status !== "Đã hủy" && (
                 <button
                   type="button"
@@ -409,32 +410,21 @@ export function ShopeeOrderDetailModal({
                     setShowCancelModal(true);
                   }}
                   disabled={actionLoading}
-                  className="flex-1 py-1.5 px-3 rounded-xl border border-rose-200 dark:border-rose-900/60 bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300 hover:bg-rose-100 font-semibold text-xs transition-colors flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50 active:scale-[0.98]"
+                  className="py-1.5 px-2 sm:px-2.5 rounded-xl border border-rose-200 dark:border-rose-900/60 bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300 hover:bg-rose-100 font-semibold text-xs transition-colors flex items-center gap-1 cursor-pointer disabled:opacity-50 active:scale-95 shrink-0"
                   title="Hủy đơn hàng trực tiếp trên hệ thống Sapo"
                 >
                   <span>❌</span>
-                  <span>Hủy đơn Sapo</span>
+                  <span className="hidden sm:inline">Hủy đơn</span>
+                  <span className="sm:hidden">Hủy</span>
                 </button>
               )}
 
-              {order.order_status !== "Đã giao" && order.order_status !== "Đã hủy" && (
-                <button
-                  type="button"
-                  onClick={() => handleOrderAction("close")}
-                  disabled={actionLoading}
-                  className="flex-1 py-1.5 px-3 rounded-xl border border-blue-200 dark:border-blue-900/60 bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 hover:bg-blue-100 font-semibold text-xs transition-colors flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50 active:scale-[0.98]"
-                  title="Hoàn tất đơn hàng trên Sapo"
-                >
-                  <span>✅</span>
-                  <span>Hoàn tất đơn</span>
-                </button>
-              )}
-
+              {/* Nút Sửa đơn */}
               {onEdit && (
                 <button
                   type="button"
                   onClick={() => onEdit(order)}
-                  className="flex-1 py-1.5 px-3 rounded-xl border border-orange-200 dark:border-orange-800/80 bg-orange-50 dark:bg-orange-950/40 text-orange-700 dark:text-orange-300 hover:bg-orange-100 font-semibold text-xs transition-colors flex items-center justify-center gap-1.5 cursor-pointer active:scale-[0.98]"
+                  className="py-1.5 px-2 sm:px-2.5 rounded-xl border border-orange-200 dark:border-orange-800/80 bg-orange-50 dark:bg-orange-950/40 text-orange-700 dark:text-orange-300 hover:bg-orange-100 font-semibold text-xs transition-colors flex items-center gap-1 cursor-pointer active:scale-95 shrink-0"
                   title="Chỉnh sửa thông tin đơn hàng và đồng bộ lên Sapo"
                 >
                   <span>✏️</span>
@@ -442,47 +432,47 @@ export function ShopeeOrderDetailModal({
                 </button>
               )}
 
+              {/* Nút Mở lại đơn (nếu đã giao) */}
               {order.order_status === "Đã giao" && (
                 <button
                   type="button"
                   onClick={() => handleOrderAction("open")}
                   disabled={actionLoading}
-                  className="flex-1 py-1.5 px-3 rounded-xl border border-amber-200 dark:border-amber-900/60 bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 hover:bg-amber-100 font-semibold text-xs transition-colors flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50 active:scale-[0.98]"
+                  className="py-1.5 px-2 sm:px-2.5 rounded-xl border border-amber-200 dark:border-amber-900/60 bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 hover:bg-amber-100 font-semibold text-xs transition-colors flex items-center gap-1 cursor-pointer disabled:opacity-50 active:scale-95 shrink-0"
                   title="Mở lại đơn hàng trên Sapo để tiếp tục xử lý"
                 >
                   <span>🔄</span>
-                  <span>Mở lại đơn</span>
+                  <span className="hidden sm:inline">Mở lại</span>
+                  <span className="sm:hidden">Mở</span>
                 </button>
               )}
-            </div>
-          )}
 
-          {/* Hàng chính: Các tiện ích & Nút Đóng */}
-          <div className="flex items-center justify-between gap-2">
-            <div className="flex items-center gap-1.5">
+              {/* Nút Làm mới từ Sapo */}
               <button
                 type="button"
                 onClick={handleRefreshFromSapo}
                 disabled={refreshingStatus}
-                className="py-1.5 px-2.5 sm:px-3 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-zinc-700 dark:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-700 font-medium text-xs transition-colors flex items-center gap-1 cursor-pointer disabled:opacity-50 active:scale-95"
+                className="py-1.5 px-2 sm:px-2.5 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-zinc-700 dark:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-700 font-medium text-xs transition-colors flex items-center gap-1 cursor-pointer disabled:opacity-50 active:scale-95 shrink-0"
                 title="Làm mới trạng thái từ Sapo"
               >
                 <span className={refreshingStatus ? "animate-spin" : ""}>🔄</span>
-                <span className="hidden sm:inline">{refreshingStatus ? "Đang tải..." : "Làm mới từ Sapo"}</span>
-                <span className="sm:hidden">Làm mới</span>
+                <span className="hidden md:inline">{refreshingStatus ? "Đang tải..." : "Làm mới"}</span>
               </button>
 
+              {/* Nút Sao chép tóm tắt */}
               <button
                 type="button"
                 onClick={handleCopyAll}
-                className="py-1.5 px-2.5 sm:px-3 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-zinc-700 dark:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-700 font-medium text-xs transition-colors flex items-center gap-1 cursor-pointer active:scale-95"
+                className="py-1.5 px-2 sm:px-2.5 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-zinc-700 dark:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-700 font-medium text-xs transition-colors flex items-center gap-1 cursor-pointer active:scale-95 shrink-0"
                 title="Sao chép tóm tắt đơn hàng"
               >
                 <span>{copiedAll ? "✓" : "📋"}</span>
-                <span className="hidden sm:inline">{copiedAll ? "Đã sao chép" : "Chép tóm tắt"}</span>
-                <span className="sm:hidden">{copiedAll ? "Đã chép" : "Tóm tắt"}</span>
+                <span className="hidden md:inline">{copiedAll ? "Đã sao chép" : "Chép"}</span>
               </button>
+            </div>
 
+            {/* Cụm nút thao tác bên phải: Xóa và Đóng cùng 1 hàng */}
+            <div className="flex items-center gap-1.5 shrink-0">
               {onDelete && (
                 <button
                   type="button"
@@ -495,21 +485,23 @@ export function ShopeeOrderDetailModal({
                       onDelete(order.order_sn);
                     }
                   }}
-                  className="p-1.5 sm:px-2 rounded-xl border border-rose-200 dark:border-rose-900/40 bg-rose-50 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400 hover:bg-rose-100 font-medium text-xs transition-colors cursor-pointer active:scale-95"
+                  className="py-1.5 px-2 sm:px-2.5 rounded-xl border border-rose-200 dark:border-rose-900/40 bg-rose-50 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400 hover:bg-rose-100 font-medium text-xs transition-colors cursor-pointer active:scale-95 flex items-center gap-1 shrink-0"
                   title="Xóa đơn hàng này và đồng bộ xóa trên Sapo"
                 >
-                  🗑️
+                  <span>🗑️</span>
+                  <span className="hidden sm:inline">Xóa</span>
                 </button>
               )}
-            </div>
 
-            <button
-              type="button"
-              onClick={onClose}
-              className="py-1.5 px-4 rounded-xl bg-zinc-900 hover:bg-zinc-800 dark:bg-zinc-100 dark:hover:bg-white text-white dark:text-zinc-900 font-bold text-xs transition-colors cursor-pointer active:scale-95"
-            >
-              Đóng
-            </button>
+              {/* Nút Đóng */}
+              <button
+                type="button"
+                onClick={onClose}
+                className="py-1.5 px-3.5 sm:px-4 rounded-xl bg-zinc-900 hover:bg-zinc-800 dark:bg-zinc-100 dark:hover:bg-white text-white dark:text-zinc-900 font-bold text-xs transition-colors cursor-pointer active:scale-95 shrink-0"
+              >
+                Đóng
+              </button>
+            </div>
           </div>
         </div>
 

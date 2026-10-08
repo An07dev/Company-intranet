@@ -19,21 +19,6 @@ interface EditOrderModalProps {
   onOrderUpdated?: (updatedOrder: ShopeeOrder) => void;
 }
 
-const SAPO_ORDER_SOURCES = [
-  { value: "Tại quầy", label: "🏪 Tại quầy (POS)" },
-  { value: "Zalo", label: "💬 Zalo OA / Chat" },
-  { value: "Facebook", label: "📘 Facebook Fanpage" },
-  { value: "Hotline", label: "📞 Hotline / Bán trực tiếp" },
-  { value: "Website", label: "🌐 Website Bán Hàng" },
-  { value: "Telesale", label: "💼 Telesale" },
-  { value: "TikTok", label: "🎵 TikTok Shop" },
-  { value: "Shopee", label: "🟠 Shopee" },
-  { value: "Lazada", label: "🔵 Lazada" },
-  { value: "Khách quen", label: "⭐ Khách quen / Giới thiệu" },
-  { value: "Đối tác B2B", label: "🤝 Đại lý / Khách sỉ B2B" },
-  { value: "other", label: "✏️ Nguồn khác (Tự nhập...)" },
-];
-
 export function EditOrderModal({
   order,
   isOpen,
@@ -50,11 +35,6 @@ export function EditOrderModal({
   const [buyerPhone, setBuyerPhone] = useState("");
   const [buyerEmail, setBuyerEmail] = useState("");
   const [buyerAddress, setBuyerAddress] = useState("");
-  const [sourceSelect, setSourceSelect] = useState("Tại quầy");
-  const [customSource, setCustomSource] = useState("");
-  const [paymentMethod, setPaymentMethod] = useState("Tiền mặt");
-  const [shippingCarrier, setShippingCarrier] = useState("");
-  const [trackingNumber, setTrackingNumber] = useState("");
   const [note, setNote] = useState("");
   const [items, setItems] = useState<LineItemEdit[]>([]);
 
@@ -67,9 +47,6 @@ export function EditOrderModal({
 
     setApiError(null);
     setBuyerName(order.buyer_username || "");
-    setShippingCarrier(order.shipping_carrier || "");
-    setTrackingNumber(order.tracking_number || "");
-    setPaymentMethod(order.payment_method || "Tiền mặt");
 
     // Bóc tách Sapo raw_text
     let rawObj: any = {};
@@ -98,24 +75,6 @@ export function EditOrderModal({
 
     // Note
     setNote(rawObj.note || "");
-
-    // Kênh bán (Source)
-    const rawSource = String(rawObj.source_name || order.shop_username || "").toLowerCase();
-    let matchedSource = "Tại quầy";
-    if (rawSource.includes("zalo")) matchedSource = "Zalo";
-    else if (rawSource.includes("facebook") || rawSource.includes("fb")) matchedSource = "Facebook";
-    else if (rawSource.includes("hotline")) matchedSource = "Hotline";
-    else if (rawSource.includes("web")) matchedSource = "Website";
-    else if (rawSource.includes("tiktok")) matchedSource = "TikTok";
-    else if (rawSource.includes("shopee")) matchedSource = "Shopee";
-    else if (rawSource.includes("lazada")) matchedSource = "Lazada";
-    else if (rawSource.includes("pos") || rawSource.includes("admin")) matchedSource = "Tại quầy";
-    else if (rawSource.includes("b2b")) matchedSource = "Đối tác B2B";
-    else {
-      matchedSource = "other";
-      setCustomSource(order.shop_username || "");
-    }
-    setSourceSelect(matchedSource);
 
     // Bóc tách Items
     if (Array.isArray(rawObj.line_items) && rawObj.line_items.length > 0) {
@@ -211,11 +170,6 @@ export function EditOrderModal({
     setLoading(true);
     setApiError(null);
 
-    const finalSource =
-      sourceSelect === "other"
-        ? customSource.trim() || "Tại quầy"
-        : sourceSelect;
-
     try {
       const payload = {
         order_sn: order.order_sn,
@@ -223,10 +177,10 @@ export function EditOrderModal({
         buyer_phone: buyerPhone.trim(),
         buyer_email: buyerEmail.trim(),
         buyer_address: buyerAddress.trim(),
-        source_name: finalSource,
-        payment_method: paymentMethod,
-        shipping_carrier: shippingCarrier.trim(),
-        tracking_number: trackingNumber.trim(),
+        source_name: order.shop_username,
+        payment_method: order.payment_method,
+        shipping_carrier: order.shipping_carrier,
+        tracking_number: order.tracking_number,
         note: note.trim(),
         items: items.map((it) => ({
           product_name: it.product_name.trim(),
@@ -387,89 +341,7 @@ export function EditOrderModal({
             </div>
           </div>
 
-          {/* Phân nhóm 2: Kênh bán & Vận chuyển */}
-          <div className="space-y-3">
-            <h4 className="text-xs font-bold text-zinc-900 dark:text-zinc-100 uppercase tracking-wider flex items-center gap-1.5 border-b border-zinc-100 dark:border-zinc-800 pb-1.5">
-              <span>🛍️</span>
-              <span>Kênh bán hàng &amp; Vận chuyển</span>
-            </h4>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div>
-                <label className="block text-xs font-semibold text-zinc-700 dark:text-zinc-300 mb-1">
-                  Nguồn / Kênh bán hàng
-                </label>
-                <select
-                  value={sourceSelect}
-                  onChange={(e) => setSourceSelect(e.target.value)}
-                  className="w-full text-xs px-3 py-2 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 focus:outline-hidden focus:ring-2 focus:ring-orange-500 cursor-pointer"
-                >
-                  {SAPO_ORDER_SOURCES.map((s) => (
-                    <option key={s.value} value={s.value}>
-                      {s.label}
-                    </option>
-                  ))}
-                </select>
-                {sourceSelect === "other" && (
-                  <input
-                    type="text"
-                    required
-                    value={customSource}
-                    onChange={(e) => setCustomSource(e.target.value)}
-                    placeholder="Nhập tên nguồn bán hàng..."
-                    className="w-full mt-2 text-xs px-3 py-1.5 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 focus:outline-hidden focus:ring-2 focus:ring-orange-500"
-                  />
-                )}
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-zinc-700 dark:text-zinc-300 mb-1">
-                  Hình thức thanh toán
-                </label>
-                <select
-                  value={paymentMethod}
-                  onChange={(e) => setPaymentMethod(e.target.value)}
-                  className="w-full text-xs px-3 py-2 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 focus:outline-hidden focus:ring-2 focus:ring-orange-500 cursor-pointer"
-                >
-                  <option value="Tiền mặt">💵 Tiền mặt</option>
-                  <option value="Chuyển khoản">💳 Chuyển khoản ngân hàng</option>
-                  <option value="COD">📦 Thu hộ COD</option>
-                  <option value="Ví điện tử">📱 Ví điện tử / Thẻ</option>
-                  <option value="Công nợ">⚖️ Ghi nợ (Công nợ)</option>
-                </select>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div>
-                <label className="block text-xs font-semibold text-zinc-700 dark:text-zinc-300 mb-1">
-                  Đơn vị vận chuyển
-                </label>
-                <input
-                  type="text"
-                  value={shippingCarrier}
-                  onChange={(e) => setShippingCarrier(e.target.value)}
-                  placeholder="GHTK, Viettel Post, AhaMove, Grab..."
-                  className="w-full text-xs px-3 py-2 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 focus:outline-hidden focus:ring-2 focus:ring-orange-500"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-zinc-700 dark:text-zinc-300 mb-1">
-                  Mã vận đơn
-                </label>
-                <input
-                  type="text"
-                  value={trackingNumber}
-                  onChange={(e) => setTrackingNumber(e.target.value)}
-                  placeholder="Mã vận đơn theo dõi..."
-                  className="w-full text-xs font-mono px-3 py-2 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 focus:outline-hidden focus:ring-2 focus:ring-orange-500"
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* Phân nhóm 3: Danh sách sản phẩm trong đơn */}
+          {/* Phân nhóm 2: Danh sách sản phẩm trong đơn */}
           <div className="space-y-3">
             <div className="flex items-center justify-between border-b border-zinc-100 dark:border-zinc-800 pb-1.5">
               <h4 className="text-xs font-bold text-zinc-900 dark:text-zinc-100 uppercase tracking-wider flex items-center gap-1.5">

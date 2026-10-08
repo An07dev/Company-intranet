@@ -396,22 +396,31 @@ export async function PUT(request: NextRequest) {
         if (note !== undefined) sapoUpdate.note = note;
         if (tags !== undefined) sapoUpdate.tags = tags;
 
-        // Cập nhật địa chỉ nhận hàng trên Sapo
+        const nameParts = cleanBuyerName.split(/\s+/);
+        const lastName = nameParts.length > 1 ? nameParts[0] : "";
+        const firstName = nameParts.length > 1 ? nameParts.slice(1).join(" ") : nameParts[0] || "Khách lẻ";
+
+        // Cập nhật địa chỉ nhận hàng & thanh toán trên Sapo
         if (buyer_name || buyer_phone || buyer_address) {
-          sapoUpdate.shipping_address = {
-            ...(existingRaw.shipping_address || {}),
+          const addrUpdate = {
             name: cleanBuyerName,
+            first_name: firstName,
+            last_name: lastName,
             phone: buyer_phone !== undefined ? buyer_phone : (existingRaw.shipping_address?.phone || ""),
             address1: buyer_address !== undefined ? buyer_address : (existingRaw.shipping_address?.address1 || "Việt Nam"),
+          };
+          sapoUpdate.shipping_address = {
+            ...(existingRaw.shipping_address || {}),
+            ...addrUpdate,
+          };
+          sapoUpdate.billing_address = {
+            ...(existingRaw.billing_address || {}),
+            ...addrUpdate,
           };
         }
 
         // Cập nhật thông tin khách hàng trên Sapo
         if (buyer_name || buyer_phone || buyer_email) {
-          const nameParts = cleanBuyerName.split(/\s+/);
-          const lastName = nameParts.length > 1 ? nameParts[0] : "";
-          const firstName = nameParts.length > 1 ? nameParts.slice(1).join(" ") : nameParts[0] || "Khách lẻ";
-
           sapoUpdate.customer = {
             ...(existingRaw.customer || {}),
             first_name: firstName,
@@ -427,6 +436,24 @@ export async function PUT(request: NextRequest) {
           sapoUpdated = true;
           if (sapoRes?.order) {
             existingRaw = { ...existingRaw, ...sapoRes.order };
+          }
+        }
+
+        // Cập nhật hồ sơ khách hàng trên Sapo nếu có customer id
+        const customerId = existingRaw.customer?.id;
+        if (customerId && (buyer_name || buyer_phone || buyer_email)) {
+          try {
+            const custPayload: any = {};
+            if (buyer_phone !== undefined) custPayload.phone = buyer_phone;
+            if (buyer_email !== undefined) custPayload.email = buyer_email;
+            if (cleanBuyerName) {
+              const nameParts = cleanBuyerName.split(/\s+/);
+              custPayload.last_name = nameParts.length > 1 ? nameParts[0] : "";
+              custPayload.first_name = nameParts.length > 1 ? nameParts.slice(1).join(" ") : nameParts[0] || "Khách lẻ";
+            }
+            await SapoService.updateCustomer(customerId, custPayload);
+          } catch (custErr) {
+            console.warn(`[Sapo Sync] Không cập nhật được master customer ${customerId}:`, custErr);
           }
         }
       } catch (err: any) {
@@ -455,6 +482,7 @@ export async function PUT(request: NextRequest) {
       updateFields.shop_username = source_name || shop_username;
     }
 
+    let newTotal = 0;
     // Cập nhật danh sách sản phẩm & tổng tiền nếu có
     if (Array.isArray(items) && items.length > 0) {
       updateFields.items = items.map((it: any) => ({
@@ -463,7 +491,7 @@ export async function PUT(request: NextRequest) {
         quantity: Number(it.quantity) || 1,
       }));
 
-      const newTotal = items.reduce(
+      newTotal = items.reduce(
         (sum: number, it: any) => sum + (Number(it.price) || 0) * (Number(it.quantity) || 1),
         0
       );
@@ -477,16 +505,39 @@ export async function PUT(request: NextRequest) {
       if (cleanBuyerName) {
         if (!existingRaw.shipping_address) existingRaw.shipping_address = {};
         existingRaw.shipping_address.name = cleanBuyerName;
+        if (!existingRaw.customer) existingRaw.customer = {};
+        existingRaw.customer.name = cleanBuyerName;
+        existingRaw.customer.first_name = cleanBuyerName;
       }
       if (buyer_phone !== undefined) {
         if (!existingRaw.shipping_address) existingRaw.shipping_address = {};
         existingRaw.shipping_address.phone = buyer_phone;
+        if (!existingRaw.customer) existingRaw.customer = {};
+        existingRaw.customer.phone = buyer_phone;
+      }
+      if (buyer_email !== undefined) {
+        if (!existingRaw.customer) existingRaw.customer = {};
+        existingRaw.customer.email = buyer_email;
       }
       if (buyer_address !== undefined) {
         if (!existingRaw.shipping_address) existingRaw.shipping_address = {};
         existingRaw.shipping_address.address1 = buyer_address;
       }
       if (note !== undefined) existingRaw.note = note;
+      if (Array.isArray(items) && items.length > 0) {
+        existingRaw.line_items = items.map((it: any, idx: number) => ({
+          id: it.id || idx + 1,
+          name: it.product_name || "Sản phẩm",
+          title: it.product_name || "Sản phẩm",
+          variant_title: it.variation || "",
+          quantity: Number(it.quantity) || 1,
+          price: Number(it.price) || 0,
+        }));
+        if (newTotal > 0) {
+          existingRaw.total_price = newTotal;
+          existingRaw.total_line_items_price = newTotal;
+        }
+      }
       updateFields.raw_text = JSON.stringify(existingRaw);
     }
 

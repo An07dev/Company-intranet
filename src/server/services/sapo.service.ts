@@ -161,6 +161,16 @@ export const SapoService = {
   },
 
   /**
+   * Cập nhật thông tin khách hàng trên Sapo
+   */
+  async updateCustomer(id: number | string, customerData: Partial<SapoCustomer> & Record<string, any>): Promise<any> {
+    return sapoFetch(`/admin/customers/${id}.json`, {
+      method: "PUT",
+      body: JSON.stringify({ customer: { id: Number(id), ...customerData } }),
+    });
+  },
+
+  /**
    * Lấy toàn bộ danh sách nhà cung cấp
    */
   async getSuppliers(): Promise<{ suppliers: SapoSupplier[] }> {
