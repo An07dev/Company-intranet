@@ -151,77 +151,76 @@ export default function CustomersPage() {
     <div className="w-full px-3 sm:px-6 lg:px-8 py-3.5 sm:py-5 space-y-3 sm:space-y-4 max-w-[1650px] mx-auto min-h-screen">
       {/* 1. Header Card */}
       <div className="bg-white dark:bg-zinc-900 p-3.5 sm:p-4 rounded-2xl border border-zinc-200 dark:border-zinc-800 shadow-2xs sm:shadow-sm">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-          {/* Bên trái: Icon, Breadcrumb & Tiêu đề */}
-          <div className="flex items-center gap-2.5 min-w-0">
-            <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-blue-500/10 dark:bg-blue-500/20 text-blue-600 dark:text-blue-400 flex items-center justify-center text-lg sm:text-xl shrink-0">
-              👥
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          {/* Nhóm bên trái: Icon + Tiêu đề + 2 Tab đặt liền kề gọn gàng bên trái */}
+          <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 min-w-0">
+            <div className="flex items-center gap-2.5 min-w-0">
+              <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-blue-500/10 dark:bg-blue-500/20 text-blue-600 dark:text-blue-400 flex items-center justify-center text-lg sm:text-xl shrink-0">
+                👥
+              </div>
+              <div className="min-w-0">
+                <div className="hidden sm:flex items-center gap-2 text-xs text-zinc-500 mb-0.5">
+                  <span>Sapo CRM & Đối tác</span>
+                  <span>/</span>
+                  <span className="text-zinc-900 dark:text-zinc-100 font-medium">Khách hàng đa kênh</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <h1 className="text-base sm:text-lg lg:text-xl font-bold text-zinc-900 dark:text-white leading-tight truncate">
+                    Quản lý Khách hàng & CRM
+                  </h1>
+                  <span className="hidden xl:inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-blue-100 dark:bg-blue-950 text-blue-700 dark:text-blue-300">
+                    {totalCount.toLocaleString("vi-VN")} khách
+                  </span>
+                </div>
+                <div className="text-[11px] text-zinc-400 truncate mt-0.5 sm:hidden">
+                  {totalCount.toLocaleString("vi-VN")} hồ sơ • Sapo Omnichannel
+                </div>
+              </div>
             </div>
-            <div className="min-w-0">
-              <div className="hidden sm:flex items-center gap-2 text-xs text-zinc-500 mb-0.5">
-                <span>Sapo CRM & Đối tác</span>
-                <span>/</span>
-                <span className="text-zinc-900 dark:text-zinc-100 font-medium">Khách hàng đa kênh</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <h1 className="text-base sm:text-lg lg:text-xl font-bold text-zinc-900 dark:text-white leading-tight truncate">
-                  Quản lý Khách hàng & CRM
-                </h1>
-                <span className="hidden lg:inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-blue-100 dark:bg-blue-950 text-blue-700 dark:text-blue-300">
-                  {totalCount.toLocaleString("vi-VN")} khách
-                </span>
-              </div>
-              <div className="text-[11px] text-zinc-400 truncate mt-0.5 sm:hidden">
-                {totalCount.toLocaleString("vi-VN")} hồ sơ • Sapo Omnichannel
-              </div>
-            </div>
-          </div>
 
-          {/* Ở giữa: 2 TAB TRÊN CÙNG HÀNG TIÊU ĐỀ (PC / Desktop View) */}
-          <div className="hidden sm:flex items-center gap-1.5 p-1 bg-zinc-100 dark:bg-zinc-800/80 rounded-xl border border-zinc-200/80 dark:border-zinc-700/80 shrink-0">
-            {/* Tab 1: Tất cả khách hàng */}
-            <button
-              type="button"
-              onClick={() => setActiveTab("all")}
-              className={`px-3.5 py-1.5 text-xs sm:text-sm font-bold rounded-lg transition-all flex items-center gap-1.5 cursor-pointer ${
-                activeTab === "all"
-                  ? "bg-white dark:bg-zinc-900 text-zinc-900 dark:text-white shadow-2xs"
-                  : "text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white"
-              }`}
-            >
-              <span>👥</span>
-              <span>Tất cả khách hàng</span>
-              <span className="px-1.5 py-0.2 rounded-full text-[10px] font-semibold bg-zinc-200 dark:bg-zinc-700 text-zinc-700 dark:text-zinc-300">
-                {totalCount.toLocaleString("vi-VN")}
-              </span>
-            </button>
-
-            {/* Tab 2: Khách hàng thân thiết */}
-            <button
-              type="button"
-              onClick={() => setActiveTab("loyal")}
-              className={`px-3.5 py-1.5 text-xs sm:text-sm font-bold rounded-lg transition-all flex items-center gap-1.5 cursor-pointer ${
-                activeTab === "loyal"
-                  ? "bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-2xs font-bold"
-                  : "text-zinc-600 dark:text-zinc-400 hover:text-amber-600 dark:hover:text-amber-400"
-              }`}
-            >
-              <span>⭐</span>
-              <span>Khách thân thiết</span>
-              <span
-                className={`px-1.5 py-0.2 rounded-full text-[10px] font-bold ${
-                  activeTab === "loyal"
-                    ? "bg-amber-700 text-white"
-                    : "bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300"
+            {/* 2 TAB ĐẶT GỌN GÀNG SANG BÊN TRÁI (Desktop View) */}
+            <div className="hidden sm:flex items-center gap-1.5 p-1 bg-zinc-100 dark:bg-zinc-800/80 rounded-xl border border-zinc-200/80 dark:border-zinc-700/80 shrink-0 sm:ml-1">
+              {/* Tab 1: Tất cả khách hàng */}
+              <button
+                type="button"
+                onClick={() => setActiveTab("all")}
+                className={`px-3 py-1.5 text-xs sm:text-sm font-bold rounded-lg transition-all flex items-center gap-1.5 cursor-pointer ${
+                  activeTab === "all"
+                    ? "bg-white dark:bg-zinc-900 text-zinc-900 dark:text-white shadow-2xs"
+                    : "text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white"
                 }`}
               >
-                {loyalCount}
-              </span>
-            </button>
+                <span>👥</span>
+                <span>Tất cả khách hàng</span>
+              </button>
+
+              {/* Tab 2: Khách hàng thân thiết */}
+              <button
+                type="button"
+                onClick={() => setActiveTab("loyal")}
+                className={`px-3 py-1.5 text-xs sm:text-sm font-bold rounded-lg transition-all flex items-center gap-1.5 cursor-pointer ${
+                  activeTab === "loyal"
+                    ? "bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-2xs font-bold"
+                    : "text-zinc-600 dark:text-zinc-400 hover:text-amber-600 dark:hover:text-amber-400"
+                }`}
+              >
+                <span>⭐</span>
+                <span>Khách thân thiết</span>
+                <span
+                  className={`px-1.5 py-0.2 rounded-full text-[10px] font-bold ${
+                    activeTab === "loyal"
+                      ? "bg-amber-700 text-white"
+                      : "bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300"
+                  }`}
+                >
+                  {loyalCount}
+                </span>
+              </button>
+            </div>
           </div>
 
           {/* Bên phải: Nút Làm mới & Xem đơn hàng (Desktop) */}
-          <div className="hidden sm:flex items-center gap-2 shrink-0">
+          <div className="hidden sm:flex items-center gap-2 shrink-0 sm:ml-auto">
             <button
               type="button"
               onClick={() => {
