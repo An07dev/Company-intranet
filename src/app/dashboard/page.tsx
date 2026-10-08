@@ -16,10 +16,12 @@ import { ShopeeOrderCharts } from "@/components/dashboard/ShopeeOrderCharts";
 import { ShopeeProductCharts } from "@/components/dashboard/ShopeeProductCharts";
 import { InventoryCharts } from "@/components/dashboard/InventoryCharts";
 import { CustomerCRMCharts } from "@/components/dashboard/CustomerCRMCharts";
+import { DebtFinanceCharts } from "@/components/dashboard/DebtFinanceCharts";
 import { DashboardStatsResponse } from "@/app/api/dashboard/stats/route";
 import { ShopeeDashboardStats } from "@/app/api/dashboard/shopee-stats/route";
 import { InventoryDashboardStats } from "@/app/api/dashboard/inventory-stats/route";
 import { CustomerCRMDashboardStats } from "@/app/api/dashboard/crm-stats/route";
+import { DebtDashboardStats } from "@/app/api/dashboard/debt-stats/route";
 
 export default function DashboardPage() {
   const { user, isLoading } = useAuth();
@@ -29,10 +31,11 @@ export default function DashboardPage() {
   const [shopeeStats, setShopeeStats] = useState<ShopeeDashboardStats | null>(null);
   const [inventoryStats, setInventoryStats] = useState<InventoryDashboardStats | null>(null);
   const [crmStats, setCrmStats] = useState<CustomerCRMDashboardStats | null>(null);
+  const [debtStats, setDebtStats] = useState<DebtDashboardStats | null>(null);
   const [loadingStats, setLoadingStats] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [mobileTab, setMobileTab] = useState<
-    "all" | "ecommerce" | "inventory" | "crm" | "attendance" | "tasks" | "leaderboard" | "employees"
+    "all" | "ecommerce" | "inventory" | "crm" | "debts" | "attendance" | "tasks" | "leaderboard" | "employees"
   >("all");
 
   // Điều hướng nếu chưa đăng nhập
@@ -46,11 +49,12 @@ export default function DashboardPage() {
   const fetchDashboardStats = useCallback(async () => {
     try {
       setRefreshing(true);
-      const [resStats, resShopee, resInventory, resCrm] = await Promise.allSettled([
+      const [resStats, resShopee, resInventory, resCrm, resDebt] = await Promise.allSettled([
         fetch("/api/dashboard/stats"),
         fetch("/api/dashboard/shopee-stats"),
         fetch("/api/dashboard/inventory-stats"),
         fetch("/api/dashboard/crm-stats"),
+        fetch("/api/dashboard/debt-stats"),
       ]);
 
       if (resStats.status === "fulfilled") {
@@ -78,6 +82,13 @@ export default function DashboardPage() {
         const jsonCrm = await resCrm.value.json();
         if (jsonCrm.success && jsonCrm.data) {
           setCrmStats(jsonCrm.data);
+        }
+      }
+
+      if (resDebt.status === "fulfilled") {
+        const jsonDebt = await resDebt.value.json();
+        if (jsonDebt.success && jsonDebt.data) {
+          setDebtStats(jsonDebt.data);
         }
       }
     } catch (err) {
@@ -217,6 +228,7 @@ export default function DashboardPage() {
             { id: "ecommerce", label: "Đơn Đa Kênh", icon: "🛍️" },
             { id: "inventory", label: "Kho & Tồn Kho", icon: "🏭" },
             { id: "crm", label: "Khách Hàng CRM", icon: "👥" },
+            { id: "debts", label: "Công nợ Sapo", icon: "⚖️" },
             { id: "attendance", label: "Chấm công", icon: "⏱️" },
             { id: "tasks", label: "Công việc", icon: "📋" },
             { id: "leaderboard", label: "Vinh danh", icon: "🏆" },
@@ -457,7 +469,20 @@ export default function DashboardPage() {
           )}
 
           {/* =========================================================================
-              PHÂN KHU 4: CHUYÊN CẦN & CÔNG VIỆC NHÂN SỰ
+              PHÂN KHU 4: QUẢN LÝ CÔNG NỢ SAPO (KHÁCH HÀNG & NHÀ CUNG CẤP)
+             ========================================================================= */}
+          {debtStats && (
+            <div
+              className={`${
+                mobileTab === "all" || mobileTab === "debts" ? "block" : "hidden"
+              } lg:block`}
+            >
+              <DebtFinanceCharts stats={debtStats} />
+            </div>
+          )}
+
+          {/* =========================================================================
+              PHÂN KHU 5: CHUYÊN CẦN & CÔNG VIỆC NHÂN SỰ
              ========================================================================= */}
           {statsData && (
             <div className="space-y-4 sm:space-y-6 pt-2">
