@@ -81,6 +81,7 @@ export function LoyalCustomersTab({ onRefreshParentLoyalMap }: LoyalCustomersTab
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [editingCustomer, setEditingCustomer] = useState<LoyalCustomerItem | null>(null);
   const [deletingCustomer, setDeletingCustomer] = useState<LoyalCustomerItem | null>(null);
+  const [selectedCustomerForDetail, setSelectedCustomerForDetail] = useState<LoyalCustomerItem | null>(null);
   const [copiedPhone, setCopiedPhone] = useState<string | null>(null);
 
   const fetchLoyalCustomers = useCallback(async () => {
@@ -359,7 +360,8 @@ export function LoyalCustomersTab({ onRefreshParentLoyalMap }: LoyalCustomersTab
               return (
                 <div
                   key={c.id}
-                  className="bg-white dark:bg-zinc-900 rounded-xl border border-zinc-200 dark:border-zinc-800 p-3.5 shadow-2xs space-y-2.5"
+                  onClick={() => setSelectedCustomerForDetail(c)}
+                  className="bg-white dark:bg-zinc-900 rounded-xl border border-zinc-200 dark:border-zinc-800 p-3.5 shadow-2xs space-y-2.5 cursor-pointer hover:border-amber-400/60 dark:hover:border-amber-600/60 transition"
                 >
                   {/* Hàng 1: Avatar, Tên & Hạng thẻ */}
                   <div className="flex items-center justify-between gap-2">
@@ -386,7 +388,7 @@ export function LoyalCustomersTab({ onRefreshParentLoyalMap }: LoyalCustomersTab
                   </div>
 
                   {/* Hàng 2: SĐT & Gọi điện */}
-                  <div className="bg-zinc-50 dark:bg-zinc-800/40 p-2.5 rounded-lg flex items-center justify-between gap-2 text-xs">
+                  <div className="bg-zinc-50 dark:bg-zinc-800/40 p-2.5 rounded-lg flex items-center justify-between gap-2 text-xs" onClick={(e) => e.stopPropagation()}>
                     {c.phone ? (
                       <div className="flex items-center gap-1.5">
                         <a
@@ -399,7 +401,7 @@ export function LoyalCustomersTab({ onRefreshParentLoyalMap }: LoyalCustomersTab
                         <button
                           type="button"
                           onClick={(e) => handleCopyPhone(c.phone!, e)}
-                          className="p-0.5 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 text-[11px]"
+                          className="p-0.5 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 text-[11px] cursor-pointer"
                           title="Sao chép SĐT"
                         >
                           {isPhoneCopied ? "✓" : "📋"}
@@ -422,23 +424,28 @@ export function LoyalCustomersTab({ onRefreshParentLoyalMap }: LoyalCustomersTab
                   )}
 
                   {/* Hàng 4: Thao tác */}
-                  <div className="flex items-center justify-between pt-1 border-t border-zinc-100 dark:border-zinc-800/80 text-xs">
-                    <span className="text-[10px] text-zinc-400">
-                      {c.orders_count || 0} đơn hàng
-                    </span>
+                  <div className="flex items-center justify-between pt-1 border-t border-zinc-100 dark:border-zinc-800/80 text-xs" onClick={(e) => e.stopPropagation()}>
+                    <button
+                      type="button"
+                      onClick={() => setSelectedCustomerForDetail(c)}
+                      className="text-[11px] font-semibold text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1 cursor-pointer"
+                    >
+                      <span>{c.orders_count || 0} đơn</span>
+                      <span>• Xem chi tiết ›</span>
+                    </button>
 
                     <div className="flex items-center gap-1.5">
                       <button
                         type="button"
                         onClick={() => setEditingCustomer(c)}
-                        className="px-2.5 py-1 text-[11px] font-semibold rounded-lg border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 hover:bg-zinc-100 dark:hover:bg-zinc-700 text-zinc-700 dark:text-zinc-300 transition"
+                        className="px-2.5 py-1 text-[11px] font-semibold rounded-lg border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 hover:bg-zinc-100 dark:hover:bg-zinc-700 text-zinc-700 dark:text-zinc-300 transition cursor-pointer"
                       >
                         Sửa thẻ
                       </button>
                       <button
                         type="button"
                         onClick={() => setDeletingCustomer(c)}
-                        className="px-2 py-1 text-[11px] font-semibold rounded-lg border border-rose-200 dark:border-rose-900/60 bg-rose-50 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400 hover:bg-rose-100 transition"
+                        className="px-2 py-1 text-[11px] font-semibold rounded-lg border border-rose-200 dark:border-rose-900/60 bg-rose-50 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400 hover:bg-rose-100 transition cursor-pointer"
                       >
                         Xóa
                       </button>
@@ -455,13 +462,13 @@ export function LoyalCustomersTab({ onRefreshParentLoyalMap }: LoyalCustomersTab
               <table className="w-full table-fixed text-left text-xs border-collapse min-w-[960px]">
                 <thead>
                   <tr className="border-b border-zinc-200/80 dark:border-zinc-800 bg-zinc-50/75 dark:bg-zinc-800/40 text-[11px] font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">
-                    <th className="py-3 px-3 w-[22%]">Khách hàng</th>
+                    <th className="py-3 px-3 w-[20%]">Khách hàng</th>
                     <th className="py-3 px-3 w-[13%]">Số điện thoại</th>
-                    <th className="py-3 px-3 w-[16%]">Hạng thành viên</th>
+                    <th className="py-3 px-3 w-[15%]">Hạng thành viên</th>
                     <th className="py-3 px-3 w-[14%] text-right whitespace-nowrap">Doanh số tích lũy</th>
-                    <th className="py-3 px-3 w-[9%] text-center">Đơn hàng</th>
+                    <th className="py-3 px-3 w-[8%] text-center">Đơn hàng</th>
                     <th className="py-3 px-3 w-[14%]">Ghi chú</th>
-                    <th className="py-3 px-3 w-[12%] text-center">Thao tác</th>
+                    <th className="py-3 px-3 w-[16%] text-center">Thao tác</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800/60">
@@ -472,7 +479,8 @@ export function LoyalCustomersTab({ onRefreshParentLoyalMap }: LoyalCustomersTab
                     return (
                       <tr
                         key={c.id}
-                        className="hover:bg-zinc-50/80 dark:hover:bg-zinc-800/40 transition-colors"
+                        onClick={() => setSelectedCustomerForDetail(c)}
+                        className="hover:bg-amber-50/30 dark:hover:bg-amber-950/20 transition-colors cursor-pointer"
                       >
                         {/* Khách hàng */}
                         <td className="py-3 px-3">
@@ -481,7 +489,7 @@ export function LoyalCustomersTab({ onRefreshParentLoyalMap }: LoyalCustomersTab
                               {c.name.charAt(0).toUpperCase()}
                             </div>
                             <div className="min-w-0">
-                              <div className="font-bold text-xs text-zinc-900 dark:text-zinc-100 truncate">
+                              <div className="font-bold text-xs text-zinc-900 dark:text-zinc-100 truncate hover:text-amber-600 dark:hover:text-amber-400 transition-colors">
                                 {c.name}
                               </div>
                               <div className="text-[10px] text-zinc-400 font-mono">
@@ -492,7 +500,7 @@ export function LoyalCustomersTab({ onRefreshParentLoyalMap }: LoyalCustomersTab
                         </td>
 
                         {/* Số điện thoại */}
-                        <td className="py-3 px-3 whitespace-nowrap">
+                        <td className="py-3 px-3 whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
                           {c.phone ? (
                             <div className="flex items-center gap-1.5 font-mono text-zinc-600 dark:text-zinc-300">
                               <a
@@ -504,7 +512,7 @@ export function LoyalCustomersTab({ onRefreshParentLoyalMap }: LoyalCustomersTab
                               <button
                                 type="button"
                                 onClick={(e) => handleCopyPhone(c.phone!, e)}
-                                className="p-0.5 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 text-xs"
+                                className="p-0.5 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 text-xs cursor-pointer"
                                 title="Sao chép SĐT"
                               >
                                 {isPhoneCopied ? "✓" : "📋"}
@@ -548,8 +556,16 @@ export function LoyalCustomersTab({ onRefreshParentLoyalMap }: LoyalCustomersTab
                         </td>
 
                         {/* Thao tác */}
-                        <td className="py-3 px-3 text-center whitespace-nowrap">
+                        <td className="py-3 px-3 text-center whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
                           <div className="flex items-center justify-center gap-1.5">
+                            <button
+                              type="button"
+                              onClick={() => setSelectedCustomerForDetail(c)}
+                              className="px-2 py-1 rounded-lg border border-blue-200 dark:border-blue-900/60 bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 hover:bg-blue-100 dark:hover:bg-blue-900/60 font-medium text-[11px] transition shadow-2xs cursor-pointer"
+                              title="Xem chi tiết khách hàng"
+                            >
+                              Chi tiết
+                            </button>
                             <button
                               type="button"
                               onClick={() => setEditingCustomer(c)}
@@ -561,7 +577,7 @@ export function LoyalCustomersTab({ onRefreshParentLoyalMap }: LoyalCustomersTab
                             <button
                               type="button"
                               onClick={() => setDeletingCustomer(c)}
-                              className="px-2 py-1 rounded-lg border border-rose-200 dark:border-rose-900/60 bg-rose-50 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400 hover:bg-rose-100 font-medium text-[11px] transition shadow-2xs cursor-pointer"
+                              className="px-2 py-1 rounded-lg border border-rose-200 dark:border-rose-900/60 bg-rose-50 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400 hover:bg-rose-100 dark:hover:bg-rose-900/60 font-medium text-[11px] transition shadow-2xs cursor-pointer"
                               title="Xóa khỏi nhóm thân thiết"
                             >
                               Xóa
@@ -674,6 +690,239 @@ export function LoyalCustomersTab({ onRefreshParentLoyalMap }: LoyalCustomersTab
                 className="px-4 py-1.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold transition cursor-pointer"
               >
                 Xác nhận xóa
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL CHI TIẾT KHÁCH HÀNG THÂN THIẾT */}
+      {selectedCustomerForDetail && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-2.5 sm:p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-200"
+          onClick={() => setSelectedCustomerForDetail(null)}
+        >
+          <div
+            className="w-full max-w-lg bg-white dark:bg-zinc-900 rounded-2xl sm:rounded-3xl border border-zinc-200 dark:border-zinc-800 shadow-2xl overflow-hidden flex flex-col max-h-[92dvh] sm:max-h-[88vh]"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Modal Header */}
+            <div className="flex items-center justify-between px-3.5 py-3 sm:px-5 sm:py-4 border-b border-zinc-100 dark:border-zinc-800 bg-zinc-50/70 dark:bg-zinc-800/40 shrink-0">
+              <div className="flex items-center gap-2.5 min-w-0 pr-2">
+                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-amber-400 to-orange-500 text-white font-bold flex items-center justify-center text-sm shrink-0 shadow-xs">
+                  {selectedCustomerForDetail.name.charAt(0).toUpperCase()}
+                </div>
+                <div className="min-w-0">
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    <h3 className="text-sm sm:text-base font-bold text-zinc-900 dark:text-zinc-100 truncate">
+                      {selectedCustomerForDetail.name}
+                    </h3>
+                    {(() => {
+                      const tierCfg =
+                        TIER_BADGE_CONFIG[selectedCustomerForDetail.tier] ||
+                        TIER_BADGE_CONFIG.standard;
+                      return (
+                        <span
+                          className={`px-2 py-0.5 rounded-full text-[10px] font-bold border ${tierCfg.style}`}
+                        >
+                          {tierCfg.badge}
+                        </span>
+                      );
+                    })()}
+                  </div>
+                  <p className="text-[10px] sm:text-[11px] text-zinc-400 font-mono mt-0.5">
+                    Sapo Customer ID: #{selectedCustomerForDetail.sapo_customer_id}
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setSelectedCustomerForDetail(null)}
+                className="p-1.5 rounded-xl text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition active:scale-90 cursor-pointer"
+                title="Đóng modal"
+              >
+                <svg
+                  className="w-5 h-5"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M6 18L18 6M6 6l12 12"
+                  />
+                </svg>
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <div className="p-3 sm:p-5 overflow-y-auto space-y-3.5 sm:space-y-4">
+              {/* Customer Stats (2x2 Grid) */}
+              <div className="grid grid-cols-2 gap-2.5">
+                <div className="p-3 rounded-xl sm:rounded-2xl bg-zinc-50/80 dark:bg-zinc-800/40 border border-zinc-200/70 dark:border-zinc-800">
+                  <div className="text-[10px] sm:text-[11px] text-zinc-400 font-medium">
+                    📦 Tổng số đơn hàng
+                  </div>
+                  <div className="text-lg sm:text-xl font-bold font-mono text-zinc-900 dark:text-zinc-100 mt-0.5">
+                    {selectedCustomerForDetail.orders_count || 0}
+                  </div>
+                </div>
+                <div className="p-3 rounded-xl sm:rounded-2xl bg-zinc-50/80 dark:bg-zinc-800/40 border border-zinc-200/70 dark:border-zinc-800">
+                  <div className="text-[10px] sm:text-[11px] text-zinc-400 font-medium">
+                    💰 Doanh số tích lũy
+                  </div>
+                  <div className="text-lg sm:text-xl font-bold font-mono text-emerald-600 dark:text-emerald-400 mt-0.5 truncate whitespace-nowrap">
+                    {formatVND(selectedCustomerForDetail.total_spent)}
+                  </div>
+                </div>
+              </div>
+
+              {/* Thông tin liên hệ & chi tiết (2x2 Grid) */}
+              <div className="p-3 sm:p-3.5 rounded-xl sm:rounded-2xl bg-zinc-50/80 dark:bg-zinc-800/40 border border-zinc-200/70 dark:border-zinc-800 text-xs grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                <div>
+                  <span className="text-[10px] text-zinc-400 font-medium block">
+                    📞 Số điện thoại
+                  </span>
+                  <div className="mt-0.5">
+                    {selectedCustomerForDetail.phone ? (
+                      <div className="flex items-center gap-1.5">
+                        <a
+                          href={`tel:${selectedCustomerForDetail.phone}`}
+                          className="font-mono font-semibold text-blue-600 dark:text-blue-400 hover:underline"
+                        >
+                          {selectedCustomerForDetail.phone}
+                        </a>
+                        <button
+                          type="button"
+                          onClick={(e) =>
+                            handleCopyPhone(selectedCustomerForDetail.phone!, e)
+                          }
+                          className="text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 text-xs p-0.5 cursor-pointer"
+                          title="Sao chép SĐT"
+                        >
+                          {copiedPhone === selectedCustomerForDetail.phone
+                            ? "✓"
+                            : "📋"}
+                        </button>
+                      </div>
+                    ) : (
+                      <span className="text-zinc-400 italic text-[11px]">
+                        Chưa cập nhật
+                      </span>
+                    )}
+                  </div>
+                </div>
+
+                <div>
+                  <span className="text-[10px] text-zinc-400 font-medium block">
+                    ✉️ Email
+                  </span>
+                  <div className="font-medium text-zinc-800 dark:text-zinc-200 truncate mt-0.5">
+                    {selectedCustomerForDetail.email || "Chưa cập nhật"}
+                  </div>
+                </div>
+
+                <div>
+                  <span className="text-[10px] text-zinc-400 font-medium block">
+                    📦 Đơn gần nhất
+                  </span>
+                  <div className="font-mono font-medium text-blue-600 dark:text-blue-400 truncate mt-0.5">
+                    {selectedCustomerForDetail.last_order_name || "Chưa có đơn"}
+                  </div>
+                </div>
+
+                <div>
+                  <span className="text-[10px] text-zinc-400 font-medium block">
+                    📅 Ngày gia nhập VIP
+                  </span>
+                  <div className="font-medium text-zinc-700 dark:text-zinc-300 mt-0.5">
+                    {selectedCustomerForDetail.created_at
+                      ? new Date(
+                          selectedCustomerForDetail.created_at
+                        ).toLocaleDateString("vi-VN", {
+                          day: "2-digit",
+                          month: "2-digit",
+                          year: "numeric",
+                        })
+                      : "—"}
+                  </div>
+                </div>
+              </div>
+
+              {/* Địa chỉ khách hàng */}
+              <div className="p-3 sm:p-3.5 rounded-xl sm:rounded-2xl bg-zinc-50/80 dark:bg-zinc-800/40 border border-zinc-200/70 dark:border-zinc-800 text-xs">
+                <span className="text-[10px] text-zinc-400 font-medium block">
+                  📍 Địa chỉ nhận hàng
+                </span>
+                <div className="font-medium text-zinc-800 dark:text-zinc-200 mt-1 leading-relaxed">
+                  {selectedCustomerForDetail.address || "Chưa có địa chỉ lưu trữ"}
+                </div>
+              </div>
+
+              {/* Ghi chú chăm sóc & Sở thích */}
+              <div className="p-3 sm:p-3.5 rounded-xl sm:rounded-2xl bg-amber-50/60 dark:bg-amber-950/20 border border-amber-200/70 dark:border-amber-900/40 text-xs space-y-1">
+                <div className="flex items-center gap-1.5 font-bold text-amber-900 dark:text-amber-300">
+                  <span>📝</span>
+                  <span>Ghi chú chăm sóc & Sở thích</span>
+                </div>
+                {selectedCustomerForDetail.notes ? (
+                  <p className="text-zinc-700 dark:text-zinc-300 text-xs leading-relaxed whitespace-pre-wrap mt-1">
+                    {selectedCustomerForDetail.notes}
+                  </p>
+                ) : (
+                  <p className="text-zinc-400 dark:text-zinc-500 italic text-[11px] mt-1">
+                    Chưa có ghi chú chăm sóc đặc biệt cho khách hàng này. Bạn có thể bấm &quot;Sửa thẻ&quot; để bổ sung ghi chú.
+                  </p>
+                )}
+              </div>
+            </div>
+
+            {/* Modal Footer */}
+            <div className="p-3 sm:p-4 border-t border-zinc-100 dark:border-zinc-800 bg-zinc-50/70 dark:bg-zinc-800/40 flex items-center justify-between gap-2 shrink-0">
+              <div className="flex items-center gap-2">
+                {selectedCustomerForDetail.phone && (
+                  <a
+                    href={`tel:${selectedCustomerForDetail.phone}`}
+                    className="py-1.5 px-3 rounded-xl border border-blue-200 dark:border-blue-900/60 bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 hover:bg-blue-100 font-semibold text-xs transition flex items-center gap-1.5 cursor-pointer active:scale-95"
+                  >
+                    <span>📞</span>
+                    <span>Gọi điện</span>
+                  </a>
+                )}
+                <button
+                  type="button"
+                  onClick={() => {
+                    const cust = selectedCustomerForDetail;
+                    setSelectedCustomerForDetail(null);
+                    setEditingCustomer(cust);
+                  }}
+                  className="py-1.5 px-3 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 hover:bg-zinc-100 dark:hover:bg-zinc-700 text-zinc-700 dark:text-zinc-200 font-semibold text-xs transition flex items-center gap-1.5 cursor-pointer"
+                >
+                  <span>✏️</span>
+                  <span>Sửa thẻ</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const cust = selectedCustomerForDetail;
+                    setSelectedCustomerForDetail(null);
+                    setDeletingCustomer(cust);
+                  }}
+                  className="py-1.5 px-3 rounded-xl border border-rose-200 dark:border-rose-900/60 bg-rose-50 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400 hover:bg-rose-100 font-semibold text-xs transition flex items-center gap-1.5 cursor-pointer"
+                >
+                  <span>🗑️</span>
+                  <span>Xóa</span>
+                </button>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setSelectedCustomerForDetail(null)}
+                className="px-4 py-1.5 rounded-xl border border-zinc-200 dark:border-zinc-700 text-xs font-semibold text-zinc-600 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition cursor-pointer"
+              >
+                Đóng
               </button>
             </div>
           </div>
