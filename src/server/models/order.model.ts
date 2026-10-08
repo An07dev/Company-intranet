@@ -70,6 +70,12 @@ export class OrderModel {
         if (order.raw_text) {
           existing.raw_text = order.raw_text;
         }
+        if (!existing.id) {
+          existing.id = `ord_${existing.order_sn || Date.now()}`;
+        }
+        if (!existing.createdAt) {
+          existing.createdAt = now;
+        }
         existing.synced_at = now;
         existing.updatedAt = now;
         await existing.save();
