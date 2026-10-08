@@ -74,8 +74,30 @@ export function SupplierDebtsTable({
   const { toast } = useToast();
   const [selectedIds, setSelectedIds] = useState<number[]>([]);
 
-  const formatVND = (num?: number) => {
-    return (num || 0).toLocaleString("vi-VN") + "\u00A0₫";
+  // Định dạng số tiền hiển thị chuẩn theo Sapo Live
+  const formatTableCell = (val: number, type: "dau" | "tang" | "giam" | "cuoi") => {
+    if (!val || val === 0) return "0\u00A0₫";
+    if (type === "tang") {
+      // Cột Nợ tăng trong kỳ trên bảng Sapo live luôn hiển thị số âm có dấu trừ màu đỏ (-473,994,964đ)
+      return `-${Math.abs(val).toLocaleString("vi-VN")}\u00A0₫`;
+    }
+    return val.toLocaleString("vi-VN") + "\u00A0₫";
+  };
+
+  const getTableCellClass = (val: number, type: "dau" | "tang" | "giam" | "cuoi") => {
+    if (!val || val === 0) return "text-zinc-400 dark:text-zinc-500 font-normal";
+    if (type === "tang") {
+      return "text-rose-600 dark:text-rose-400 font-medium";
+    }
+    if (type === "giam") {
+      return "text-emerald-600 dark:text-emerald-400 font-medium";
+    }
+    if (val < 0) {
+      return type === "cuoi"
+        ? "text-rose-600 dark:text-rose-400 font-bold"
+        : "text-rose-600 dark:text-rose-400 font-medium";
+    }
+    return "text-emerald-600 dark:text-emerald-400 font-medium";
   };
 
   const handleCopyPhone = (phone: string, e: React.MouseEvent) => {
@@ -207,29 +229,29 @@ export function SupplierDebtsTable({
                 <div className="grid grid-cols-2 gap-2 bg-zinc-50 dark:bg-zinc-800/40 p-2.5 rounded-xl border border-zinc-100 dark:border-zinc-800/60">
                   <div>
                     <div className="text-[10px] text-zinc-400">Nợ đầu kỳ</div>
-                    <div className="text-xs font-mono font-medium text-zinc-700 dark:text-zinc-300">
-                      {formatVND(s.no_dau_ky)}
+                    <div className={`text-xs font-mono ${getTableCellClass(s.no_dau_ky, "dau")}`}>
+                      {formatTableCell(s.no_dau_ky, "dau")}
                     </div>
                   </div>
 
                   <div>
-                    <div className="text-[10px] text-zinc-400">Nợ tăng (Nhập)</div>
-                    <div className="text-xs font-mono font-medium text-rose-600 dark:text-rose-400">
-                      {formatVND(s.no_tang_trong_ky)}
+                    <div className="text-[10px] text-zinc-400">Nợ tăng trong kỳ</div>
+                    <div className={`text-xs font-mono ${getTableCellClass(s.no_tang_trong_ky, "tang")}`}>
+                      {formatTableCell(s.no_tang_trong_ky, "tang")}
                     </div>
                   </div>
 
                   <div>
-                    <div className="text-[10px] text-zinc-400">Nợ giảm (Đã trả)</div>
-                    <div className="text-xs font-mono font-medium text-emerald-600 dark:text-emerald-400">
-                      {formatVND(s.no_giam_trong_ky)}
+                    <div className="text-[10px] text-zinc-400">Nợ giảm trong kỳ</div>
+                    <div className={`text-xs font-mono ${getTableCellClass(s.no_giam_trong_ky, "giam")}`}>
+                      {formatTableCell(s.no_giam_trong_ky, "giam")}
                     </div>
                   </div>
 
                   <div>
                     <div className="text-[10px] text-zinc-400 font-semibold">Phải thu/trả cuối kỳ</div>
-                    <div className="text-xs font-mono font-bold text-indigo-700 dark:text-indigo-300">
-                      {formatVND(s.phai_thu_tra_cuoi_ky)}
+                    <div className={`text-xs font-mono ${getTableCellClass(s.phai_thu_tra_cuoi_ky, "cuoi")}`}>
+                      {formatTableCell(s.phai_thu_tra_cuoi_ky, "cuoi")}
                     </div>
                   </div>
                 </div>
@@ -274,14 +296,19 @@ export function SupplierDebtsTable({
                   className="rounded border-zinc-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer"
                 />
               </th>
-              <th className="py-3 px-3 w-[11%]">Mã NCC</th>
+              <th className="py-3 px-3 w-[12%]">Mã nhà cung cấp</th>
               <th className="py-3 px-3 w-[22%]">Tên nhà cung cấp</th>
-              <th className="py-3 px-3 w-[12%]">Số điện thoại</th>
+              <th className="py-3 px-3 w-[11%]">Số điện thoại</th>
               <th className="py-3 px-3 text-right w-[12%] whitespace-nowrap">Nợ đầu kỳ</th>
               <th className="py-3 px-3 text-right w-[12%] whitespace-nowrap">Nợ tăng trong kỳ</th>
               <th className="py-3 px-3 text-right w-[12%] whitespace-nowrap">Nợ giảm trong kỳ</th>
-              <th className="py-3 px-3 text-right w-[15%] whitespace-nowrap">Phải thu/trả cuối kỳ</th>
-              <th className="py-3 px-3 text-center w-[9%]">Thao tác</th>
+              <th className="py-3 px-3 text-right w-[15%] whitespace-nowrap">
+                <span className="inline-flex items-center gap-1 justify-end">
+                  <span>Phải thu/trả cuối kỳ</span>
+                  <span className="text-[10px] text-indigo-500 font-bold">▲</span>
+                </span>
+              </th>
+              <th className="py-3 px-3 text-center w-[8%]">Thao tác</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800/80 text-xs">
@@ -395,23 +422,23 @@ export function SupplierDebtsTable({
                     </td>
 
                     {/* Nợ đầu kỳ */}
-                    <td className="py-3.5 px-3 text-right font-mono text-zinc-700 dark:text-zinc-300 whitespace-nowrap">
-                      {formatVND(s.no_dau_ky)}
+                    <td className={`py-3.5 px-3 text-right font-mono whitespace-nowrap ${getTableCellClass(s.no_dau_ky, "dau")}`}>
+                      {formatTableCell(s.no_dau_ky, "dau")}
                     </td>
 
                     {/* Nợ tăng trong kỳ */}
-                    <td className="py-3.5 px-3 text-right font-mono font-medium text-rose-600 dark:text-rose-400 whitespace-nowrap">
-                      {formatVND(s.no_tang_trong_ky)}
+                    <td className={`py-3.5 px-3 text-right font-mono whitespace-nowrap ${getTableCellClass(s.no_tang_trong_ky, "tang")}`}>
+                      {formatTableCell(s.no_tang_trong_ky, "tang")}
                     </td>
 
                     {/* Nợ giảm trong kỳ */}
-                    <td className="py-3.5 px-3 text-right font-mono font-medium text-emerald-600 dark:text-emerald-400 whitespace-nowrap">
-                      {formatVND(s.no_giam_trong_ky)}
+                    <td className={`py-3.5 px-3 text-right font-mono whitespace-nowrap ${getTableCellClass(s.no_giam_trong_ky, "giam")}`}>
+                      {formatTableCell(s.no_giam_trong_ky, "giam")}
                     </td>
 
                     {/* Phải thu/trả cuối kỳ */}
-                    <td className="py-3.5 px-3 text-right font-mono font-bold text-indigo-900 dark:text-indigo-200 whitespace-nowrap">
-                      {formatVND(s.phai_thu_tra_cuoi_ky)}
+                    <td className={`py-3.5 px-3 text-right font-mono whitespace-nowrap ${getTableCellClass(s.phai_thu_tra_cuoi_ky, "cuoi")}`}>
+                      {formatTableCell(s.phai_thu_tra_cuoi_ky, "cuoi")}
                     </td>
 
                     {/* Thao tác */}

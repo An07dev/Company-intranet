@@ -759,6 +759,10 @@ export interface ISapoSupplierDocument {
   status: string;
   address1?: string | null;
   raw_text?: string;
+  no_dau_ky?: number;
+  no_tang_trong_ky?: number;
+  no_giam_trong_ky?: number;
+  phai_thu_tra_cuoi_ky?: number;
   created_on?: string;
   updated_on?: string;
 }
@@ -774,6 +778,10 @@ const SapoSupplierSchema = new Schema<ISapoSupplierDocument>(
     status: { type: String, default: "active", index: true },
     address1: { type: String },
     raw_text: { type: String },
+    no_dau_ky: { type: Number, default: 0 },
+    no_tang_trong_ky: { type: Number, default: 0 },
+    no_giam_trong_ky: { type: Number, default: 0 },
+    phai_thu_tra_cuoi_ky: { type: Number, default: 0 },
     created_on: { type: String },
     updated_on: { type: String },
   },

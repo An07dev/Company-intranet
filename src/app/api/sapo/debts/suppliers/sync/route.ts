@@ -8,6 +8,8 @@ import {
 import { SapoService } from "@/server/services/sapo.service";
 import { LogModel } from "@/server/models/log.model";
 
+import { SAPO_SUPPLIER_OFFICIAL_DEBTS } from "@/server/constants/sapo-debts";
+
 export const dynamic = "force-dynamic";
 export const maxDuration = 60; // 60s for Vercel Pro or Node.js runtime
 
@@ -28,27 +30,36 @@ export async function POST(request: NextRequest) {
       const suppliersRes = await SapoService.getSuppliers();
       const suppliers = suppliersRes.suppliers || [];
       if (suppliers.length > 0) {
-        const supOps = suppliers.map((s: any) => ({
-          updateOne: {
-            filter: { id: s.id },
-            update: {
-              $set: {
-                id: s.id,
-                code: s.code || `SUP${s.id}`,
-                name: s.name || "Chưa đặt tên",
-                phone: s.phone || null,
-                email: s.email || null,
-                tax_number: s.tax_number || null,
-                status: s.status || "active",
-                address1: s.address1 || null,
-                raw_text: JSON.stringify(s),
-                created_on: s.created_on,
-                updated_on: s.updated_on,
+        const supOps = suppliers.map((s: any) => {
+          const official = SAPO_SUPPLIER_OFFICIAL_DEBTS[s.id];
+          return {
+            updateOne: {
+              filter: { id: s.id },
+              update: {
+                $set: {
+                  id: s.id,
+                  code: official?.code || s.code || `SUP${s.id}`,
+                  name: s.name || "Chưa đặt tên",
+                  phone: s.phone || null,
+                  email: s.email || null,
+                  tax_number: s.tax_number || null,
+                  status: s.status || "active",
+                  address1: s.address1 || null,
+                  raw_text: JSON.stringify(s),
+                  created_on: s.created_on,
+                  updated_on: s.updated_on,
+                },
+                $setOnInsert: {
+                  no_dau_ky: official?.no_dau_ky ?? 0,
+                  no_tang_trong_ky: official?.no_tang_trong_ky ?? 0,
+                  no_giam_trong_ky: official?.no_giam_trong_ky ?? 0,
+                  phai_thu_tra_cuoi_ky: official?.phai_thu_tra_cuoi_ky ?? 0,
+                },
               },
+              upsert: true,
             },
-            upsert: true,
-          },
-        }));
+          };
+        });
         await MongoSapoSupplierModel.bulkWrite(supOps);
         totalSuppliers = suppliers.length;
       }
