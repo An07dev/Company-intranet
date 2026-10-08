@@ -428,11 +428,11 @@ export default function DebtsManagementPage() {
   };
 
   return (
-    <div className="p-3 sm:p-5 lg:p-6 space-y-3.5 max-w-7xl mx-auto">
+    <div className="w-full px-3.5 sm:px-6 lg:px-8 py-3.5 sm:py-5 space-y-4 max-w-[1920px] mx-auto">
       {/* 1. LEVEL 1: SEGMENT TABS (KHÁCH HÀNG VS NHÀ CUNG CẤP) */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pb-1 border-b border-zinc-200/80 dark:border-zinc-800">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pb-2 border-b border-zinc-200/80 dark:border-zinc-800">
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-2xl bg-gradient-to-br from-indigo-500 to-rose-500 text-white flex items-center justify-center text-lg shadow-2xs shrink-0">
+          <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-indigo-500 to-rose-500 text-white flex items-center justify-center text-xl shadow-2xs shrink-0">
             ⚖️
           </div>
           <div>
@@ -440,20 +440,20 @@ export default function DebtsManagementPage() {
               Quản lý công nợ Sapo
             </div>
             {/* Top Level Nav Pill Switcher */}
-            <div className="flex items-center gap-1.5 mt-0.5">
+            <div className="flex items-center gap-2 mt-1">
               <button
                 type="button"
                 onClick={() => setMainSection("customers")}
-                className={`px-3 py-1 text-xs sm:text-sm font-bold rounded-xl transition-all flex items-center gap-1.5 cursor-pointer ${
+                className={`px-4 py-2 text-xs sm:text-sm font-bold rounded-xl transition-all flex items-center gap-2 cursor-pointer ${
                   mainSection === "customers"
-                    ? "bg-zinc-900 text-white dark:bg-white dark:text-zinc-900 shadow-2xs"
+                    ? "bg-zinc-900 text-white dark:bg-white dark:text-zinc-900 shadow-sm"
                     : "text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800"
                 }`}
               >
                 <span>👥</span>
                 <span>Khách hàng</span>
                 {customerSummary && (
-                  <span className="text-[10px] px-1.5 py-0.2 rounded-md bg-zinc-700 dark:bg-zinc-200 text-white dark:text-zinc-900 font-mono">
+                  <span className="text-[11px] px-2 py-0.5 rounded-full bg-zinc-700 dark:bg-zinc-200 text-white dark:text-zinc-900 font-mono">
                     {customerSummary.totalDebtors || 0}
                   </span>
                 )}
@@ -462,15 +462,15 @@ export default function DebtsManagementPage() {
               <button
                 type="button"
                 onClick={() => setMainSection("suppliers")}
-                className={`px-3 py-1 text-xs sm:text-sm font-bold rounded-xl transition-all flex items-center gap-1.5 cursor-pointer ${
+                className={`px-4 py-2 text-xs sm:text-sm font-bold rounded-xl transition-all flex items-center gap-2 cursor-pointer ${
                   mainSection === "suppliers"
-                    ? "bg-indigo-600 text-white shadow-2xs"
+                    ? "bg-indigo-600 text-white shadow-sm"
                     : "text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800"
                 }`}
               >
                 <span>🏭</span>
                 <span>Nhà cung cấp</span>
-                <span className="text-[10px] px-1.5 py-0.2 rounded-md bg-indigo-100 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300 font-mono">
+                <span className="text-[11px] px-2 py-0.5 rounded-full bg-indigo-100 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300 font-mono">
                   {supplierSummary?.total_suppliers || 23}
                 </span>
               </button>
