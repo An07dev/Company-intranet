@@ -333,14 +333,29 @@ export async function POST(request: NextRequest) {
 }
 
 /**
- * PUT /api/sapo/orders - Cập nhật ghi chú, tag, người nhận hoặc mã vận đơn
+ * PUT /api/sapo/orders - Cập nhật thông tin chi tiết đơn hàng (Đồng bộ Sapo Omnichannel)
  */
 export async function PUT(request: NextRequest) {
   try {
     await connectToDatabase();
     const now = new Date().toISOString();
     const body = await request.json();
-    const { order_sn, note, tags, buyer_username, shipping_carrier, tracking_number } = body;
+    const {
+      order_sn,
+      buyer_name,
+      buyer_username,
+      buyer_phone,
+      buyer_email,
+      buyer_address,
+      source_name,
+      shop_username,
+      payment_method,
+      shipping_carrier,
+      tracking_number,
+      note,
+      tags,
+      items,
+    } = body;
 
     if (!order_sn) {
       return NextResponse.json(
@@ -359,21 +374,60 @@ export async function PUT(request: NextRequest) {
 
     // Trích xuất Sapo ID từ raw_text nếu có
     let sapoId: number | string | null = null;
+    let existingRaw: any = {};
     if (existingOrder.raw_text) {
       try {
-        const raw = JSON.parse(existingOrder.raw_text);
-        if (raw.id) sapoId = raw.id;
+        existingRaw = JSON.parse(existingOrder.raw_text);
+        if (existingRaw.id) sapoId = existingRaw.id;
       } catch {}
     }
 
+    if (!sapoId && existingOrder.id && /^\d+$/.test(String(existingOrder.id)) && String(existingOrder.id).length >= 7) {
+      sapoId = existingOrder.id;
+    }
+
+    const cleanBuyerName = (buyer_name || buyer_username || existingOrder.buyer_username || "").trim();
+
     // Nếu có sapoId, đồng bộ ngược lên Sapo Admin REST API
+    let sapoUpdated = false;
     if (sapoId) {
       try {
         const sapoUpdate: any = {};
         if (note !== undefined) sapoUpdate.note = note;
         if (tags !== undefined) sapoUpdate.tags = tags;
+
+        // Cập nhật địa chỉ nhận hàng trên Sapo
+        if (buyer_name || buyer_phone || buyer_address) {
+          sapoUpdate.shipping_address = {
+            ...(existingRaw.shipping_address || {}),
+            name: cleanBuyerName,
+            phone: buyer_phone !== undefined ? buyer_phone : (existingRaw.shipping_address?.phone || ""),
+            address1: buyer_address !== undefined ? buyer_address : (existingRaw.shipping_address?.address1 || "Việt Nam"),
+          };
+        }
+
+        // Cập nhật thông tin khách hàng trên Sapo
+        if (buyer_name || buyer_phone || buyer_email) {
+          const nameParts = cleanBuyerName.split(/\s+/);
+          const lastName = nameParts.length > 1 ? nameParts[0] : "";
+          const firstName = nameParts.length > 1 ? nameParts.slice(1).join(" ") : nameParts[0] || "Khách lẻ";
+
+          sapoUpdate.customer = {
+            ...(existingRaw.customer || {}),
+            first_name: firstName,
+            last_name: lastName,
+            name: cleanBuyerName,
+            phone: buyer_phone !== undefined ? buyer_phone : (existingRaw.customer?.phone || ""),
+            email: buyer_email !== undefined ? buyer_email : (existingRaw.customer?.email || ""),
+          };
+        }
+
         if (Object.keys(sapoUpdate).length > 0) {
-          await SapoService.updateOrder(sapoId, sapoUpdate);
+          const sapoRes = await SapoService.updateOrder(sapoId, sapoUpdate);
+          sapoUpdated = true;
+          if (sapoRes?.order) {
+            existingRaw = { ...existingRaw, ...sapoRes.order };
+          }
         }
       } catch (err: any) {
         console.error(`[Sapo Sync Order Error] Không thể cập nhật lên Sapo API cho đơn ${order_sn}:`, err);
@@ -392,27 +446,68 @@ export async function PUT(request: NextRequest) {
 
     // Cập nhật document trong MongoDB
     const updateFields: any = { updatedAt: now };
-    if (note !== undefined) {
-      updateFields.status_description = `Ghi chú: ${note}`;
-    }
-    if (buyer_username !== undefined) updateFields.buyer_username = buyer_username;
+    if (cleanBuyerName) updateFields.buyer_username = cleanBuyerName;
+    if (note !== undefined) updateFields.status_description = `Ghi chú: ${note}`;
     if (shipping_carrier !== undefined) updateFields.shipping_carrier = shipping_carrier;
     if (tracking_number !== undefined) updateFields.tracking_number = tracking_number;
+    if (payment_method !== undefined) updateFields.payment_method = payment_method;
+    if (source_name !== undefined || shop_username !== undefined) {
+      updateFields.shop_username = source_name || shop_username;
+    }
+
+    // Cập nhật danh sách sản phẩm & tổng tiền nếu có
+    if (Array.isArray(items) && items.length > 0) {
+      updateFields.items = items.map((it: any) => ({
+        product_name: String(it.product_name || it.title || "Sản phẩm"),
+        variation: String(it.variation || it.variant_title || ""),
+        quantity: Number(it.quantity) || 1,
+      }));
+
+      const newTotal = items.reduce(
+        (sum: number, it: any) => sum + (Number(it.price) || 0) * (Number(it.quantity) || 1),
+        0
+      );
+      if (newTotal > 0) {
+        updateFields.total_amount = newTotal;
+      }
+    }
+
+    // Cập nhật raw_text đồng bộ
+    if (existingRaw) {
+      if (cleanBuyerName) {
+        if (!existingRaw.shipping_address) existingRaw.shipping_address = {};
+        existingRaw.shipping_address.name = cleanBuyerName;
+      }
+      if (buyer_phone !== undefined) {
+        if (!existingRaw.shipping_address) existingRaw.shipping_address = {};
+        existingRaw.shipping_address.phone = buyer_phone;
+      }
+      if (buyer_address !== undefined) {
+        if (!existingRaw.shipping_address) existingRaw.shipping_address = {};
+        existingRaw.shipping_address.address1 = buyer_address;
+      }
+      if (note !== undefined) existingRaw.note = note;
+      updateFields.raw_text = JSON.stringify(existingRaw);
+    }
 
     await MongoShopeeOrderModel.updateOne({ order_sn }, { $set: updateFields });
+
+    const updatedDoc = await MongoShopeeOrderModel.findOne({ order_sn });
 
     await LogModel.createLog({
       level: "info",
       type: "order_update",
       source: "sapo_order_edit",
-      shop_username: existingOrder.shop_username,
-      message: `Đã cập nhật thông tin đơn hàng #${order_sn}`,
+      shop_username: updatedDoc?.shop_username || existingOrder.shop_username,
+      message: `Đã cập nhật thông tin đơn hàng #${order_sn} (${sapoUpdated ? "Đồng bộ Sapo thành công" : "Cập nhật nội bộ"})`,
       details: body,
     });
 
     return NextResponse.json({
       success: true,
-      message: `Đã cập nhật thông tin đơn hàng #${order_sn} thành công!`,
+      message: `Đã cập nhật thông tin đơn hàng #${order_sn} thành công!${sapoUpdated ? " (Đã đồng bộ lên Sapo)" : ""}`,
+      data: updatedDoc,
+      sapo_synced: sapoUpdated,
     });
   } catch (error: any) {
     console.error("[Sapo Update Order Error]:", error);
@@ -422,6 +517,119 @@ export async function PUT(request: NextRequest) {
         success: false,
         message: displayMessage,
         sapo_detail: displayMessage,
+        error: rawError,
+      },
+      { status: 500 }
+    );
+  }
+}
+
+/**
+ * DELETE /api/sapo/orders - Xóa đơn hàng và đồng bộ xóa vĩnh viễn trên Sapo Omnichannel
+ */
+export async function DELETE(request: NextRequest) {
+  try {
+    await connectToDatabase();
+    const { searchParams } = new URL(request.url);
+    let orderSn = searchParams.get("order_sn");
+
+    if (!orderSn) {
+      try {
+        const body = await request.json();
+        orderSn = body?.order_sn;
+      } catch {}
+    }
+
+    if (!orderSn) {
+      return NextResponse.json(
+        { success: false, message: "Thiếu mã đơn hàng order_sn" },
+        { status: 400 }
+      );
+    }
+
+    const order = await MongoShopeeOrderModel.findOne({ order_sn: orderSn });
+    if (!order) {
+      return NextResponse.json(
+        { success: false, message: `Không tìm thấy đơn hàng #${orderSn} trong hệ thống` },
+        { status: 404 }
+      );
+    }
+
+    // Tìm Sapo ID để xóa trên Sapo Omnichannel
+    let sapoId: number | string | null = null;
+    if (order.raw_text) {
+      try {
+        const raw = JSON.parse(order.raw_text);
+        if (raw.id) sapoId = raw.id;
+      } catch {}
+    }
+
+    if (!sapoId && order.id && /^\d+$/.test(String(order.id)) && String(order.id).length >= 7) {
+      sapoId = order.id;
+    }
+
+    if (!sapoId) {
+      try {
+        const cleanSn = String(orderSn).replace(/^#/, "").trim();
+        const searchRes = await SapoService.getOrders({ query: cleanSn, limit: 5 });
+        const matched =
+          searchRes.orders?.find(
+            (o: any) =>
+              String(o.order_number) === cleanSn ||
+              String(o.name).replace(/^#/, "") === cleanSn ||
+              String(o.id) === cleanSn
+          ) || searchRes.orders?.[0];
+        if (matched?.id) {
+          sapoId = matched.id;
+        }
+      } catch (searchErr: any) {
+        console.warn("[Sapo Delete Search Warning]:", searchErr.message);
+      }
+    }
+
+    let sapoDeleted = false;
+    let sapoErrorMsg = "";
+
+    // Xóa trên Sapo nếu có sapoId
+    if (sapoId) {
+      try {
+        await SapoService.deleteOrder(sapoId);
+        sapoDeleted = true;
+        console.log(`[Sapo Delete Success] Đã xóa đơn ${orderSn} (Sapo ID: ${sapoId}) trên Sapo Omnichannel`);
+      } catch (err: any) {
+        console.error(`[Sapo Delete Error] Không thể xóa trên Sapo cho đơn ${orderSn}:`, err);
+        const { displayMessage } = parseSapoErrorDetail(err, "Lỗi xóa đơn trên Sapo");
+        sapoErrorMsg = displayMessage;
+      }
+    }
+
+    // Xóa khỏi MongoDB
+    await MongoShopeeOrderModel.deleteOne({ order_sn: orderSn });
+
+    await LogModel.createLog({
+      level: "warn",
+      type: "order_delete",
+      source: "sapo_order_delete",
+      shop_username: order.shop_username,
+      message: `Đã xóa đơn hàng #${orderSn} (${sapoDeleted ? "Đã đồng bộ xóa trên Sapo" : "Xóa nội bộ"})`,
+      details: { order_sn: orderSn, sapoId, sapoDeleted, sapoErrorMsg },
+    });
+
+    return NextResponse.json({
+      success: true,
+      message: sapoDeleted
+        ? `Đã xóa đơn hàng #${orderSn} và đồng bộ xóa thành công trên Sapo Omnichannel!`
+        : `Đã xóa đơn hàng #${orderSn} thành công!${sapoErrorMsg ? ` (Ghi chú Sapo: ${sapoErrorMsg})` : ""}`,
+      sapo_deleted: sapoDeleted,
+      sapo_id: sapoId,
+    });
+  } catch (error: any) {
+    console.error("[Delete Order API Error]:", error);
+    const { displayMessage, rawError } = parseSapoErrorDetail(error, "Lỗi khi xóa đơn hàng");
+    return NextResponse.json(
+      {
+        success: false,
+        message: displayMessage,
         error: rawError,
       },
       { status: 500 }

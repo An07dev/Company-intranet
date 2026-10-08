@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { OrderModel } from "@/server/models/order.model";
+import { SapoService } from "@/server/services/sapo.service";
+import { MongoShopeeOrderModel } from "@/server/db/schema";
+import { connectToDatabase } from "@/server/db";
 
 // Headers hỗ trợ CORS để Chrome Extension bắn dữ liệu trực tiếp không bị chặn
 const corsHeaders = {
@@ -118,6 +121,32 @@ export async function DELETE(request: NextRequest) {
         }
       } catch {
         // không có json body
+      }
+    }
+
+    // Nếu xóa đơn cụ thể, đồng bộ xóa trên Sapo nếu có Sapo ID
+    if (orderSns && orderSns.length === 1) {
+      try {
+        await connectToDatabase();
+        const singleSn = orderSns[0];
+        const doc = await MongoShopeeOrderModel.findOne({ order_sn: singleSn });
+        let sapoId: number | string | null = null;
+        if (doc?.raw_text) {
+          try {
+            const raw = JSON.parse(doc.raw_text);
+            if (raw.id) sapoId = raw.id;
+          } catch {}
+        }
+        if (!sapoId && doc?.id && /^\d+$/.test(String(doc.id)) && String(doc.id).length >= 7) {
+          sapoId = doc.id;
+        }
+        if (sapoId) {
+          await SapoService.deleteOrder(sapoId).catch((err) =>
+            console.warn(`[Shopee Orders DELETE] Sapo delete error for ${singleSn}:`, err.message)
+          );
+        }
+      } catch (e: any) {
+        console.warn("[Shopee Orders DELETE] Failed checking Sapo ID:", e.message);
       }
     }
 

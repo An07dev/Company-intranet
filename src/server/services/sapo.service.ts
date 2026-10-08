@@ -40,7 +40,16 @@ async function sapoFetch<T = any>(endpoint: string, options: RequestInit = {}): 
     throw new Error(`Sapo API error [${res.status}] ${res.statusText}: ${errorDetail}`);
   }
 
-  return res.json() as Promise<T>;
+  const text = await res.text();
+  if (!text || text.trim() === "") {
+    return {} as T;
+  }
+
+  try {
+    return JSON.parse(text) as T;
+  } catch {
+    return text as unknown as T;
+  }
 }
 
 export interface SapoCustomer {
@@ -342,6 +351,15 @@ export const SapoService = {
     return sapoFetch(`/admin/orders/${id}/cancel.json`, {
       method: "POST",
       body: JSON.stringify({ order_cancel: { reason: sapoReason, email: false } }),
+    });
+  },
+
+  /**
+   * Xóa đơn hàng hoàn toàn khỏi Sapo Omnichannel
+   */
+  async deleteOrder(id: number | string): Promise<any> {
+    return sapoFetch(`/admin/orders/${id}.json`, {
+      method: "DELETE",
     });
   },
 

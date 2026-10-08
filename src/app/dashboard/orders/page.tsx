@@ -5,6 +5,7 @@ import Link from "next/link";
 import { ShopeeOrder } from "@/types";
 import { ShopeeStatusBadge } from "@/components/shopee/ShopeeStatusBadge";
 import { ShopeeOrderDetailModal } from "@/components/shopee/ShopeeOrderDetailModal";
+import { EditOrderModal } from "@/components/shopee/EditOrderModal";
 import { CreateOrderModal } from "@/components/shopee/CreateOrderModal";
 import { useToast } from "@/context/ToastContext";
 
@@ -34,7 +35,7 @@ function getChannelBadge(shopUsername?: string) {
   }
   if (s.includes("shopee")) {
     return {
-      label: "Shopee (Sapo)",
+      label: "Shopee",
       badgeClass: "bg-orange-50 text-orange-700 dark:bg-orange-950/60 dark:text-orange-300 border-orange-200 dark:border-orange-800",
       icon: "🟠",
     };
@@ -97,6 +98,7 @@ export default function MultiChannelOrdersPage() {
 
   // Active Detail Modal & Copy Tracking
   const [selectedOrder, setSelectedOrder] = useState<ShopeeOrder | null>(null);
+  const [editingOrder, setEditingOrder] = useState<ShopeeOrder | null>(null);
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [copiedSn, setCopiedSn] = useState<string | null>(null);
   const [copiedTracking, setCopiedTracking] = useState<string | null>(null);
@@ -229,17 +231,17 @@ export default function MultiChannelOrdersPage() {
     }, 2000);
   };
 
-  // Delete single order
+  // Delete single order with 2-way Sapo synchronization
   const handleDeleteOrder = async (order_sn: string) => {
-    if (!confirm(`Bạn có chắc chắn muốn xóa đơn hàng ${order_sn}?`)) return;
     try {
-      const res = await fetch(`/api/shopee/orders?order_sn=${encodeURIComponent(order_sn)}`, {
+      const res = await fetch(`/api/sapo/orders?order_sn=${encodeURIComponent(order_sn)}`, {
         method: "DELETE",
       });
       const data = await res.json();
       if (data.success) {
-        toast.success(`Đã xóa đơn hàng ${order_sn}`);
+        toast.success(data.message || `Đã xóa đơn hàng #${order_sn} và đồng bộ xóa trên Sapo!`);
         setSelectedOrder(null);
+        setEditingOrder(null);
         fetchOrders();
       } else {
         toast.error(data.message || "Xóa đơn thất bại");
@@ -1279,7 +1281,7 @@ export default function MultiChannelOrdersPage() {
                     <th className="py-3 px-4 w-36">Trạng thái</th>
                     <th className="py-3 px-4 w-44">Vận chuyển</th>
                     <th className="py-3 px-4 w-32">Thời gian</th>
-                    <th className="py-3 px-3 text-right w-16">Chi tiết</th>
+                    <th className="py-3 px-3 text-right w-20">Thao tác</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800/60">
@@ -1395,19 +1397,32 @@ export default function MultiChannelOrdersPage() {
                           {formatDateTime(order.createdAt || order.synced_at)}
                         </td>
 
-                        {/* 9. Chi tiết */}
+                        {/* 9. Thao tác */}
                         <td className="py-3.5 px-3 text-right">
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setSelectedOrder(order);
-                            }}
-                            className="p-1.5 rounded-lg text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
-                            title="Xem chi tiết"
-                          >
-                            👁️
-                          </button>
+                          <div className="flex items-center justify-end gap-1">
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setEditingOrder(order);
+                              }}
+                              className="p-1.5 rounded-lg text-orange-600 hover:text-orange-700 hover:bg-orange-50 dark:hover:bg-orange-950/40 transition-colors"
+                              title="Chỉnh sửa đơn hàng"
+                            >
+                              ✏️
+                            </button>
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setSelectedOrder(order);
+                              }}
+                              className="p-1.5 rounded-lg text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
+                              title="Xem chi tiết"
+                            >
+                              👁️
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     );
@@ -1592,7 +1607,23 @@ export default function MultiChannelOrdersPage() {
           isOpen={!!selectedOrder}
           onClose={() => setSelectedOrder(null)}
           onDelete={handleDeleteOrder}
+          onEdit={(orderToEdit) => setEditingOrder(orderToEdit)}
           onOrderUpdated={() => fetchOrders(true)}
+        />
+      )}
+
+      {/* Modal Chỉnh Sửa Đơn Hàng (Đồng bộ Sapo Omnichannel) */}
+      {editingOrder && (
+        <EditOrderModal
+          order={editingOrder}
+          isOpen={!!editingOrder}
+          onClose={() => setEditingOrder(null)}
+          onOrderUpdated={(updated) => {
+            fetchOrders(true);
+            if (selectedOrder && selectedOrder.order_sn === updated.order_sn) {
+              setSelectedOrder(updated);
+            }
+          }}
         />
       )}
 

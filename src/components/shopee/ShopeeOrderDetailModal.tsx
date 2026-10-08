@@ -11,6 +11,7 @@ interface ShopeeOrderDetailModalProps {
   onClose: () => void;
   onCopySn?: (sn: string) => void;
   onDelete?: (order_sn: string) => void;
+  onEdit?: (order: ShopeeOrder) => void;
   onOrderUpdated?: () => void;
 }
 
@@ -32,6 +33,7 @@ export function ShopeeOrderDetailModal({
   onClose,
   onCopySn,
   onDelete,
+  onEdit,
   onOrderUpdated,
 }: ShopeeOrderDetailModalProps) {
   const { toast } = useToast();
@@ -428,6 +430,18 @@ export function ShopeeOrderDetailModal({
                 </button>
               )}
 
+              {onEdit && (
+                <button
+                  type="button"
+                  onClick={() => onEdit(order)}
+                  className="flex-1 py-1.5 px-3 rounded-xl border border-orange-200 dark:border-orange-800/80 bg-orange-50 dark:bg-orange-950/40 text-orange-700 dark:text-orange-300 hover:bg-orange-100 font-semibold text-xs transition-colors flex items-center justify-center gap-1.5 cursor-pointer active:scale-[0.98]"
+                  title="Chỉnh sửa thông tin đơn hàng và đồng bộ lên Sapo"
+                >
+                  <span>✏️</span>
+                  <span>Sửa đơn</span>
+                </button>
+              )}
+
               {order.order_status === "Đã giao" && (
                 <button
                   type="button"
@@ -472,9 +486,17 @@ export function ShopeeOrderDetailModal({
               {onDelete && (
                 <button
                   type="button"
-                  onClick={() => onDelete(order.order_sn)}
+                  onClick={() => {
+                    if (
+                      confirm(
+                        `Bạn có chắc chắn muốn xóa đơn hàng #${order.order_sn}?\nThao tác này sẽ xóa đơn và ĐỒNG BỘ XÓA VĨNH VIỄN trên Sapo Omnichannel!`
+                      )
+                    ) {
+                      onDelete(order.order_sn);
+                    }
+                  }}
                   className="p-1.5 sm:px-2 rounded-xl border border-rose-200 dark:border-rose-900/40 bg-rose-50 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400 hover:bg-rose-100 font-medium text-xs transition-colors cursor-pointer active:scale-95"
-                  title="Xóa đơn hàng này"
+                  title="Xóa đơn hàng này và đồng bộ xóa trên Sapo"
                 >
                   🗑️
                 </button>
