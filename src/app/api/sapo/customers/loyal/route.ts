@@ -37,11 +37,15 @@ export async function GET(request: NextRequest) {
     const filter: Record<string, any> = {};
 
     if (query) {
-      filter.$or = [
+      const orConditions: any[] = [
         { name: { $regex: query, $options: "i" } },
         { phone: { $regex: query, $options: "i" } },
         { email: { $regex: query, $options: "i" } },
       ];
+      if (/^\d+$/.test(query)) {
+        orConditions.push({ sapo_customer_id: Number(query) });
+      }
+      filter.$or = orConditions;
     }
 
     if (tier && tier !== "all") {
