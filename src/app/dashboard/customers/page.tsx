@@ -205,11 +205,10 @@ export default function CustomersPage() {
               <button
                 type="button"
                 onClick={() => setActiveTab("all")}
-                className={`px-3 py-1.5 text-xs sm:text-sm font-bold rounded-lg transition-all flex items-center gap-1.5 cursor-pointer ${
-                  activeTab === "all"
-                    ? "bg-white dark:bg-zinc-900 text-zinc-900 dark:text-white shadow-2xs"
-                    : "text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white"
-                }`}
+                className={`px-3 py-1.5 text-xs sm:text-sm font-bold rounded-lg transition-all flex items-center gap-1.5 cursor-pointer ${activeTab === "all"
+                  ? "bg-white dark:bg-zinc-900 text-zinc-900 dark:text-white shadow-2xs"
+                  : "text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white"
+                  }`}
               >
                 <span>👥</span>
                 <span>Tất cả khách hàng</span>
@@ -219,20 +218,18 @@ export default function CustomersPage() {
               <button
                 type="button"
                 onClick={() => setActiveTab("loyal")}
-                className={`px-3 py-1.5 text-xs sm:text-sm font-bold rounded-lg transition-all flex items-center gap-1.5 cursor-pointer ${
-                  activeTab === "loyal"
-                    ? "bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-2xs font-bold"
-                    : "text-zinc-600 dark:text-zinc-400 hover:text-amber-600 dark:hover:text-amber-400"
-                }`}
+                className={`px-3 py-1.5 text-xs sm:text-sm font-bold rounded-lg transition-all flex items-center gap-1.5 cursor-pointer ${activeTab === "loyal"
+                  ? "bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-2xs font-bold"
+                  : "text-zinc-600 dark:text-zinc-400 hover:text-amber-600 dark:hover:text-amber-400"
+                  }`}
               >
                 <span>⭐</span>
                 <span>Khách thân thiết</span>
                 <span
-                  className={`px-1.5 py-0.2 rounded-full text-[10px] font-bold ${
-                    activeTab === "loyal"
-                      ? "bg-amber-700 text-white"
-                      : "bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300"
-                  }`}
+                  className={`px-1.5 py-0.2 rounded-full text-[10px] font-bold ${activeTab === "loyal"
+                    ? "bg-amber-700 text-white"
+                    : "bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300"
+                    }`}
                 >
                   {loyalCount}
                 </span>
@@ -280,11 +277,10 @@ export default function CustomersPage() {
             <button
               type="button"
               onClick={() => setActiveTab("all")}
-              className={`flex-1 px-3 py-1.5 text-xs font-bold rounded-lg transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
-                activeTab === "all"
-                  ? "bg-white dark:bg-zinc-900 text-zinc-900 dark:text-white shadow-2xs"
-                  : "text-zinc-600 dark:text-zinc-400"
-              }`}
+              className={`flex-1 px-3 py-1.5 text-xs font-bold rounded-lg transition-all flex items-center justify-center gap-1.5 cursor-pointer ${activeTab === "all"
+                ? "bg-white dark:bg-zinc-900 text-zinc-900 dark:text-white shadow-2xs"
+                : "text-zinc-600 dark:text-zinc-400"
+                }`}
             >
               <span>👥</span>
               <span>Tất cả khách hàng</span>
@@ -292,11 +288,10 @@ export default function CustomersPage() {
             <button
               type="button"
               onClick={() => setActiveTab("loyal")}
-              className={`flex-1 px-3 py-1.5 text-xs font-bold rounded-lg transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
-                activeTab === "loyal"
-                  ? "bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-2xs font-bold"
-                  : "text-zinc-600 dark:text-zinc-400"
-              }`}
+              className={`flex-1 px-3 py-1.5 text-xs font-bold rounded-lg transition-all flex items-center justify-center gap-1.5 cursor-pointer ${activeTab === "loyal"
+                ? "bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-2xs font-bold"
+                : "text-zinc-600 dark:text-zinc-400"
+                }`}
             >
               <span>⭐</span>
               <span>Khách thân thiết</span>

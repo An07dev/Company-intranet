@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import { useToast } from "@/context/ToastContext";
+import { DebtTableLoading } from "./DebtTableLoading";
 
 export interface DebtOrder {
   order_sn: string;
@@ -171,16 +172,13 @@ export function OrderDebtsTable({
         </div>
       </div>
 
+      {/* Loading banner when fetching / filtering */}
+      {loading && <DebtTableLoading type="orders" mode="banner" />}
+
       {/* 1. MOBILE CARD VIEW (< md screens) */}
       <div className="block md:hidden divide-y divide-zinc-100 dark:divide-zinc-800">
         {loading ? (
-          Array.from({ length: 4 }).map((_, i) => (
-            <div key={i} className="p-3.5 space-y-2 animate-pulse">
-              <div className="h-4 bg-zinc-200 dark:bg-zinc-800 rounded w-28"></div>
-              <div className="h-3 bg-zinc-200 dark:bg-zinc-800 rounded w-40"></div>
-              <div className="h-4 bg-zinc-200 dark:bg-zinc-800 rounded w-24"></div>
-            </div>
-          ))
+          <DebtTableLoading type="orders" mode="mobile" rows={4} />
         ) : orders.length === 0 ? (
           <div className="py-10 text-center text-zinc-500">
             <p className="font-semibold text-xs">Không có đơn nợ nào phù hợp</p>
@@ -273,18 +271,7 @@ export function OrderDebtsTable({
           </thead>
           <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800/60">
             {loading ? (
-              Array.from({ length: 5 }).map((_, i) => (
-                <tr key={i} className="animate-pulse">
-                  <td className="py-3 px-4"><div className="h-4 bg-zinc-200 dark:bg-zinc-800 rounded w-28 mb-1"></div></td>
-                  <td className="py-3 px-4"><div className="h-4 bg-zinc-200 dark:bg-zinc-800 rounded w-32"></div></td>
-                  <td className="py-3 px-4 text-right"><div className="h-4 bg-zinc-200 dark:bg-zinc-800 rounded w-20 ml-auto"></div></td>
-                  <td className="py-3 px-4 text-right"><div className="h-4 bg-zinc-200 dark:bg-zinc-800 rounded w-16 ml-auto"></div></td>
-                  <td className="py-3 px-4 text-right"><div className="h-4 bg-zinc-200 dark:bg-zinc-800 rounded w-20 ml-auto"></div></td>
-                  <td className="py-3 px-4 text-center"><div className="h-4 bg-zinc-200 dark:bg-zinc-800 rounded w-16 mx-auto"></div></td>
-                  <td className="py-3 px-4"><div className="h-4 bg-zinc-200 dark:bg-zinc-800 rounded w-24"></div></td>
-                  <td className="py-3 px-4 text-right"><div className="h-6 bg-zinc-200 dark:bg-zinc-800 rounded w-20 ml-auto"></div></td>
-                </tr>
-              ))
+              <DebtTableLoading type="orders" mode="rows" rows={5} colSpan={8} />
             ) : orders.length === 0 ? (
               <tr>
                 <td colSpan={8} className="py-10 text-center text-zinc-500">

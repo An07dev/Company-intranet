@@ -2,6 +2,7 @@
 
 import React, { useState, useMemo } from "react";
 import { useToast } from "@/context/ToastContext";
+import { DebtTableLoading } from "./DebtTableLoading";
 
 export interface SupplierDebtItem {
   id: number;
@@ -181,24 +182,13 @@ export function SupplierDebtsTable({
         </div>
       </div>
 
+      {/* Loading banner when fetching / filtering */}
+      {loading && <DebtTableLoading type="suppliers" mode="banner" />}
+
       {/* 1. MOBILE CARD VIEW (< md screens) */}
       <div className="block md:hidden divide-y divide-zinc-100 dark:divide-zinc-800">
         {loading ? (
-          Array.from({ length: 4 }).map((_, i) => (
-            <div key={i} className="p-3 space-y-2 animate-pulse">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 rounded-xl bg-zinc-200 dark:bg-zinc-800"></div>
-                  <div className="space-y-1">
-                    <div className="h-3.5 bg-zinc-200 dark:bg-zinc-800 rounded w-28"></div>
-                    <div className="h-2.5 bg-zinc-200 dark:bg-zinc-800 rounded w-16"></div>
-                  </div>
-                </div>
-                <div className="h-4 bg-zinc-200 dark:bg-zinc-800 rounded w-20"></div>
-              </div>
-              <div className="h-3 bg-zinc-100 dark:bg-zinc-800/40 rounded w-3/4"></div>
-            </div>
-          ))
+          <DebtTableLoading type="suppliers" mode="mobile" rows={4} />
         ) : suppliers.length === 0 ? (
           <div className="p-8 text-center text-zinc-500 dark:text-zinc-400 text-xs">
             Không tìm thấy nhà cung cấp nào phù hợp.
@@ -326,37 +316,7 @@ export function SupplierDebtsTable({
           </thead>
           <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800/80 text-xs">
             {loading ? (
-              Array.from({ length: 6 }).map((_, i) => (
-                <tr key={i} className="animate-pulse">
-                  <td className="py-3.5 px-3.5 text-center">
-                    <div className="w-4 h-4 bg-zinc-200 dark:bg-zinc-800 rounded mx-auto"></div>
-                  </td>
-                  <td className="py-3.5 px-3.5">
-                    <div className="h-4 bg-zinc-200 dark:bg-zinc-800 rounded w-20"></div>
-                  </td>
-                  <td className="py-3.5 px-3.5">
-                    <div className="h-4 bg-zinc-200 dark:bg-zinc-800 rounded w-36"></div>
-                  </td>
-                  <td className="py-3.5 px-3.5">
-                    <div className="h-4 bg-zinc-200 dark:bg-zinc-800 rounded w-24"></div>
-                  </td>
-                  <td className="py-3.5 px-3.5 text-right">
-                    <div className="h-4 bg-zinc-200 dark:bg-zinc-800 rounded w-20 ml-auto"></div>
-                  </td>
-                  <td className="py-3.5 px-3.5 text-right">
-                    <div className="h-4 bg-zinc-200 dark:bg-zinc-800 rounded w-20 ml-auto"></div>
-                  </td>
-                  <td className="py-3.5 px-3.5 text-right">
-                    <div className="h-4 bg-zinc-200 dark:bg-zinc-800 rounded w-20 ml-auto"></div>
-                  </td>
-                  <td className="py-3.5 px-3.5 text-right">
-                    <div className="h-4 bg-zinc-200 dark:bg-zinc-800 rounded w-24 ml-auto"></div>
-                  </td>
-                  <td className="py-3.5 px-3.5 text-center">
-                    <div className="h-7 bg-zinc-200 dark:bg-zinc-800 rounded-lg w-16 mx-auto"></div>
-                  </td>
-                </tr>
-              ))
+              <DebtTableLoading type="suppliers" mode="rows" rows={6} colSpan={9} />
             ) : suppliers.length === 0 ? (
               <tr>
                 <td colSpan={9} className="py-12 text-center text-zinc-500 dark:text-zinc-400">

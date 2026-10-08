@@ -374,13 +374,6 @@ export default function SuppliersPage() {
               <span className={loading ? "animate-spin" : ""}>🔄</span>
               <span>Làm mới</span>
             </button>
-            <Link
-              href="/dashboard/shopee-products"
-              className="py-2 px-3.5 text-xs font-semibold rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-zinc-700 dark:text-zinc-200 hover:bg-zinc-50 dark:hover:bg-zinc-700 transition flex items-center gap-1.5 shadow-2xs whitespace-nowrap"
-            >
-              <span>📦</span>
-              <span>Sản phẩm</span>
-            </Link>
           </div>
         </div>
 
@@ -497,18 +490,16 @@ export default function SuppliersPage() {
                 setStatusFilter("all");
                 setCurrentPage(1);
               }}
-              className={`px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-lg sm:rounded-xl transition-all whitespace-nowrap text-xs font-semibold shrink-0 cursor-pointer flex items-center gap-1.5 active:scale-95 ${
-                statusFilter === "all"
-                  ? "bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 shadow-2xs"
-                  : "text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 bg-zinc-50 dark:bg-zinc-800/60"
-              }`}
+              className={`px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-lg sm:rounded-xl transition-all whitespace-nowrap text-xs font-semibold shrink-0 cursor-pointer flex items-center gap-1.5 active:scale-95 ${statusFilter === "all"
+                ? "bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 shadow-2xs"
+                : "text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 bg-zinc-50 dark:bg-zinc-800/60"
+                }`}
             >
               <span>Tất cả</span>
-              <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-mono font-medium ${
-                statusFilter === "all"
-                  ? "bg-zinc-700 text-zinc-200 dark:bg-zinc-300 dark:text-zinc-900"
-                  : "bg-zinc-200/80 dark:bg-zinc-700/80 text-zinc-600 dark:text-zinc-300"
-              }`}>
+              <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-mono font-medium ${statusFilter === "all"
+                ? "bg-zinc-700 text-zinc-200 dark:bg-zinc-300 dark:text-zinc-900"
+                : "bg-zinc-200/80 dark:bg-zinc-700/80 text-zinc-600 dark:text-zinc-300"
+                }`}>
                 {suppliers.length}
               </span>
             </button>
@@ -519,18 +510,16 @@ export default function SuppliersPage() {
                 setStatusFilter("active");
                 setCurrentPage(1);
               }}
-              className={`px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-lg sm:rounded-xl transition-all whitespace-nowrap text-xs font-semibold shrink-0 cursor-pointer flex items-center gap-1.5 active:scale-95 ${
-                statusFilter === "active"
-                  ? "bg-emerald-600 text-white shadow-2xs"
-                  : "text-emerald-700 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 bg-emerald-50/50 dark:bg-emerald-950/20"
-              }`}
+              className={`px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-lg sm:rounded-xl transition-all whitespace-nowrap text-xs font-semibold shrink-0 cursor-pointer flex items-center gap-1.5 active:scale-95 ${statusFilter === "active"
+                ? "bg-emerald-600 text-white shadow-2xs"
+                : "text-emerald-700 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 bg-emerald-50/50 dark:bg-emerald-950/20"
+                }`}
             >
               <span>Đang hợp tác</span>
-              <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-mono font-medium ${
-                statusFilter === "active"
-                  ? "bg-emerald-800 text-white"
-                  : "bg-emerald-200/70 dark:bg-emerald-900/60 text-emerald-800 dark:text-emerald-300"
-              }`}>
+              <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-mono font-medium ${statusFilter === "active"
+                ? "bg-emerald-800 text-white"
+                : "bg-emerald-200/70 dark:bg-emerald-900/60 text-emerald-800 dark:text-emerald-300"
+                }`}>
                 {activeCount}
               </span>
             </button>
@@ -541,18 +530,16 @@ export default function SuppliersPage() {
                 setStatusFilter("inactive");
                 setCurrentPage(1);
               }}
-              className={`px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-lg sm:rounded-xl transition-all whitespace-nowrap text-xs font-semibold shrink-0 cursor-pointer flex items-center gap-1.5 active:scale-95 ${
-                statusFilter === "inactive"
-                  ? "bg-zinc-800 text-white dark:bg-zinc-200 dark:text-zinc-900 shadow-2xs"
-                  : "text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 bg-zinc-50 dark:bg-zinc-800/60"
-              }`}
+              className={`px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-lg sm:rounded-xl transition-all whitespace-nowrap text-xs font-semibold shrink-0 cursor-pointer flex items-center gap-1.5 active:scale-95 ${statusFilter === "inactive"
+                ? "bg-zinc-800 text-white dark:bg-zinc-200 dark:text-zinc-900 shadow-2xs"
+                : "text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 bg-zinc-50 dark:bg-zinc-800/60"
+                }`}
             >
               <span>Tạm ngưng</span>
-              <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-mono font-medium ${
-                statusFilter === "inactive"
-                  ? "bg-zinc-600 text-zinc-100 dark:bg-zinc-400 dark:text-zinc-900"
-                  : "bg-zinc-200/80 dark:bg-zinc-700/80 text-zinc-600 dark:text-zinc-300"
-              }`}>
+              <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-mono font-medium ${statusFilter === "inactive"
+                ? "bg-zinc-600 text-zinc-100 dark:bg-zinc-400 dark:text-zinc-900"
+                : "bg-zinc-200/80 dark:bg-zinc-700/80 text-zinc-600 dark:text-zinc-300"
+                }`}>
                 {inactiveCount}
               </span>
             </button>
@@ -563,18 +550,16 @@ export default function SuppliersPage() {
                 setStatusFilter("with_phone");
                 setCurrentPage(1);
               }}
-              className={`px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-lg sm:rounded-xl transition-all whitespace-nowrap text-xs font-semibold shrink-0 cursor-pointer flex items-center gap-1.5 active:scale-95 ${
-                statusFilter === "with_phone"
-                  ? "bg-blue-600 text-white shadow-2xs"
-                  : "text-blue-700 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/40 bg-blue-50/50 dark:bg-blue-950/20"
-              }`}
+              className={`px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-lg sm:rounded-xl transition-all whitespace-nowrap text-xs font-semibold shrink-0 cursor-pointer flex items-center gap-1.5 active:scale-95 ${statusFilter === "with_phone"
+                ? "bg-blue-600 text-white shadow-2xs"
+                : "text-blue-700 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/40 bg-blue-50/50 dark:bg-blue-950/20"
+                }`}
             >
               <span>Có Hotline</span>
-              <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-mono font-medium ${
-                statusFilter === "with_phone"
-                  ? "bg-blue-800 text-white"
-                  : "bg-blue-200/70 dark:bg-blue-900/60 text-blue-800 dark:text-blue-300"
-              }`}>
+              <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-mono font-medium ${statusFilter === "with_phone"
+                ? "bg-blue-800 text-white"
+                : "bg-blue-200/70 dark:bg-blue-900/60 text-blue-800 dark:text-blue-300"
+                }`}>
                 {withPhoneCount}
               </span>
             </button>
@@ -701,11 +686,10 @@ export default function SuppliersPage() {
                         {s.code || `ID-${s.id}`}
                       </span>
                       <span
-                        className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold ${
-                          s.status === "active"
-                            ? "bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300"
-                            : "bg-zinc-100 dark:bg-zinc-800 text-zinc-500"
-                        }`}
+                        className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold ${s.status === "active"
+                          ? "bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300"
+                          : "bg-zinc-100 dark:bg-zinc-800 text-zinc-500"
+                          }`}
                       >
                         {s.status === "active" ? "🟢 Đang hợp tác" : "⚪ Tạm ngưng"}
                       </span>
@@ -874,11 +858,10 @@ export default function SuppliersPage() {
 
                       <td className="py-3 px-4 text-center">
                         <span
-                          className={`inline-block px-2 py-0.5 rounded-full text-[11px] font-semibold ${
-                            s.status === "active"
-                              ? "bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300"
-                              : "bg-zinc-100 dark:bg-zinc-800 text-zinc-500"
-                          }`}
+                          className={`inline-block px-2 py-0.5 rounded-full text-[11px] font-semibold ${s.status === "active"
+                            ? "bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300"
+                            : "bg-zinc-100 dark:bg-zinc-800 text-zinc-500"
+                            }`}
                         >
                           {s.status === "active" ? "Đang hợp tác" : "Tạm ngưng"}
                         </span>
@@ -985,11 +968,10 @@ export default function SuppliersPage() {
                           key={`page-${pageNum}`}
                           type="button"
                           onClick={() => setCurrentPage(pageNum)}
-                          className={`w-8 h-8 text-xs font-semibold rounded-lg transition-all cursor-pointer ${
-                            isActive
-                              ? "bg-emerald-600 text-white shadow-2xs font-bold"
-                              : "border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100"
-                          }`}
+                          className={`w-8 h-8 text-xs font-semibold rounded-lg transition-all cursor-pointer ${isActive
+                            ? "bg-emerald-600 text-white shadow-2xs font-bold"
+                            : "border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100"
+                            }`}
                         >
                           {pageNum}
                         </button>
@@ -1036,11 +1018,10 @@ export default function SuppliersPage() {
                       {selectedSupplier.code || `ID-${selectedSupplier.id}`}
                     </span>
                     <span
-                      className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${
-                        selectedSupplier.status === "active"
-                          ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-400"
-                          : "bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400"
-                      }`}
+                      className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${selectedSupplier.status === "active"
+                        ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-400"
+                        : "bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400"
+                        }`}
                     >
                       {selectedSupplier.status === "active" ? "Đang hợp tác" : "Tạm ngưng"}
                     </span>

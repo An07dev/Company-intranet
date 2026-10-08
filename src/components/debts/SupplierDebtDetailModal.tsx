@@ -59,7 +59,7 @@ export function SupplierDebtDetailModal({
   if (!isOpen || !supplier) return null;
 
   const formatVND = (num?: number) => {
-    return (num || 0).toLocaleString("vi-VN") + " ₫";
+    return (num || 0).toLocaleString("vi-VN") + "\u00A0₫";
   };
 
   const formatDateTime = (dateStr?: string) => {
@@ -174,7 +174,7 @@ Trân trọng cảm ơn!`;
       onClick={onClose}
     >
       <div
-        className="w-full max-w-4xl bg-white dark:bg-zinc-900 rounded-t-3xl sm:rounded-3xl border border-zinc-200 dark:border-zinc-800 shadow-2xl overflow-hidden flex flex-col max-h-[92vh] sm:max-h-[88vh] animate-in slide-in-from-bottom-5 sm:slide-in-from-bottom-0 duration-200"
+        className="w-full max-w-5xl bg-white dark:bg-zinc-900 rounded-t-3xl sm:rounded-3xl border border-zinc-200 dark:border-zinc-800 shadow-2xl overflow-hidden flex flex-col max-h-[92vh] sm:max-h-[88vh] animate-in slide-in-from-bottom-5 sm:slide-in-from-bottom-0 duration-200"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Mobile Drag Indicator */}

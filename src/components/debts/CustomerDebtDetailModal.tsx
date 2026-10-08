@@ -56,7 +56,7 @@ export function CustomerDebtDetailModal({
   if (!isOpen || !customer) return null;
 
   const formatVND = (num?: number) => {
-    return (num || 0).toLocaleString("vi-VN") + " ₫";
+    return (num || 0).toLocaleString("vi-VN") + "\u00A0₫";
   };
 
   const formatDateTime = (dateStr?: string) => {
@@ -108,7 +108,7 @@ Trân trọng cảm ơn Quý khách!`;
       onClick={onClose}
     >
       <div
-        className="w-full max-w-3xl bg-white dark:bg-zinc-900 rounded-t-3xl sm:rounded-3xl border border-zinc-200 dark:border-zinc-800 shadow-2xl overflow-hidden flex flex-col max-h-[92vh] sm:max-h-[85vh] animate-in slide-in-from-bottom-5 sm:slide-in-from-bottom-0 duration-200"
+        className="w-full max-w-5xl bg-white dark:bg-zinc-900 rounded-t-3xl sm:rounded-3xl border border-zinc-200 dark:border-zinc-800 shadow-2xl overflow-hidden flex flex-col max-h-[92vh] sm:max-h-[88vh] animate-in slide-in-from-bottom-5 sm:slide-in-from-bottom-0 duration-200"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Mobile Drag Indicator Bar */}
@@ -161,36 +161,36 @@ Trân trọng cảm ơn Quý khách!`;
         </div>
 
         {/* 4 KPI Summary Cards for Customer */}
-        <div className="p-2.5 sm:p-3 bg-zinc-50/40 dark:bg-zinc-800/30 border-b border-zinc-200/80 dark:border-zinc-800 shrink-0">
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 sm:gap-2 text-xs">
+        <div className="p-3 sm:p-4 bg-zinc-50/40 dark:bg-zinc-800/30 border-b border-zinc-200/80 dark:border-zinc-800 shrink-0">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3 text-xs">
             {/* Đầu kỳ */}
-            <div className="bg-white dark:bg-zinc-900 p-2 sm:p-2.5 rounded-xl border border-zinc-200/80 dark:border-zinc-700 shadow-2xs">
-              <span className="text-[9px] sm:text-[10px] text-zinc-500 uppercase font-semibold">Nợ đầu kỳ</span>
-              <div className="text-xs sm:text-sm font-bold font-mono text-zinc-800 dark:text-zinc-200 mt-0.5 truncate">
+            <div className="bg-white dark:bg-zinc-900 p-2.5 sm:p-3 rounded-xl border border-zinc-200/80 dark:border-zinc-700 shadow-2xs">
+              <span className="text-[10px] sm:text-[11px] text-zinc-500 uppercase font-semibold">Nợ đầu kỳ</span>
+              <div className="text-xs sm:text-base font-bold font-mono text-zinc-800 dark:text-zinc-200 mt-0.5 truncate">
                 {formatVND(customer.dau_ky)}
               </div>
             </div>
 
             {/* Tăng trong kỳ */}
-            <div className="bg-white dark:bg-zinc-900 p-2 sm:p-2.5 rounded-xl border border-blue-200/80 dark:border-blue-900 shadow-2xs">
-              <span className="text-[9px] sm:text-[10px] text-blue-600 uppercase font-semibold">Nợ tăng (+)</span>
-              <div className="text-xs sm:text-sm font-bold font-mono text-blue-600 mt-0.5 truncate">
+            <div className="bg-white dark:bg-zinc-900 p-2.5 sm:p-3 rounded-xl border border-blue-200/80 dark:border-blue-900 shadow-2xs">
+              <span className="text-[10px] sm:text-[11px] text-blue-600 uppercase font-semibold">Nợ tăng (+)</span>
+              <div className="text-xs sm:text-base font-bold font-mono text-blue-600 mt-0.5 truncate">
                 {formatVND(customer.tang_trong_ky)}
               </div>
             </div>
 
             {/* Giảm trong kỳ */}
-            <div className="bg-white dark:bg-zinc-900 p-2 sm:p-2.5 rounded-xl border border-rose-200/80 dark:border-rose-900 shadow-2xs">
-              <span className="text-[9px] sm:text-[10px] text-rose-600 uppercase font-semibold">Nợ giảm (−)</span>
-              <div className="text-xs sm:text-sm font-bold font-mono text-rose-600 mt-0.5 truncate">
-                {customer.giam_trong_ky ? `-${formatVND(customer.giam_trong_ky)}` : "0 ₫"}
+            <div className="bg-white dark:bg-zinc-900 p-2.5 sm:p-3 rounded-xl border border-rose-200/80 dark:border-rose-900 shadow-2xs">
+              <span className="text-[10px] sm:text-[11px] text-rose-600 uppercase font-semibold">Nợ giảm (−)</span>
+              <div className="text-xs sm:text-base font-bold font-mono text-rose-600 mt-0.5 truncate">
+                {customer.giam_trong_ky ? `-${formatVND(customer.giam_trong_ky)}` : "0\u00A0₫"}
               </div>
             </div>
 
             {/* Phải thu cuối kỳ */}
-            <div className="bg-emerald-50/60 dark:bg-emerald-950/40 p-2 sm:p-2.5 rounded-xl border-2 border-emerald-300 dark:border-emerald-700 shadow-2xs">
-              <span className="text-[9px] sm:text-[10px] text-emerald-800 dark:text-emerald-300 uppercase font-bold">Phải thu cuối kỳ</span>
-              <div className="text-xs sm:text-sm lg:text-base font-black font-mono text-emerald-700 dark:text-emerald-300 mt-0.5 truncate">
+            <div className="bg-emerald-50/60 dark:bg-emerald-950/40 p-2.5 sm:p-3 rounded-xl border-2 border-emerald-300 dark:border-emerald-700 shadow-2xs">
+              <span className="text-[10px] sm:text-[11px] text-emerald-800 dark:text-emerald-300 uppercase font-bold">Phải thu cuối kỳ</span>
+              <div className="text-xs sm:text-base lg:text-lg font-black font-mono text-emerald-700 dark:text-emerald-300 mt-0.5 truncate">
                 {formatVND(customer.cuoi_ky ?? customer.total_debt)}
               </div>
             </div>
@@ -318,13 +318,13 @@ Trân trọng cảm ơn Quý khách!`;
                 <table className="w-full text-left text-xs border-collapse">
                   <thead>
                     <tr className="border-b border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-800/50 text-zinc-500 font-semibold">
-                      <th className="py-2.5 px-3">Mã đơn</th>
-                      <th className="py-2.5 px-3">Ngày tạo</th>
-                      <th className="py-2.5 px-3 text-right">Tổng tiền</th>
-                      <th className="py-2.5 px-3 text-right">Đã thu</th>
-                      <th className="py-2.5 px-3 text-right">Còn nợ lại</th>
-                      <th className="py-2.5 px-3 text-center">Trạng thái</th>
-                      <th className="py-2.5 px-3 text-right">Hành động</th>
+                      <th className="py-2.5 px-3.5 whitespace-nowrap">Mã đơn</th>
+                      <th className="py-2.5 px-3.5 whitespace-nowrap">Ngày tạo</th>
+                      <th className="py-2.5 px-3.5 text-right whitespace-nowrap">Tổng tiền</th>
+                      <th className="py-2.5 px-3.5 text-right whitespace-nowrap">Đã thu</th>
+                      <th className="py-2.5 px-3.5 text-right whitespace-nowrap">Còn nợ lại</th>
+                      <th className="py-2.5 px-3.5 text-center whitespace-nowrap">Trạng thái</th>
+                      <th className="py-2.5 px-3.5 text-right whitespace-nowrap">Hành động</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800">
@@ -332,24 +332,24 @@ Trân trọng cảm ơn Quý khách!`;
                       const unp = o.unpaid_amount ?? o.outstanding ?? 0;
                       return (
                         <tr key={o.order_sn} className="hover:bg-zinc-50/60 dark:hover:bg-zinc-800/30">
-                          <td className="py-2 px-3 font-mono font-bold text-zinc-900 dark:text-white">
+                          <td className="py-2.5 px-3.5 font-mono font-bold text-zinc-900 dark:text-white whitespace-nowrap">
                             #{o.order_sn}
                           </td>
-                          <td className="py-2 px-3 text-zinc-500">
+                          <td className="py-2.5 px-3.5 text-zinc-500 whitespace-nowrap">
                             {formatDateTime(o.created_at)}
                           </td>
-                          <td className="py-2 px-3 text-right font-mono text-zinc-700 dark:text-zinc-300">
+                          <td className="py-2.5 px-3.5 text-right font-mono text-zinc-700 dark:text-zinc-300 whitespace-nowrap">
                             {formatVND(o.total_price || o.total_amount)}
                           </td>
-                          <td className="py-2 px-3 text-right font-mono text-emerald-600 dark:text-emerald-400">
+                          <td className="py-2.5 px-3.5 text-right font-mono text-emerald-600 dark:text-emerald-400 whitespace-nowrap">
                             {formatVND(o.total_received)}
                           </td>
-                          <td className="py-2 px-3 text-right font-mono font-bold text-rose-600 dark:text-rose-400">
-                            {unp > 0 ? formatVND(unp) : "0 ₫"}
+                          <td className="py-2.5 px-3.5 text-right font-mono font-bold text-rose-600 dark:text-rose-400 whitespace-nowrap">
+                            {unp > 0 ? formatVND(unp) : "0\u00A0₫"}
                           </td>
-                          <td className="py-2 px-3 text-center">
+                          <td className="py-2.5 px-3.5 text-center whitespace-nowrap">
                             <span
-                              className={`px-2 py-0.5 rounded-full text-[10px] font-semibold ${
+                              className={`inline-block px-2.5 py-0.5 rounded-full text-[10px] font-semibold whitespace-nowrap ${
                                 unp === 0
                                   ? "bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300"
                                   : o.financial_status === "partially_paid"
@@ -360,7 +360,7 @@ Trân trọng cảm ơn Quý khách!`;
                               {unp === 0 ? "Đã trả đủ" : o.financial_status === "partially_paid" ? "Trả một phần" : "Chưa thanh toán"}
                             </span>
                           </td>
-                          <td className="py-2 px-3 text-right">
+                          <td className="py-2.5 px-3.5 text-right whitespace-nowrap">
                             {unp > 0 ? (
                               <button
                                 type="button"
@@ -384,12 +384,13 @@ Trân trọng cảm ơn Quý khách!`;
                                     days_overdue: o.days_overdue || 0,
                                   });
                                 }}
-                                className="px-2.5 py-1 rounded-lg bg-rose-600 hover:bg-rose-700 text-white font-semibold text-xs transition-colors cursor-pointer"
+                                className="px-3 py-1 rounded-lg bg-rose-600 hover:bg-rose-700 text-white font-semibold text-xs transition-colors cursor-pointer inline-flex items-center gap-1 shadow-2xs whitespace-nowrap"
                               >
-                                Thu nợ
+                                <span>💳</span>
+                                <span>Thu nợ</span>
                               </button>
                             ) : (
-                              <span className="text-zinc-400 text-[11px]">Đã xong</span>
+                              <span className="text-zinc-400 text-[11px] font-medium">Đã xong</span>
                             )}
                           </td>
                         </tr>

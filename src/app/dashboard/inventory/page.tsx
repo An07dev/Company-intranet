@@ -398,13 +398,6 @@ export default function InventoryPage() {
               <span className={`inline-block ${refreshing ? "animate-spin" : ""}`}>🔄</span>
               <span>{refreshing ? "Đang tải..." : "Làm mới"}</span>
             </button>
-            <Link
-              href="/dashboard/suppliers"
-              className="py-2 px-3.5 text-xs font-semibold rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-zinc-700 dark:text-zinc-200 hover:bg-zinc-50 dark:hover:bg-zinc-700 transition flex items-center gap-1.5 shadow-2xs whitespace-nowrap"
-            >
-              <span>🏭</span>
-              <span>NCC</span>
-            </Link>
           </div>
         </div>
 
@@ -477,14 +470,6 @@ export default function InventoryPage() {
                   <span className="text-sm">📊</span>
                   <span>Xuất báo cáo CSV</span>
                 </button>
-                <Link
-                  href="/dashboard/suppliers"
-                  onClick={() => setShowMoreMenu(false)}
-                  className="w-full text-left p-2.5 rounded-xl hover:bg-zinc-100 dark:hover:bg-zinc-800 flex items-center gap-2.5 text-zinc-700 dark:text-zinc-300 font-medium"
-                >
-                  <span className="text-sm">🏭</span>
-                  <span>Nhà cung cấp & Đối tác</span>
-                </Link>
               </div>
             )}
           </div>
@@ -557,18 +542,16 @@ export default function InventoryPage() {
                 setStockFilter("all");
                 setCurrentPage(1);
               }}
-              className={`px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg sm:rounded-xl transition-all whitespace-nowrap text-[11px] sm:text-xs font-semibold shrink-0 cursor-pointer flex items-center gap-1 sm:gap-1.5 active:scale-95 ${
-                stockFilter === "all"
-                  ? "bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 shadow-2xs"
-                  : "text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 bg-zinc-50 dark:bg-zinc-800/60"
-              }`}
+              className={`px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg sm:rounded-xl transition-all whitespace-nowrap text-[11px] sm:text-xs font-semibold shrink-0 cursor-pointer flex items-center gap-1 sm:gap-1.5 active:scale-95 ${stockFilter === "all"
+                ? "bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 shadow-2xs"
+                : "text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 bg-zinc-50 dark:bg-zinc-800/60"
+                }`}
             >
               <span>Tất cả</span>
-              <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-mono font-medium ${
-                stockFilter === "all"
-                  ? "bg-zinc-700 text-zinc-200 dark:bg-zinc-300 dark:text-zinc-900"
-                  : "bg-zinc-200/80 dark:bg-zinc-700/80 text-zinc-600 dark:text-zinc-300"
-              }`}>
+              <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-mono font-medium ${stockFilter === "all"
+                ? "bg-zinc-700 text-zinc-200 dark:bg-zinc-300 dark:text-zinc-900"
+                : "bg-zinc-200/80 dark:bg-zinc-700/80 text-zinc-600 dark:text-zinc-300"
+                }`}>
                 {totalSkuDisplay}
               </span>
             </button>
@@ -579,18 +562,16 @@ export default function InventoryPage() {
                 setStockFilter("in_stock");
                 setCurrentPage(1);
               }}
-              className={`px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg sm:rounded-xl transition-all whitespace-nowrap text-[11px] sm:text-xs font-semibold shrink-0 cursor-pointer flex items-center gap-1 sm:gap-1.5 active:scale-95 ${
-                stockFilter === "in_stock"
-                  ? "bg-emerald-600 text-white shadow-2xs"
-                  : "text-emerald-700 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 bg-emerald-50/50 dark:bg-emerald-950/20"
-              }`}
+              className={`px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg sm:rounded-xl transition-all whitespace-nowrap text-[11px] sm:text-xs font-semibold shrink-0 cursor-pointer flex items-center gap-1 sm:gap-1.5 active:scale-95 ${stockFilter === "in_stock"
+                ? "bg-emerald-600 text-white shadow-2xs"
+                : "text-emerald-700 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 bg-emerald-50/50 dark:bg-emerald-950/20"
+                }`}
             >
               <span>Còn hàng</span>
-              <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-mono font-medium ${
-                stockFilter === "in_stock"
-                  ? "bg-emerald-800 text-white"
-                  : "bg-emerald-200/70 dark:bg-emerald-900/60 text-emerald-800 dark:text-emerald-300"
-              }`}>
+              <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-mono font-medium ${stockFilter === "in_stock"
+                ? "bg-emerald-800 text-white"
+                : "bg-emerald-200/70 dark:bg-emerald-900/60 text-emerald-800 dark:text-emerald-300"
+                }`}>
                 {inStockDisplay}
               </span>
             </button>
@@ -601,18 +582,16 @@ export default function InventoryPage() {
                 setStockFilter("low_stock");
                 setCurrentPage(1);
               }}
-              className={`px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg sm:rounded-xl transition-all whitespace-nowrap text-[11px] sm:text-xs font-semibold shrink-0 cursor-pointer flex items-center gap-1 sm:gap-1.5 active:scale-95 ${
-                stockFilter === "low_stock"
-                  ? "bg-amber-600 text-white shadow-2xs"
-                  : "text-amber-700 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-950/40 bg-amber-50/50 dark:bg-amber-950/20"
-              }`}
+              className={`px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg sm:rounded-xl transition-all whitespace-nowrap text-[11px] sm:text-xs font-semibold shrink-0 cursor-pointer flex items-center gap-1 sm:gap-1.5 active:scale-95 ${stockFilter === "low_stock"
+                ? "bg-amber-600 text-white shadow-2xs"
+                : "text-amber-700 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-950/40 bg-amber-50/50 dark:bg-amber-950/20"
+                }`}
             >
               <span>Sắp hết</span>
-              <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-mono font-medium ${
-                stockFilter === "low_stock"
-                  ? "bg-amber-800 text-white"
-                  : "bg-amber-200/70 dark:bg-amber-900/60 text-amber-800 dark:text-amber-300"
-              }`}>
+              <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-mono font-medium ${stockFilter === "low_stock"
+                ? "bg-amber-800 text-white"
+                : "bg-amber-200/70 dark:bg-amber-900/60 text-amber-800 dark:text-amber-300"
+                }`}>
                 {lowStockDisplay}
               </span>
             </button>
@@ -623,18 +602,16 @@ export default function InventoryPage() {
                 setStockFilter("out_of_stock");
                 setCurrentPage(1);
               }}
-              className={`px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg sm:rounded-xl transition-all whitespace-nowrap text-[11px] sm:text-xs font-semibold shrink-0 cursor-pointer flex items-center gap-1 sm:gap-1.5 active:scale-95 ${
-                stockFilter === "out_of_stock"
-                  ? "bg-rose-600 text-white shadow-2xs"
-                  : "text-rose-700 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 bg-rose-50/50 dark:bg-rose-950/20"
-              }`}
+              className={`px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg sm:rounded-xl transition-all whitespace-nowrap text-[11px] sm:text-xs font-semibold shrink-0 cursor-pointer flex items-center gap-1 sm:gap-1.5 active:scale-95 ${stockFilter === "out_of_stock"
+                ? "bg-rose-600 text-white shadow-2xs"
+                : "text-rose-700 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 bg-rose-50/50 dark:bg-rose-950/20"
+                }`}
             >
               <span>Hết hàng</span>
-              <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-mono font-medium ${
-                stockFilter === "out_of_stock"
-                  ? "bg-rose-800 text-white"
-                  : "bg-rose-200/70 dark:bg-rose-900/60 text-rose-800 dark:text-rose-300"
-              }`}>
+              <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-mono font-medium ${stockFilter === "out_of_stock"
+                ? "bg-rose-800 text-white"
+                : "bg-rose-200/70 dark:bg-rose-900/60 text-rose-800 dark:text-rose-300"
+                }`}>
                 {outOfStockDisplay}
               </span>
             </button>
@@ -782,13 +759,12 @@ export default function InventoryPage() {
                     </div>
 
                     <span
-                      className={`inline-flex items-center px-2 py-0.5 rounded-full font-mono font-bold text-[11px] shadow-2xs shrink-0 ${
-                        isOutOfStock
-                          ? "bg-rose-100 text-rose-700 dark:bg-rose-950 dark:text-rose-300"
-                          : isLowStock
+                      className={`inline-flex items-center px-2 py-0.5 rounded-full font-mono font-bold text-[11px] shadow-2xs shrink-0 ${isOutOfStock
+                        ? "bg-rose-100 text-rose-700 dark:bg-rose-950 dark:text-rose-300"
+                        : isLowStock
                           ? "bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300"
                           : "bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300"
-                      }`}
+                        }`}
                     >
                       {isOutOfStock ? "🚫 Hết 0" : isLowStock ? `⚠️ Còn ${stockNum}` : `🟢 Còn ${stockNum}`}
                     </span>
@@ -843,8 +819,8 @@ export default function InventoryPage() {
                         {p.price_display && p.price_display !== "₫0" && p.price_display !== "₫"
                           ? p.price_display
                           : p.price_min > 0
-                          ? `₫${p.price_min.toLocaleString("vi-VN")}`
-                          : "--"}
+                            ? `₫${p.price_min.toLocaleString("vi-VN")}`
+                            : "--"}
                       </div>
                     </div>
 
@@ -991,20 +967,19 @@ export default function InventoryPage() {
                           {p.price_display && p.price_display !== "₫0" && p.price_display !== "₫"
                             ? p.price_display
                             : p.price_min > 0
-                            ? `₫${p.price_min.toLocaleString("vi-VN")}`
-                            : "--"}
+                              ? `₫${p.price_min.toLocaleString("vi-VN")}`
+                              : "--"}
                         </td>
 
                         {/* Stock */}
                         <td className="py-3 px-4 text-center whitespace-nowrap">
                           <span
-                            className={`inline-block px-3 py-1 rounded-full font-mono font-extrabold text-xs shadow-xs ${
-                              isOutOfStock
-                                ? "bg-rose-100 text-rose-700 dark:bg-rose-950 dark:text-rose-300"
-                                : isLowStock
+                            className={`inline-block px-3 py-1 rounded-full font-mono font-extrabold text-xs shadow-xs ${isOutOfStock
+                              ? "bg-rose-100 text-rose-700 dark:bg-rose-950 dark:text-rose-300"
+                              : isLowStock
                                 ? "bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300"
                                 : "bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300"
-                            }`}
+                              }`}
                           >
                             {stockNum.toLocaleString("vi-VN")}
                           </span>
@@ -1169,11 +1144,10 @@ export default function InventoryPage() {
                           key={`page-${pageNum}`}
                           type="button"
                           onClick={() => setCurrentPage(pageNum)}
-                          className={`w-8 h-8 text-xs font-semibold rounded-lg transition-all cursor-pointer ${
-                            isActive
-                              ? "bg-amber-600 text-white shadow-2xs font-bold"
-                              : "border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100"
-                          }`}
+                          className={`w-8 h-8 text-xs font-semibold rounded-lg transition-all cursor-pointer ${isActive
+                            ? "bg-amber-600 text-white shadow-2xs font-bold"
+                            : "border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100"
+                            }`}
                         >
                           {pageNum}
                         </button>

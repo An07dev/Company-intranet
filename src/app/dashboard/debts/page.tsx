@@ -12,6 +12,7 @@ import { CustomerDebtDetailModal } from "@/components/debts/CustomerDebtDetailMo
 import { SupplierDebtStatsCards } from "@/components/debts/SupplierDebtStatsCards";
 import { SupplierDebtsTable, SupplierDebtItem } from "@/components/debts/SupplierDebtsTable";
 import { SupplierDebtDetailModal } from "@/components/debts/SupplierDebtDetailModal";
+import { DebtTableLoading } from "@/components/debts/DebtTableLoading";
 
 type MainSection = "customers" | "suppliers";
 type CustomerSubTab = "customers" | "orders";
@@ -476,11 +477,10 @@ export default function DebtsManagementPage() {
               <button
                 type="button"
                 onClick={() => setMainSection("customers")}
-                className={`flex-1 sm:flex-initial justify-center px-3 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm font-bold rounded-lg sm:rounded-xl transition-all flex items-center gap-1.5 cursor-pointer ${
-                  mainSection === "customers"
-                    ? "bg-zinc-900 text-white dark:bg-white dark:text-zinc-900 shadow-sm"
-                    : "text-zinc-600 dark:text-zinc-400 hover:bg-zinc-200/60 dark:hover:bg-zinc-700/60"
-                }`}
+                className={`flex-1 sm:flex-initial justify-center px-3 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm font-bold rounded-lg sm:rounded-xl transition-all flex items-center gap-1.5 cursor-pointer ${mainSection === "customers"
+                  ? "bg-zinc-900 text-white dark:bg-white dark:text-zinc-900 shadow-sm"
+                  : "text-zinc-600 dark:text-zinc-400 hover:bg-zinc-200/60 dark:hover:bg-zinc-700/60"
+                  }`}
               >
                 <span>👥</span>
                 <span>Khách hàng</span>
@@ -494,11 +494,10 @@ export default function DebtsManagementPage() {
               <button
                 type="button"
                 onClick={() => setMainSection("suppliers")}
-                className={`flex-1 sm:flex-initial justify-center px-3 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm font-bold rounded-lg sm:rounded-xl transition-all flex items-center gap-1.5 cursor-pointer ${
-                  mainSection === "suppliers"
-                    ? "bg-indigo-600 text-white shadow-sm"
-                    : "text-zinc-600 dark:text-zinc-400 hover:bg-zinc-200/60 dark:hover:bg-zinc-700/60"
-                }`}
+                className={`flex-1 sm:flex-initial justify-center px-3 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm font-bold rounded-lg sm:rounded-xl transition-all flex items-center gap-1.5 cursor-pointer ${mainSection === "suppliers"
+                  ? "bg-indigo-600 text-white shadow-sm"
+                  : "text-zinc-600 dark:text-zinc-400 hover:bg-zinc-200/60 dark:hover:bg-zinc-700/60"
+                  }`}
               >
                 <span>🏭</span>
                 <span>Nhà cung cấp</span>
@@ -563,11 +562,10 @@ export default function DebtsManagementPage() {
             type="button"
             onClick={handleRefreshAll}
             disabled={refreshing}
-            className={`px-2.5 sm:px-3.5 py-1.5 rounded-xl text-white font-semibold text-xs transition-colors flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50 shadow-2xs shrink-0 whitespace-nowrap ${
-              mainSection === "suppliers"
-                ? "bg-indigo-600 hover:bg-indigo-700"
-                : "bg-zinc-900 hover:bg-zinc-800 dark:bg-zinc-100 dark:hover:bg-white dark:text-zinc-900"
-            }`}
+            className={`px-2.5 sm:px-3.5 py-1.5 rounded-xl text-white font-semibold text-xs transition-colors flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50 shadow-2xs shrink-0 whitespace-nowrap ${mainSection === "suppliers"
+              ? "bg-indigo-600 hover:bg-indigo-700"
+              : "bg-zinc-900 hover:bg-zinc-800 dark:bg-zinc-100 dark:hover:bg-white dark:text-zinc-900"
+              }`}
             title="Đồng bộ lại dữ liệu từ Sapo Omnichannel"
             aria-label="Đồng bộ lại từ Sapo"
           >
@@ -576,7 +574,7 @@ export default function DebtsManagementPage() {
               {refreshing
                 ? "Đang đồng bộ..."
                 : mainSection === "suppliers"
-                  ? "Đồng bộ NCC Sapo"
+                  ? "Đồng bộ Sapo"
                   : "Đồng bộ Sapo"}
             </span>
           </button>
@@ -600,11 +598,10 @@ export default function DebtsManagementPage() {
             <button
               type="button"
               onClick={() => setCustomerSubTab("customers")}
-              className={`px-2.5 sm:px-3.5 py-1.5 sm:py-2 font-bold text-xs sm:text-sm border-b-2 transition-colors flex items-center gap-1.5 cursor-pointer ${
-                customerSubTab === "customers"
-                  ? "border-rose-600 text-rose-600 dark:text-rose-400"
-                  : "border-transparent text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-300"
-              }`}
+              className={`px-2.5 sm:px-3.5 py-1.5 sm:py-2 font-bold text-xs sm:text-sm border-b-2 transition-colors flex items-center gap-1.5 cursor-pointer ${customerSubTab === "customers"
+                ? "border-rose-600 text-rose-600 dark:text-rose-400"
+                : "border-transparent text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-300"
+                }`}
             >
               <span>👥</span>
               <span>Khách nợ</span>
@@ -616,11 +613,10 @@ export default function DebtsManagementPage() {
             <button
               type="button"
               onClick={() => setCustomerSubTab("orders")}
-              className={`px-2.5 sm:px-3.5 py-1.5 sm:py-2 font-bold text-xs sm:text-sm border-b-2 transition-colors flex items-center gap-1.5 cursor-pointer ${
-                customerSubTab === "orders"
-                  ? "border-rose-600 text-rose-600 dark:text-rose-400"
-                  : "border-transparent text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-300"
-              }`}
+              className={`px-2.5 sm:px-3.5 py-1.5 sm:py-2 font-bold text-xs sm:text-sm border-b-2 transition-colors flex items-center gap-1.5 cursor-pointer ${customerSubTab === "orders"
+                ? "border-rose-600 text-rose-600 dark:text-rose-400"
+                : "border-transparent text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-300"
+                }`}
             >
               <span>📋</span>
               <span>Đơn nợ</span>

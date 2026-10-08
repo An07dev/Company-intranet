@@ -595,14 +595,7 @@ export default function MultiChannelOrdersPage() {
 
           {/* Desktop Right Toolbar (sm:flex hidden) */}
           <div className="hidden sm:flex items-center gap-2 shrink-0">
-            <Link
-              href="/dashboard/webhooks"
-              className="py-2 px-3 text-xs font-medium rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-zinc-700 dark:text-zinc-200 hover:bg-zinc-50 dark:hover:bg-zinc-700/60 transition-colors shadow-2xs flex items-center gap-1.5 shrink-0"
-              title="Cấu hình Webhook"
-            >
-              <span>⚡</span>
-              <span>Cấu hình Webhook</span>
-            </Link>
+
 
             <button
               type="button"
@@ -852,18 +845,6 @@ export default function MultiChannelOrdersPage() {
                   <span className="text-sm">📊</span>
                   <span>Xuất file Excel / CSV</span>
                 </button>
-
-                <Link
-                  href="/dashboard/webhooks"
-                  onClick={() => setShowMoreMenu(false)}
-                  className="w-full text-left p-2.5 rounded-xl hover:bg-zinc-100 dark:hover:bg-zinc-800 flex items-center gap-2.5 text-zinc-700 dark:text-zinc-300 font-medium"
-                >
-                  <span className="text-sm">⚡</span>
-                  <span>Cấu hình Webhook Sapo</span>
-                </Link>
-
-                <div className="my-1 border-t border-zinc-100 dark:border-zinc-800" />
-
                 {/* <button
                   type="button"
                   onClick={() => {
