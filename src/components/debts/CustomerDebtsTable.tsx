@@ -244,29 +244,29 @@ Xin chân thành cảm ơn Quý khách!`;
 
       {/* 2. DESKTOP TABLE VIEW (>= md screens) */}
       <div className="hidden md:block overflow-x-auto">
-        <table className="w-full table-fixed text-left text-xs border-collapse">
+        <table className="w-full table-fixed text-left text-xs border-collapse min-w-[960px]">
           <thead>
-            <tr className="border-b border-zinc-200/80 dark:border-zinc-800 bg-zinc-50/75 dark:bg-zinc-800/40 text-zinc-500 dark:text-zinc-400">
-              <th className="py-2.5 px-4 w-[28%] font-semibold">Tên đối tượng</th>
-              <th className="py-2.5 px-4 w-[14%] font-semibold">Số điện thoại</th>
-              <th className="py-2.5 px-4 w-[13%] font-semibold text-right whitespace-nowrap">Nợ đầu kỳ</th>
-              <th className="py-2.5 px-4 w-[13%] font-semibold text-right whitespace-nowrap">Nợ tăng trong kỳ</th>
-              <th className="py-2.5 px-4 w-[13%] font-semibold text-right whitespace-nowrap">Nợ giảm trong kỳ</th>
-              <th className="py-2.5 px-4 w-[14%] font-semibold text-right whitespace-nowrap">Phải thu/trả cuối kỳ</th>
-              <th className="py-2.5 px-4 w-[8%] font-semibold text-center">Thao tác</th>
+            <tr className="border-b border-zinc-200/80 dark:border-zinc-800 bg-zinc-50/75 dark:bg-zinc-800/40 text-[11px] font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">
+              <th className="py-3 px-3 w-[22%]">Tên đối tượng</th>
+              <th className="py-3 px-3 w-[13%]">Số điện thoại</th>
+              <th className="py-3 px-3 w-[13%] text-right whitespace-nowrap">Nợ đầu kỳ</th>
+              <th className="py-3 px-3 w-[13%] text-right whitespace-nowrap">Nợ tăng trong kỳ</th>
+              <th className="py-3 px-3 w-[13%] text-right whitespace-nowrap">Nợ giảm trong kỳ</th>
+              <th className="py-3 px-3 w-[14%] text-right whitespace-nowrap">Phải thu/trả cuối kỳ</th>
+              <th className="py-3 px-3 w-[12%] text-center">Thao tác</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800/60">
             {loading ? (
               Array.from({ length: 5 }).map((_, i) => (
                 <tr key={i} className="animate-pulse">
-                  <td className="py-3 px-4"><div className="h-4 bg-zinc-200 dark:bg-zinc-800 rounded w-36 mb-1"></div></td>
-                  <td className="py-3 px-4"><div className="h-4 bg-zinc-200 dark:bg-zinc-800 rounded w-24"></div></td>
-                  <td className="py-3 px-4 text-right"><div className="h-4 bg-zinc-200 dark:bg-zinc-800 rounded w-20 ml-auto"></div></td>
-                  <td className="py-3 px-4 text-right"><div className="h-4 bg-zinc-200 dark:bg-zinc-800 rounded w-20 ml-auto"></div></td>
-                  <td className="py-3 px-4 text-right"><div className="h-4 bg-zinc-200 dark:bg-zinc-800 rounded w-20 ml-auto"></div></td>
-                  <td className="py-3 px-4 text-right"><div className="h-4 bg-zinc-200 dark:bg-zinc-800 rounded w-24 ml-auto"></div></td>
-                  <td className="py-3 px-4 text-center"><div className="h-6 bg-zinc-200 dark:bg-zinc-800 rounded w-16 mx-auto"></div></td>
+                  <td className="py-3 px-3"><div className="h-4 bg-zinc-200 dark:bg-zinc-800 rounded w-36 mb-1"></div></td>
+                  <td className="py-3 px-3"><div className="h-4 bg-zinc-200 dark:bg-zinc-800 rounded w-24"></div></td>
+                  <td className="py-3 px-3 text-right"><div className="h-4 bg-zinc-200 dark:bg-zinc-800 rounded w-20 ml-auto"></div></td>
+                  <td className="py-3 px-3 text-right"><div className="h-4 bg-zinc-200 dark:bg-zinc-800 rounded w-20 ml-auto"></div></td>
+                  <td className="py-3 px-3 text-right"><div className="h-4 bg-zinc-200 dark:bg-zinc-800 rounded w-20 ml-auto"></div></td>
+                  <td className="py-3 px-3 text-right"><div className="h-4 bg-zinc-200 dark:bg-zinc-800 rounded w-24 ml-auto"></div></td>
+                  <td className="py-3 px-3 text-center"><div className="h-6 bg-zinc-200 dark:bg-zinc-800 rounded w-16 mx-auto"></div></td>
                 </tr>
               ))
             ) : customers.length === 0 ? (
@@ -288,7 +288,7 @@ Xin chân thành cảm ơn Quý khách!`;
                     className="hover:bg-zinc-50/80 dark:hover:bg-zinc-800/40 transition-colors cursor-pointer group"
                   >
                     {/* Tên đối tượng */}
-                    <td className="py-2.5 px-4">
+                    <td className="py-3 px-3">
                       <div className="flex items-center gap-2.5">
                         <div className="w-7 h-7 rounded-full bg-gradient-to-br from-rose-500 to-orange-500 text-white flex items-center justify-center font-bold text-xs shrink-0 shadow-2xs">
                           {initial}
@@ -298,7 +298,7 @@ Xin chân thành cảm ơn Quý khách!`;
                             {c.name}
                           </div>
                           {c.address ? (
-                            <div className="text-[10px] text-zinc-400 truncate">
+                            <div className="text-[10px] text-zinc-400 truncate max-w-[200px]">
                               {c.address}
                             </div>
                           ) : null}
@@ -307,7 +307,7 @@ Xin chân thành cảm ơn Quý khách!`;
                     </td>
 
                     {/* Số điện thoại */}
-                    <td className="py-2.5 px-4">
+                    <td className="py-3 px-3 whitespace-nowrap">
                       {c.phone ? (
                         <div className="flex items-center gap-1.5 font-mono text-zinc-600 dark:text-zinc-300">
                           <span>{c.phone}</span>
@@ -326,34 +326,34 @@ Xin chân thành cảm ơn Quý khách!`;
                     </td>
 
                     {/* Nợ đầu kỳ */}
-                    <td className="py-2.5 px-4 text-right font-mono text-zinc-700 dark:text-zinc-300 whitespace-nowrap">
+                    <td className="py-3 px-3 text-right font-mono text-zinc-700 dark:text-zinc-300 whitespace-nowrap">
                       {formatVND(c.dau_ky)}
                     </td>
 
                     {/* Nợ tăng trong kỳ */}
-                    <td className="py-2.5 px-4 text-right font-mono text-blue-600 dark:text-blue-400 whitespace-nowrap">
-                      {c.tang_trong_ky > 0 ? formatVND(c.tang_trong_ky) : "0 ₫"}
+                    <td className="py-3 px-3 text-right font-mono font-medium text-blue-600 dark:text-blue-400 whitespace-nowrap">
+                      {c.tang_trong_ky > 0 ? formatVND(c.tang_trong_ky) : "0\u00A0₫"}
                     </td>
 
                     {/* Nợ giảm trong kỳ */}
-                    <td className="py-2.5 px-4 text-right font-mono text-rose-600 dark:text-rose-400 whitespace-nowrap">
-                      {c.giam_trong_ky > 0 ? `-${formatVND(c.giam_trong_ky)}` : "0 ₫"}
+                    <td className="py-3 px-3 text-right font-mono font-medium text-rose-600 dark:text-rose-400 whitespace-nowrap">
+                      {c.giam_trong_ky > 0 ? `-${formatVND(c.giam_trong_ky)}` : "0\u00A0₫"}
                     </td>
 
                     {/* Phải thu/trả cuối kỳ */}
-                    <td className="py-2.5 px-4 text-right whitespace-nowrap">
-                      <span className="font-mono font-bold text-xs text-emerald-600 dark:text-emerald-400">
+                    <td className="py-3 px-3 text-right whitespace-nowrap">
+                      <span className="font-mono font-bold text-xs text-emerald-600 dark:text-emerald-400 inline-block whitespace-nowrap">
                         {formatVND(c.cuoi_ky)}
                       </span>
                     </td>
 
                     {/* Thao tác */}
-                    <td className="py-2.5 px-4 text-center" onClick={(e) => e.stopPropagation()}>
-                      <div className="flex items-center justify-center gap-1.5">
+                    <td className="py-3 px-3 text-center whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
+                      <div className="flex items-center justify-center gap-1.5 whitespace-nowrap">
                         <button
                           type="button"
                           onClick={() => onViewCustomerDetail(c)}
-                          className="px-2.5 py-1 rounded-lg border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-700 font-medium text-[11px] transition-colors"
+                          className="px-2.5 py-1 rounded-lg border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-700 font-medium text-[11px] transition-colors shadow-2xs"
                           title="Xem chi tiết đơn nợ"
                         >
                           Chi tiết
@@ -362,7 +362,7 @@ Xin chân thành cảm ơn Quý khách!`;
                         <button
                           type="button"
                           onClick={(e) => handleCopyStatement(c, e)}
-                          className={`px-2 py-1 rounded-lg font-medium text-[11px] transition-colors border ${
+                          className={`px-2 py-1 rounded-lg font-medium text-[11px] transition-colors border shadow-2xs ${
                             isCopied
                               ? "bg-emerald-50 dark:bg-emerald-950/60 border-emerald-300 dark:border-emerald-800 text-emerald-700 dark:text-emerald-300"
                               : "bg-blue-50 dark:bg-blue-950/60 border-blue-200 dark:border-blue-900 text-blue-700 dark:text-blue-300 hover:bg-blue-100"

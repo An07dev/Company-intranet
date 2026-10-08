@@ -285,7 +285,7 @@ export function SupplierDebtsTable({
 
       {/* 2. DESKTOP TABLE VIEW (>= md screens) */}
       <div className="hidden md:block overflow-x-auto">
-        <table className="w-full table-fixed text-left border-collapse">
+        <table className="w-full table-fixed text-left border-collapse min-w-[1020px]">
           <thead>
             <tr className="border-b border-zinc-200/80 dark:border-zinc-800 bg-zinc-50/75 dark:bg-zinc-800/40 text-[11px] font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">
               <th className="py-3 px-3 w-[4%] text-center">
@@ -296,19 +296,19 @@ export function SupplierDebtsTable({
                   className="rounded border-zinc-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer"
                 />
               </th>
-              <th className="py-3 px-3 w-[12%]">Mã nhà cung cấp</th>
-              <th className="py-3 px-3 w-[22%]">Tên nhà cung cấp</th>
+              <th className="py-3 px-3 w-[11%]">Mã nhà cung cấp</th>
+              <th className="py-3 px-3 w-[21%]">Tên nhà cung cấp</th>
               <th className="py-3 px-3 w-[11%]">Số điện thoại</th>
-              <th className="py-3 px-3 text-right w-[12%] whitespace-nowrap">Nợ đầu kỳ</th>
-              <th className="py-3 px-3 text-right w-[12%] whitespace-nowrap">Nợ tăng trong kỳ</th>
-              <th className="py-3 px-3 text-right w-[12%] whitespace-nowrap">Nợ giảm trong kỳ</th>
-              <th className="py-3 px-3 text-right w-[15%] whitespace-nowrap">
+              <th className="py-3 px-3 text-right w-[11%] whitespace-nowrap">Nợ đầu kỳ</th>
+              <th className="py-3 px-3 text-right w-[11%] whitespace-nowrap">Nợ tăng trong kỳ</th>
+              <th className="py-3 px-3 text-right w-[11%] whitespace-nowrap">Nợ giảm trong kỳ</th>
+              <th className="py-3 px-3 text-right w-[13%] whitespace-nowrap">
                 <span className="inline-flex items-center gap-1 justify-end">
                   <span>Phải thu/trả cuối kỳ</span>
                   <span className="text-[10px] text-indigo-500 font-bold">▲</span>
                 </span>
               </th>
-              <th className="py-3 px-3 text-center w-[8%]">Thao tác</th>
+              <th className="py-3 px-3 text-center w-[7%]">Thao tác</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800/80 text-xs">

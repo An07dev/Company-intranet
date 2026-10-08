@@ -258,17 +258,17 @@ export function OrderDebtsTable({
 
       {/* 2. DESKTOP TABLE VIEW (>= md screens) */}
       <div className="hidden md:block overflow-x-auto">
-        <table className="w-full text-left text-xs border-collapse">
+        <table className="w-full table-fixed text-left text-xs border-collapse min-w-[980px]">
           <thead>
-            <tr className="border-b border-zinc-200/80 dark:border-zinc-800 bg-zinc-50/75 dark:bg-zinc-800/40 text-zinc-500 dark:text-zinc-400">
-              <th className="py-2.5 px-4 font-semibold">Mã đơn & Kênh</th>
-              <th className="py-2.5 px-4 font-semibold">Khách hàng</th>
-              <th className="py-2.5 px-4 font-semibold text-right">Tổng tiền</th>
-              <th className="py-2.5 px-4 font-semibold text-right">Đã thanh toán</th>
-              <th className="py-2.5 px-4 font-semibold text-right">Còn nợ lại</th>
-              <th className="py-2.5 px-4 font-semibold text-center">Tuổi nợ</th>
-              <th className="py-2.5 px-4 font-semibold">Ngày tạo đơn</th>
-              <th className="py-2.5 px-4 font-semibold text-right">Thao tác</th>
+            <tr className="border-b border-zinc-200/80 dark:border-zinc-800 bg-zinc-50/75 dark:bg-zinc-800/40 text-[11px] font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">
+              <th className="py-3 px-3 w-[14%]">Mã đơn & Kênh</th>
+              <th className="py-3 px-3 w-[20%]">Khách hàng</th>
+              <th className="py-3 px-3 w-[12%] text-right whitespace-nowrap">Tổng tiền</th>
+              <th className="py-3 px-3 w-[12%] text-right whitespace-nowrap">Đã thanh toán</th>
+              <th className="py-3 px-3 w-[13%] text-right whitespace-nowrap">Còn nợ lại</th>
+              <th className="py-3 px-3 w-[9%] text-center whitespace-nowrap">Tuổi nợ</th>
+              <th className="py-3 px-3 w-[10%] whitespace-nowrap">Ngày tạo đơn</th>
+              <th className="py-3 px-3 w-[10%] text-center">Thao tác</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800/60">
@@ -303,7 +303,7 @@ export function OrderDebtsTable({
                     className="hover:bg-zinc-50/80 dark:hover:bg-zinc-800/40 transition-colors"
                   >
                     {/* Mã đơn & Kênh */}
-                    <td className="py-2.5 px-4">
+                    <td className="py-3 px-3">
                       <div className="flex items-center gap-1.5">
                         <span className="font-mono font-bold text-zinc-900 dark:text-zinc-100">
                           #{o.order_sn}
@@ -317,52 +317,52 @@ export function OrderDebtsTable({
                           {isCopied ? "✓" : "📋"}
                         </button>
                       </div>
-                      <div className="mt-0.5 flex items-center gap-1.5">
+                      <div className="mt-0.5 flex items-center gap-1.5 flex-wrap">
                         <span className={`px-1.5 py-0.2 rounded text-[10px] font-semibold border ${badge.class}`}>
                           {badge.label}
                         </span>
-                        <span className="text-[10px] text-zinc-400">
+                        <span className="text-[10px] text-zinc-400 truncate">
                           {o.order_status}
                         </span>
                       </div>
                     </td>
 
                     {/* Khách hàng */}
-                    <td className="py-2.5 px-4">
+                    <td className="py-3 px-3">
                       <div className="font-semibold text-zinc-900 dark:text-zinc-100 truncate max-w-[180px]">
                         {o.customer_name}
                       </div>
                       {o.customer_phone ? (
-                        <div className="text-[11px] font-mono text-zinc-500">
+                        <div className="text-[11px] font-mono text-zinc-500 whitespace-nowrap">
                           {o.customer_phone}
                         </div>
                       ) : (
-                        <div className="text-[10px] text-zinc-400 italic">Khách lẻ / Chưa có SĐT</div>
+                        <div className="text-[10px] text-zinc-400 italic">Khách lẻ</div>
                       )}
                     </td>
 
                     {/* Tổng tiền */}
-                    <td className="py-2.5 px-4 text-right font-mono font-semibold text-zinc-800 dark:text-zinc-200">
+                    <td className="py-3 px-3 text-right font-mono font-semibold text-zinc-800 dark:text-zinc-200 whitespace-nowrap">
                       {formatVND(o.total_amount)}
                     </td>
 
                     {/* Đã thanh toán */}
-                    <td className="py-2.5 px-4 text-right font-mono text-emerald-600 dark:text-emerald-400">
+                    <td className="py-3 px-3 text-right font-mono text-emerald-600 dark:text-emerald-400 whitespace-nowrap">
                       {formatVND(o.total_received)}
                     </td>
 
                     {/* Còn nợ lại */}
-                    <td className="py-2.5 px-4 text-right">
-                      <span className="font-mono font-bold text-xs text-rose-600 dark:text-rose-400">
+                    <td className="py-3 px-3 text-right whitespace-nowrap">
+                      <span className="font-mono font-bold text-xs text-rose-600 dark:text-rose-400 inline-block whitespace-nowrap">
                         {formatVND(o.unpaid_amount)}
                       </span>
-                      <div className="text-[10px] text-zinc-400">
+                      <div className="text-[10px] text-zinc-400 whitespace-nowrap">
                         {o.financial_status === "partially_paid" ? "Đã trả một phần" : "Chưa trả"}
                       </div>
                     </td>
 
                     {/* Tuổi nợ */}
-                    <td className="py-2.5 px-4 text-center">
+                    <td className="py-3 px-3 text-center whitespace-nowrap">
                       <span
                         className={`inline-block px-2 py-0.5 rounded-full text-[10px] font-bold ${
                           o.days_overdue >= 60
@@ -377,16 +377,16 @@ export function OrderDebtsTable({
                     </td>
 
                     {/* Ngày tạo */}
-                    <td className="py-2.5 px-4 text-zinc-500 dark:text-zinc-400 text-[11px]">
+                    <td className="py-3 px-3 text-zinc-500 dark:text-zinc-400 text-[11px] whitespace-nowrap">
                       {formatDateTime(o.created_at)}
                     </td>
 
                     {/* Thao tác */}
-                    <td className="py-2.5 px-4 text-right">
+                    <td className="py-3 px-3 text-center whitespace-nowrap">
                       <button
                         type="button"
                         onClick={() => onCollectDebt(o)}
-                        className="px-2.5 py-1 rounded-lg bg-rose-600 hover:bg-rose-700 text-white font-semibold text-xs transition-colors flex items-center gap-1 ml-auto cursor-pointer shadow-2xs shadow-rose-600/30"
+                        className="px-2.5 py-1 rounded-lg bg-rose-600 hover:bg-rose-700 text-white font-semibold text-xs transition-colors inline-flex items-center justify-center gap-1 cursor-pointer shadow-2xs shadow-rose-600/30 whitespace-nowrap"
                       >
                         <span>💳</span>
                         <span>Thu nợ</span>
