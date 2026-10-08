@@ -68,6 +68,8 @@ export default function SuppliersPage() {
   const [isDeleting, setIsDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
 
+  const [syncingSapo, setSyncingSapo] = useState(false);
+
   const fetchSuppliers = async () => {
     setLoading(true);
     setError(null);
@@ -83,6 +85,27 @@ export default function SuppliersPage() {
       toast.error(err.message || "Lỗi kết nối Sapo API");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleSyncFromSapo = async () => {
+    setSyncingSapo(true);
+    try {
+      const res = await fetch("/api/sapo/suppliers/sync", { method: "POST" });
+      const json = await res.json();
+      if (!res.ok || !json.success) {
+        throw new Error(json.message || "Lỗi đồng bộ nhà cung cấp từ Sapo");
+      }
+      toast.success(json.message || "Đã đồng bộ nhà cung cấp từ Sapo thành công!");
+      if (json.data?.suppliers && Array.isArray(json.data.suppliers)) {
+        setSuppliers(json.data.suppliers);
+      } else {
+        await fetchSuppliers();
+      }
+    } catch (err: any) {
+      toast.error(err.message || "Không thể đồng bộ nhà cung cấp từ Sapo");
+    } finally {
+      setSyncingSapo(false);
     }
   };
 
@@ -326,8 +349,18 @@ export default function SuppliersPage() {
           <div className="hidden sm:flex items-center gap-2 shrink-0">
             <button
               type="button"
+              onClick={handleSyncFromSapo}
+              disabled={syncingSapo || loading}
+              className="py-2 px-3 text-xs font-semibold rounded-xl border border-emerald-200 dark:border-emerald-800/60 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-100 dark:hover:bg-emerald-900/50 transition flex items-center gap-1.5 cursor-pointer disabled:opacity-60 shadow-2xs whitespace-nowrap"
+              title="Đồng bộ danh sách nhà cung cấp mới nhất từ Sapo Omnichannel"
+            >
+              <span className={syncingSapo ? "animate-spin" : ""}>🔄</span>
+              <span>{syncingSapo ? "Đang đồng bộ Sapo..." : "Đồng bộ Sapo"}</span>
+            </button>
+            <button
+              type="button"
               onClick={() => setIsCreateOpen(true)}
-              className="py-2 px-3.5 text-xs font-semibold rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white transition flex items-center gap-1.5 shadow-2xs cursor-pointer"
+              className="py-2 px-3.5 text-xs font-semibold rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white transition flex items-center gap-1.5 shadow-2xs cursor-pointer whitespace-nowrap"
             >
               <span>➕</span>
               <span>Thêm NCC mới</span>
@@ -335,15 +368,15 @@ export default function SuppliersPage() {
             <button
               type="button"
               onClick={fetchSuppliers}
-              disabled={loading}
-              className="py-2 px-3 text-xs font-semibold rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-zinc-700 dark:text-zinc-200 hover:bg-zinc-50 dark:hover:bg-zinc-700 transition flex items-center gap-1.5 cursor-pointer disabled:opacity-60 shadow-2xs"
+              disabled={loading || syncingSapo}
+              className="py-2 px-3 text-xs font-semibold rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-zinc-700 dark:text-zinc-200 hover:bg-zinc-50 dark:hover:bg-zinc-700 transition flex items-center gap-1.5 cursor-pointer disabled:opacity-60 shadow-2xs whitespace-nowrap"
             >
               <span className={loading ? "animate-spin" : ""}>🔄</span>
               <span>Làm mới</span>
             </button>
             <Link
               href="/dashboard/shopee-products"
-              className="py-2 px-3.5 text-xs font-semibold rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-zinc-700 dark:text-zinc-200 hover:bg-zinc-50 dark:hover:bg-zinc-700 transition flex items-center gap-1.5 shadow-2xs"
+              className="py-2 px-3.5 text-xs font-semibold rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-zinc-700 dark:text-zinc-200 hover:bg-zinc-50 dark:hover:bg-zinc-700 transition flex items-center gap-1.5 shadow-2xs whitespace-nowrap"
             >
               <span>📦</span>
               <span>Sản phẩm</span>
@@ -351,32 +384,50 @@ export default function SuppliersPage() {
           </div>
         </div>
 
-        {/* Mobile Toolbar (sm:hidden) */}
-        <div className="sm:hidden pt-2.5 border-t border-zinc-100 dark:border-zinc-800/80 flex items-center gap-2">
-          <button
-            type="button"
-            onClick={() => setIsCreateOpen(true)}
-            className="flex-1 py-2 px-3 text-xs font-bold rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white shadow-2xs flex items-center justify-center gap-1.5 active:scale-[0.98] transition cursor-pointer"
-          >
-            <span>➕</span>
-            <span>Thêm NCC</span>
-          </button>
-          <Link
-            href="/dashboard/shopee-products"
-            className="py-2 px-3 text-xs font-semibold rounded-xl border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-200 active:scale-95 transition flex items-center gap-1 cursor-pointer shrink-0"
-          >
-            <span>📦</span>
-            <span>Sản phẩm</span>
-          </Link>
-          <button
-            type="button"
-            onClick={fetchSuppliers}
-            disabled={loading}
-            className="w-9 h-9 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-200 active:scale-95 transition flex items-center justify-center cursor-pointer disabled:opacity-50 shrink-0"
-            title="Làm mới danh sách"
-          >
-            <span className={loading ? "animate-spin" : ""}>🔄</span>
-          </button>
+        {/* Mobile Toolbar (sm:hidden) - Tối ưu 2 hàng sạch sẽ, chống mất text */}
+        <div className="sm:hidden pt-2.5 border-t border-zinc-100 dark:border-zinc-800/80 space-y-2">
+          {/* Hàng 1: 2 nút thao tác chính */}
+          <div className="grid grid-cols-2 gap-2">
+            <button
+              type="button"
+              onClick={handleSyncFromSapo}
+              disabled={syncingSapo || loading}
+              className="h-10 px-3 text-xs font-semibold rounded-xl border border-emerald-200 dark:border-emerald-800/60 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-100 dark:hover:bg-emerald-900/50 active:scale-[0.98] transition flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-60 whitespace-nowrap shadow-2xs"
+              title="Đồng bộ từ Sapo"
+            >
+              <span className={`shrink-0 ${syncingSapo ? "animate-spin" : ""}`}>🔄</span>
+              <span>{syncingSapo ? "Đang đồng bộ..." : "Đồng bộ Sapo"}</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setIsCreateOpen(true)}
+              className="h-10 px-3 text-xs font-bold rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white shadow-2xs flex items-center justify-center gap-1.5 active:scale-[0.98] transition cursor-pointer whitespace-nowrap"
+            >
+              <span className="shrink-0">➕</span>
+              <span>Thêm NCC mới</span>
+            </button>
+          </div>
+
+          {/* Hàng 2: Làm mới và Sản phẩm */}
+          <div className="grid grid-cols-2 gap-2">
+            <button
+              type="button"
+              onClick={fetchSuppliers}
+              disabled={loading || syncingSapo}
+              className="h-9 px-3 text-xs font-semibold rounded-xl border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-200 active:scale-[0.98] transition flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50 whitespace-nowrap shadow-2xs"
+              title="Làm mới danh sách"
+            >
+              <span className={`shrink-0 ${loading ? "animate-spin" : ""}`}>🔄</span>
+              <span>Làm mới</span>
+            </button>
+            <Link
+              href="/dashboard/shopee-products"
+              className="h-9 px-3 text-xs font-semibold rounded-xl border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-200 active:scale-95 transition flex items-center justify-center gap-1.5 cursor-pointer whitespace-nowrap shadow-2xs"
+            >
+              <span className="shrink-0">📦</span>
+              <span>Sản phẩm</span>
+            </Link>
+          </div>
         </div>
       </div>
 

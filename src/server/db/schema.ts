@@ -951,6 +951,60 @@ export const MongoLoyalCustomerModel: Model<ILoyalCustomerDocument> =
   mongoose.models.LoyalCustomer ||
   mongoose.model<ILoyalCustomerDocument>("LoyalCustomer", LoyalCustomerSchema, "loyal_customers");
 
+// ==========================================
+// SAPO CUSTOMERS CACHE / SYNC (DANH BẠ KHÁCH HÀNG SAPO)
+// ==========================================
+export interface ISapoCustomerDocument {
+  id: number;
+  first_name: string | null;
+  last_name: string | null;
+  name: string;
+  phone: string | null;
+  email: string | null;
+  orders_count: number;
+  total_spent: number;
+  last_order_id: number | null;
+  last_order_name: string | null;
+  tags: string;
+  note: string | null;
+  created_on: string;
+  modified_on: string;
+  default_address?: any;
+  addresses?: any[];
+  synced_at: string;
+}
 
+const SapoCustomerSchema = new Schema<ISapoCustomerDocument>(
+  {
+    id: { type: Number, required: true, unique: true, index: true },
+    first_name: { type: String, default: "" },
+    last_name: { type: String, default: "" },
+    name: { type: String, default: "", index: true },
+    phone: { type: String, default: "", index: true },
+    email: { type: String, default: "", index: true },
+    orders_count: { type: Number, default: 0 },
+    total_spent: { type: Number, default: 0, index: true },
+    last_order_id: { type: Number, default: null },
+    last_order_name: { type: String, default: null },
+    tags: { type: String, default: "" },
+    note: { type: String, default: null },
+    created_on: { type: String, required: true, index: true },
+    modified_on: { type: String, required: true, index: true },
+    default_address: { type: Schema.Types.Mixed, default: null },
+    addresses: { type: [Schema.Types.Mixed], default: [] },
+    synced_at: { type: String, required: true },
+  },
+  {
+    timestamps: false,
+    versionKey: false,
+    collection: "sapo_customers",
+  }
+);
 
+SapoCustomerSchema.index({ created_on: -1 });
+SapoCustomerSchema.index({ modified_on: -1 });
+SapoCustomerSchema.index({ id: -1 });
 
+export const MongoSapoCustomerModel: Model<ISapoCustomerDocument> =
+  mongoose.models.SapoCustomer ||
+  mongoose.model<ISapoCustomerDocument>("SapoCustomer", SapoCustomerSchema, "sapo_customers");

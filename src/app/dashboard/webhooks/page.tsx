@@ -11,6 +11,38 @@ interface PingResult {
   timestamp: string;
 }
 
+interface SapoWebhookItem {
+  id: number;
+  topic: string;
+  topic_name: string;
+  address: string;
+  format: string;
+  created_on: string;
+  status: string;
+  is_valid_target: boolean;
+}
+
+interface SapoRequiredTopic {
+  topic: string;
+  label: string;
+  registered: boolean;
+  webhook_id: number | null;
+  address: string | null;
+}
+
+interface SapoPingResult {
+  success: boolean;
+  connected: boolean;
+  latency_ms: number;
+  store_domain: string;
+  total_webhooks: number;
+  webhooks: SapoWebhookItem[];
+  required_topics: SapoRequiredTopic[];
+  all_active: boolean;
+  timestamp: string;
+  message: string;
+}
+
 interface WebhookLog {
   id?: string;
   level: string;
@@ -27,6 +59,10 @@ export default function WebhooksPage() {
   const [copiedUrl, setCopiedUrl] = useState(false);
   const [pinging, setPinging] = useState(false);
   const [pingResult, setPingResult] = useState<PingResult | null>(null);
+
+  // Ping Sapo Webhook State
+  const [pingingSapo, setPingingSapo] = useState(false);
+  const [sapoPingResult, setSapoPingResult] = useState<SapoPingResult | null>(null);
 
   // Test Simulation State
   const [simulating, setSimulating] = useState(false);
@@ -52,8 +88,30 @@ export default function WebhooksPage() {
     setTimeout(() => setCopiedUrl(false), 2000);
   };
 
-  // Test Ping Endpoint
+  // Ping kiểm tra kết nối trực tiếp tới Sapo Omnichannel API (chỉ chạy khi người dùng chủ động bấm nút)
+  const handlePingSapo = async () => {
+    if (pingingSapo) return;
+    setPingingSapo(true);
+    try {
+      const res = await fetch("/api/sapo/webhooks/ping");
+      const data: SapoPingResult = await res.json();
+      setSapoPingResult(data);
+
+      if (res.ok && data.success && data.connected) {
+        toast.success(`Ping Sapo thành công! Độ trễ: ${data.latency_ms}ms (${data.total_webhooks}/5 webhook đang Live)`);
+      } else {
+        toast.error(data.message || `Lỗi kết nối tới Sapo (Mã ${res.status})`);
+      }
+    } catch (err: any) {
+      toast.error(`Lỗi kết nối khi ping tới Sapo: ${err?.message || "Không phản hồi"}`);
+    } finally {
+      setPingingSapo(false);
+    }
+  };
+
+  // Test Ping Endpoint nội bộ (Vercel)
   const handlePing = async () => {
+    if (pinging) return;
     setPinging(true);
     const start = performance.now();
     try {
@@ -69,7 +127,7 @@ export default function WebhooksPage() {
       });
 
       if (res.ok) {
-        toast.success(`Ping thành công! Độ trễ: ${latency}ms`);
+        toast.success(`Ping máy chủ thành công! Độ trễ: ${latency}ms`);
       } else {
         toast.error(`Endpoint trả về mã ${res.status}`);
       }
@@ -191,23 +249,24 @@ export default function WebhooksPage() {
           </div>
 
           {/* Action Toolbar */}
-          <div className="grid grid-cols-2 gap-2 sm:flex sm:items-center sm:gap-2.5 shrink-0 pt-2 sm:pt-0 border-t sm:border-t-0 border-zinc-100 dark:border-zinc-800/80">
+          <div className="grid grid-cols-2 sm:flex sm:items-center sm:gap-2.5 shrink-0 pt-2 sm:pt-0 border-t sm:border-t-0 border-zinc-100 dark:border-zinc-800/80">
             <button
               type="button"
-              onClick={handlePing}
-              disabled={pinging}
-              className="py-2 px-3 sm:px-4 rounded-xl text-xs sm:text-sm font-semibold border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-zinc-700 dark:text-zinc-200 hover:bg-zinc-50 dark:hover:bg-zinc-700 transition shadow-2xs flex items-center justify-center gap-1.5 disabled:opacity-50 cursor-pointer active:scale-95"
+              onClick={handlePingSapo}
+              disabled={pingingSapo}
+              className="py-2 px-3 sm:px-4 rounded-xl text-xs sm:text-sm font-semibold bg-emerald-600 hover:bg-emerald-700 text-white transition shadow-2xs flex items-center justify-center gap-1.5 disabled:opacity-60 cursor-pointer active:scale-95 whitespace-nowrap"
+              title="Gửi tín hiệu kiểm tra kết nối tới Sapo Omnichannel API"
             >
-              <span className={`text-emerald-500 ${pinging ? "animate-spin" : ""}`}>🔄</span>
-              <span className="truncate">{pinging ? "Đang ping..." : "Kiểm tra Ping"}</span>
+              <span className={`text-sm ${pingingSapo ? "animate-spin" : ""}`}>⚡</span>
+              <span>{pingingSapo ? "Đang ping Sapo..." : "Ping kết nối Sapo"}</span>
             </button>
 
             <Link
               href="/dashboard/orders"
-              className="py-2 px-3 sm:px-4 rounded-xl text-xs sm:text-sm font-semibold bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 hover:opacity-90 transition shadow-2xs flex items-center justify-center gap-1.5 active:scale-95 text-center"
+              className="py-2 px-3 sm:px-4 rounded-xl text-xs sm:text-sm font-semibold bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 hover:opacity-90 transition shadow-2xs flex items-center justify-center gap-1.5 active:scale-95 text-center whitespace-nowrap"
             >
               <span>📦</span>
-              <span className="truncate">Xem đơn hàng</span>
+              <span>Xem đơn hàng</span>
             </Link>
           </div>
         </div>
@@ -225,7 +284,7 @@ export default function WebhooksPage() {
               </h2>
             </div>
             <span className="text-[11px] px-2.5 py-0.5 rounded-full font-mono font-semibold bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 shrink-0">
-              ID: {webhookId}
+              {sapoPingResult ? `${sapoPingResult.total_webhooks} Webhook Live` : `ID: ${webhookId}`}
             </span>
           </div>
 
@@ -269,7 +328,7 @@ export default function WebhooksPage() {
               <div className="p-2.5 sm:p-3 rounded-xl bg-zinc-50 dark:bg-zinc-800/40 border border-zinc-100 dark:border-zinc-800/80">
                 <p className="text-[10px] text-zinc-500 uppercase font-semibold">Sự kiện kích hoạt</p>
                 <p className="text-xs font-bold text-indigo-600 dark:text-indigo-400 mt-0.5">
-                  orders/create
+                  {sapoPingResult ? `${sapoPingResult.total_webhooks} sự kiện Live` : "5 sự kiện"}
                 </p>
               </div>
 
@@ -305,336 +364,143 @@ export default function WebhooksPage() {
           </div>
         </div>
 
-        {/* Card 2: Kết quả kiểm tra (Liveness) */}
+        {/* Card 2: Kết quả kiểm tra kết nối tới Sapo (Live) */}
         <div className="rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-3.5 sm:p-5 shadow-2xs sm:shadow-sm flex flex-col justify-between space-y-3">
           <div>
-            <h3 className="text-sm font-bold text-zinc-900 dark:text-zinc-100 flex items-center gap-2 mb-1.5">
-              <span className="w-2 h-2 rounded-full bg-indigo-500 shrink-0" />
-              Kiểm tra trạng thái máy chủ
-            </h3>
+            <div className="flex items-center justify-between gap-2 mb-1.5">
+              <h3 className="text-sm font-bold text-zinc-900 dark:text-zinc-100 flex items-center gap-2">
+                <span className={`w-2.5 h-2.5 rounded-full shrink-0 ${sapoPingResult?.connected ? "bg-emerald-500 animate-pulse" : "bg-amber-500"}`} />
+                <span>Kiểm tra kết nối Sapo</span>
+              </h3>
+              <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${
+                sapoPingResult?.connected 
+                  ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800"
+                  : "bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-300 border-zinc-200 dark:border-zinc-700"
+              }`}>
+                {sapoPingResult?.connected ? "Sapo Live" : "Chưa kiểm tra"}
+              </span>
+            </div>
+            
             <p className="text-[11px] text-zinc-500 leading-relaxed">
-              Gửi tín hiệu HTTP request kiểm tra độ trễ kết nối tới endpoint trên Vercel.
+              Gửi tín hiệu tới Sapo Admin REST API để kiểm tra kết nối và xác thực 5 sự kiện Webhook đang hoạt động.
             </p>
 
-            {pingResult ? (
+            {sapoPingResult ? (
               <div className="mt-3 p-3 rounded-xl border bg-zinc-50 dark:bg-zinc-800/60 border-zinc-200 dark:border-zinc-700 space-y-2">
                 <div className="flex items-center justify-between text-xs">
-                  <span className="text-zinc-500 text-[11px]">Mã phản hồi:</span>
-                  <span
-                    className={`font-mono font-bold px-2 py-0.5 rounded text-[11px] ${
-                      pingResult.status === 200
-                        ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/60 dark:text-emerald-300"
-                        : "bg-rose-100 text-rose-800 dark:bg-rose-900/60 dark:text-rose-300"
-                    }`}
-                  >
-                    HTTP {pingResult.status} OK
+                  <span className="text-zinc-500 text-[11px]">Trạng thái kết nối:</span>
+                  <span className={`font-mono font-bold px-2 py-0.5 rounded text-[11px] ${
+                    sapoPingResult.connected 
+                      ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/60 dark:text-emerald-300"
+                      : "bg-rose-100 text-rose-800 dark:bg-rose-900/60 dark:text-rose-300"
+                  }`}>
+                    {sapoPingResult.connected ? "HTTP 200 • Đã kết nối" : "Lỗi kết nối"}
                   </span>
                 </div>
+
                 <div className="flex items-center justify-between text-xs">
-                  <span className="text-zinc-500 text-[11px]">Độ trễ phản hồi:</span>
-                  <span className="font-mono font-bold text-zinc-800 dark:text-zinc-200">{pingResult.latencyMs} ms</span>
+                  <span className="text-zinc-500 text-[11px]">Độ trễ tới Sapo:</span>
+                  <span className="font-mono font-bold text-emerald-600 dark:text-emerald-400">
+                    ⚡ {sapoPingResult.latency_ms} ms
+                  </span>
                 </div>
+
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-zinc-500 text-[11px]">Webhook đang kích hoạt:</span>
+                  <span className="font-bold text-zinc-800 dark:text-zinc-200">
+                    {sapoPingResult.total_webhooks} / 5 sự kiện
+                  </span>
+                </div>
+
                 <div className="flex items-center justify-between text-xs">
                   <span className="text-zinc-500 text-[11px]">Thời gian kiểm tra:</span>
-                  <span className="font-mono text-zinc-500">{pingResult.timestamp}</span>
+                  <span className="font-mono text-zinc-500">
+                    {new Date(sapoPingResult.timestamp).toLocaleTimeString("vi-VN")}
+                  </span>
                 </div>
-                <div className="text-[11px] text-zinc-600 dark:text-zinc-400 border-t border-zinc-200/60 dark:border-zinc-700/60 pt-2 truncate">
-                  {pingResult.message}
+
+                {/* 5 sự kiện webhook */}
+                {Array.isArray(sapoPingResult?.required_topics) && sapoPingResult.required_topics.length > 0 && (
+                  <div className="pt-2 border-t border-zinc-200/60 dark:border-zinc-700/60 space-y-1">
+                    <div className="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider">
+                      Sự kiện Webhook xác nhận từ Sapo:
+                    </div>
+                    <div className="grid grid-cols-1 gap-1 text-[11px]">
+                      {sapoPingResult.required_topics.map((item) => (
+                        <div key={item.topic} className="flex items-center justify-between py-0.5">
+                          <span className="text-zinc-700 dark:text-zinc-300 flex items-center gap-1.5 font-mono text-[10.5px]">
+                            <span className={item.registered ? "text-emerald-500" : "text-zinc-400"}>
+                              {item.registered ? "✓" : "○"}
+                            </span>
+                            <span>{item.topic}</span>
+                          </span>
+                          <span className={`text-[10px] px-1.5 py-0.2 rounded font-semibold ${
+                            item.registered 
+                              ? "bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300"
+                              : "bg-zinc-100 text-zinc-500"
+                          }`}>
+                            {item.registered ? `ID: ${item.webhook_id}` : "Chưa đăng ký"}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                <div className="text-[11px] text-zinc-600 dark:text-zinc-400 border-t border-zinc-200/60 dark:border-zinc-700/60 pt-2">
+                  {sapoPingResult.message}
                 </div>
               </div>
             ) : (
               <div className="mt-3 p-4 rounded-xl border border-dashed border-zinc-200 dark:border-zinc-800 text-center">
-                <p className="text-xs text-zinc-400">Chưa kiểm tra. Hãy nhấn nút &quot;Ping ngay&quot;.</p>
+                <p className="text-xs text-zinc-400">Chưa kiểm tra. Hãy nhấn nút &quot;Ping kiểm tra kết nối tới Sapo&quot; bên dưới.</p>
+              </div>
+            )}
+
+            {/* Thông tin phụ ping Vercel nếu đã kiểm tra */}
+            {pingResult && (
+              <div className="mt-2 p-2.5 rounded-lg bg-zinc-50 dark:bg-zinc-800/40 border border-zinc-200/60 dark:border-zinc-700/60 text-[11px] space-y-1">
+                <div className="flex items-center justify-between text-zinc-600 dark:text-zinc-400">
+                  <span>Máy chủ Vercel:</span>
+                  <span className="font-mono font-semibold text-emerald-600 dark:text-emerald-400">
+                    HTTP {pingResult.status} ({pingResult.latencyMs}ms)
+                  </span>
+                </div>
               </div>
             )}
           </div>
 
-          <button
-            type="button"
-            onClick={handlePing}
-            disabled={pinging}
-            className="w-full py-2.5 rounded-xl text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white transition flex items-center justify-center gap-1.5 shadow-2xs disabled:opacity-50 cursor-pointer active:scale-95"
-          >
-            <span className={`text-sm ${pinging ? "animate-spin" : ""}`}>⚡</span>
-            <span>{pinging ? "Đang gửi tín hiệu..." : "Ping kiểm tra ngay"}</span>
-          </button>
+          <div className="space-y-2 pt-2">
+            <button
+              type="button"
+              onClick={handlePingSapo}
+              disabled={pingingSapo}
+              className="w-full py-2.5 rounded-xl text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white transition flex items-center justify-center gap-1.5 shadow-2xs disabled:opacity-50 cursor-pointer active:scale-95"
+            >
+              <span className={`text-sm ${pingingSapo ? "animate-spin" : ""}`}>⚡</span>
+              <span>{pingingSapo ? "Đang gửi tín hiệu tới Sapo..." : "Ping kiểm tra kết nối tới Sapo"}</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={handlePing}
+              disabled={pinging}
+              className="w-full py-1.5 rounded-lg text-[11px] font-semibold text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition flex items-center justify-center gap-1 cursor-pointer"
+            >
+              <span className={pinging ? "animate-spin" : ""}>🔄</span>
+              <span>{pinging ? "Đang ping máy chủ Vercel..." : "Kiểm tra thêm Endpoint Vercel"}</span>
+            </button>
+          </div>
         </div>
       </div>
 
       {/* 3. Grid: Playground Test Order & Recent Logs */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-3.5 sm:gap-5">
         {/* Playground: Gửi đơn test */}
-        <div className="lg:col-span-5 rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-3.5 sm:p-5 shadow-2xs sm:shadow-sm space-y-3.5">
-          <div>
-            <h3 className="text-sm sm:text-base font-bold text-zinc-900 dark:text-zinc-100 flex items-center gap-2">
-              <span className="p-1 rounded-lg bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 text-sm">
-                🧪
-              </span>
-              Bắn đơn hàng giả lập (Simulator)
-            </h3>
-            <p className="text-[11px] text-zinc-500 mt-1">
-              Mô phỏng 1 đơn hàng từ Sapo bắn sang Webhook để kiểm tra lưu database tức thì.
-            </p>
-          </div>
 
-          <form onSubmit={handleSimulateOrder} className="space-y-3">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-              <div>
-                <label className="block text-[11px] font-semibold text-zinc-700 dark:text-zinc-300 mb-1">
-                  Kênh / Sàn
-                </label>
-                <select
-                  value={testShop}
-                  onChange={(e) => setTestShop(e.target.value)}
-                  className="w-full px-3 py-2 text-xs rounded-xl bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-zinc-800 dark:text-zinc-200 focus:ring-2 focus:ring-indigo-500 focus:outline-hidden font-medium"
-                >
-                  <option value="Shopee">Shopee</option>
-                  <option value="TikTok">TikTok Shop</option>
-                  <option value="Lazada">Lazada</option>
-                  <option value="POS">Sapo POS (Tại quầy)</option>
-                  <option value="Website">Sapo Website</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-[11px] font-semibold text-zinc-700 dark:text-zinc-300 mb-1">
-                  Mã đơn hàng
-                </label>
-                <input
-                  type="text"
-                  value={testOrderNumber}
-                  onChange={(e) => setTestOrderNumber(e.target.value)}
-                  required
-                  className="w-full px-3 py-2 text-xs rounded-xl bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-zinc-800 dark:text-zinc-200 font-mono font-bold focus:ring-2 focus:ring-indigo-500 focus:outline-hidden"
-                />
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-              <div>
-                <label className="block text-[11px] font-semibold text-zinc-700 dark:text-zinc-300 mb-1">
-                  Tên người mua
-                </label>
-                <input
-                  type="text"
-                  value={testCustomer}
-                  onChange={(e) => setTestCustomer(e.target.value)}
-                  required
-                  className="w-full px-3 py-2 text-xs rounded-xl bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-zinc-800 dark:text-zinc-200 focus:ring-2 focus:ring-indigo-500 focus:outline-hidden"
-                />
-              </div>
-
-              <div>
-                <label className="block text-[11px] font-semibold text-zinc-700 dark:text-zinc-300 mb-1">
-                  Tổng tiền (VNĐ)
-                </label>
-                <input
-                  type="number"
-                  value={testAmount}
-                  onChange={(e) => setTestAmount(e.target.value)}
-                  required
-                  className="w-full px-3 py-2 text-xs rounded-xl bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-zinc-800 dark:text-zinc-200 font-mono font-bold focus:ring-2 focus:ring-indigo-500 focus:outline-hidden"
-                />
-              </div>
-            </div>
-
-            <button
-              type="submit"
-              disabled={simulating}
-              className="w-full py-2.5 rounded-xl text-xs font-bold bg-indigo-600 hover:bg-indigo-700 text-white transition flex items-center justify-center gap-1.5 shadow-2xs disabled:opacity-50 cursor-pointer active:scale-95"
-            >
-              <span>{simulating ? "⏳" : "🚀"}</span>
-              <span>{simulating ? "Đang gửi dữ liệu..." : "Bắn đơn test sang Webhook"}</span>
-            </button>
-          </form>
-
-          {simulationResult && (
-            <div className="p-3 rounded-xl bg-zinc-50 dark:bg-zinc-800/60 border border-zinc-200 dark:border-zinc-700 space-y-1.5 animate-in fade-in duration-150">
-              <div className="flex items-center justify-between text-[11px]">
-                <span className="font-semibold text-emerald-600 dark:text-emerald-400">
-                  ✓ Phản hồi từ Webhook ({simulationResult.success ? "Thành công" : "Lỗi"}):
-                </span>
-                <button
-                  type="button"
-                  onClick={() => setSimulationResult(null)}
-                  className="text-zinc-400 hover:text-zinc-600 text-xs"
-                >
-                  ✕
-                </button>
-              </div>
-              <pre className="text-[10px] font-mono text-zinc-700 dark:text-zinc-300 overflow-x-auto max-h-36 p-2 rounded-lg bg-white dark:bg-zinc-900 border border-zinc-200/60 dark:border-zinc-800">
-                {JSON.stringify(simulationResult, null, 2)}
-              </pre>
-            </div>
-          )}
-        </div>
 
         {/* Bảng sự kiện Webhook gần đây */}
-        <div className="lg:col-span-7 rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-3.5 sm:p-5 shadow-2xs sm:shadow-sm space-y-3.5">
-          <div className="flex items-center justify-between gap-2">
-            <div>
-              <h3 className="text-sm sm:text-base font-bold text-zinc-900 dark:text-zinc-100 flex items-center gap-2">
-                <span className="p-1 rounded-lg bg-purple-50 dark:bg-purple-950/60 text-purple-600 dark:text-purple-400 text-sm">
-                  📋
-                </span>
-                Nhật ký sự kiện đồng bộ gần đây
-              </h3>
-              <p className="text-[11px] text-zinc-500 mt-0.5 line-clamp-1">
-                Các sự kiện webhook và tiến trình đồng bộ đơn ghi nhận mới nhất.
-              </p>
-            </div>
 
-            <button
-              type="button"
-              onClick={fetchRecentLogs}
-              disabled={loadingLogs}
-              className="p-1.5 rounded-xl border border-zinc-200 dark:border-zinc-700 text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200 transition-colors cursor-pointer active:scale-95 disabled:opacity-50 shrink-0"
-              title="Tải lại nhật ký"
-            >
-              <span className={`inline-block ${loadingLogs ? "animate-spin" : ""}`}>🔄</span>
-            </button>
-          </div>
-
-          {loadingLogs ? (
-            <div className="py-10 text-center text-xs text-zinc-400 flex items-center justify-center gap-2">
-              <span className="animate-spin text-sm">⏳</span>
-              <span>Đang tải nhật ký sự kiện...</span>
-            </div>
-          ) : recentLogs.length === 0 ? (
-            <div className="py-10 text-center text-xs text-zinc-400 border border-dashed border-zinc-200 dark:border-zinc-800 rounded-xl space-y-1">
-              <div className="text-xl">📭</div>
-              <div>Chưa có sự kiện nào được ghi nhận. Hãy thử bắn 1 đơn test!</div>
-            </div>
-          ) : (
-            <div className="space-y-3">
-              {/* =========================================================================
-                  GIAO DIỆN MOBILE: DANH SÁCH THẺ LOG (CARD VIEW - md:hidden)
-                 ========================================================================= */}
-              <div className="md:hidden space-y-2">
-                {recentLogs.map((log, idx) => {
-                  const isSelected = selectedLog?.id === log.id;
-                  return (
-                    <div
-                      key={log.id || idx}
-                      className="p-2.5 rounded-xl bg-zinc-50/70 dark:bg-zinc-800/40 border border-zinc-200/60 dark:border-zinc-800 space-y-1.5 text-xs"
-                    >
-                      <div className="flex items-center justify-between gap-2">
-                        <span className="font-mono text-[11px] text-zinc-500">
-                          {new Date(log.createdAt).toLocaleTimeString("vi-VN")}
-                        </span>
-                        <span
-                          className={`px-2 py-0.2 rounded-full text-[10px] font-bold uppercase font-mono ${
-                            log.level === "success"
-                              ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300"
-                              : log.level === "error"
-                              ? "bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300"
-                              : "bg-indigo-100 text-indigo-800 dark:bg-indigo-950 dark:text-indigo-300"
-                          }`}
-                        >
-                          {log.level}
-                        </span>
-                      </div>
-
-                      <div className="font-medium text-zinc-800 dark:text-zinc-200 leading-snug break-words">
-                        {log.message}
-                      </div>
-
-                      {log.details && (
-                        <div className="pt-1 flex items-center justify-end">
-                          <button
-                            type="button"
-                            onClick={() => setSelectedLog(isSelected ? null : log)}
-                            className="text-xs text-indigo-600 dark:text-indigo-400 font-semibold hover:underline"
-                          >
-                            {isSelected ? "Đóng JSON ▲" : "Xem Payload ▼"}
-                          </button>
-                        </div>
-                      )}
-
-                      {isSelected && log.details && (
-                        <div className="mt-2 p-2 rounded-lg bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 animate-in fade-in duration-150">
-                          <pre className="text-[10px] font-mono text-zinc-800 dark:text-zinc-200 overflow-x-auto max-h-40">
-                            {JSON.stringify(log.details, null, 2)}
-                          </pre>
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-
-              {/* =========================================================================
-                  GIAO DIỆN DESKTOP: BẢNG TABLE (hidden md:block)
-                 ========================================================================= */}
-              <div className="hidden md:block overflow-x-auto">
-                <table className="w-full text-left text-xs">
-                  <thead>
-                    <tr className="border-b border-zinc-100 dark:border-zinc-800 text-zinc-400 uppercase text-[10px] tracking-wider">
-                      <th className="py-2.5 font-medium">Thời gian</th>
-                      <th className="py-2.5 font-medium">Trạng thái</th>
-                      <th className="py-2.5 font-medium">Nội dung sự kiện</th>
-                      <th className="py-2.5 font-medium text-right">Chi tiết</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800/60">
-                    {recentLogs.map((log, idx) => (
-                      <tr key={log.id || idx} className="hover:bg-zinc-50/60 dark:hover:bg-zinc-800/30 transition-colors">
-                        <td className="py-2.5 text-zinc-500 font-mono text-[11px] whitespace-nowrap">
-                          {new Date(log.createdAt).toLocaleTimeString("vi-VN")}
-                        </td>
-                        <td className="py-2.5 whitespace-nowrap">
-                          <span
-                            className={`px-2 py-0.5 rounded text-[10px] font-semibold uppercase ${
-                              log.level === "success"
-                                ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300"
-                                : log.level === "error"
-                                ? "bg-rose-50 text-rose-700 dark:bg-rose-950/60 dark:text-rose-300"
-                                : "bg-indigo-50 text-indigo-700 dark:bg-indigo-950/60 dark:text-indigo-300"
-                            }`}
-                          >
-                            {log.level}
-                          </span>
-                        </td>
-                        <td className="py-2.5 text-zinc-800 dark:text-zinc-200 max-w-xs truncate font-medium">
-                          {log.message}
-                        </td>
-                        <td className="py-2.5 text-right whitespace-nowrap">
-                          {log.details && (
-                            <button
-                              type="button"
-                              onClick={() => setSelectedLog(selectedLog?.id === log.id ? null : log)}
-                              className="text-xs text-indigo-600 dark:text-indigo-400 hover:underline font-medium cursor-pointer"
-                            >
-                              {selectedLog?.id === log.id ? "Đóng" : "Xem"}
-                            </button>
-                          )}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-
-                {selectedLog?.details && (
-                  <div className="mt-3 p-3 rounded-xl bg-zinc-50 dark:bg-zinc-800/80 border border-zinc-200 dark:border-zinc-700 text-xs animate-in fade-in duration-150">
-                    <div className="flex items-center justify-between mb-1.5 font-semibold text-zinc-700 dark:text-zinc-200">
-                      <span>Chi tiết Payload JSON:</span>
-                      <button
-                        type="button"
-                        onClick={() => setSelectedLog(null)}
-                        className="text-zinc-400 hover:text-zinc-600 cursor-pointer"
-                      >
-                        ✕
-                      </button>
-                    </div>
-                    <pre className="text-[11px] font-mono text-zinc-800 dark:text-zinc-200 overflow-x-auto max-h-48 p-2 rounded-lg bg-white dark:bg-zinc-900 border border-zinc-100 dark:border-zinc-800">
-                      {JSON.stringify(selectedLog.details, null, 2)}
-                    </pre>
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
-        </div>
       </div>
     </div>
   );

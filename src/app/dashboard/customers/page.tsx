@@ -130,6 +130,27 @@ export default function CustomersPage() {
     setPage(1);
   };
 
+  const [syncingSapo, setSyncingSapo] = useState(false);
+
+  const handleSyncFromSapo = async () => {
+    setSyncingSapo(true);
+    try {
+      const res = await fetch("/api/sapo/customers", { method: "POST" });
+      const json = await res.json();
+      if (!res.ok || !json.success) {
+        throw new Error(json.message || "Lỗi đồng bộ khách hàng từ Sapo");
+      }
+      toast.success(json.message || "Đã đồng bộ dữ liệu khách hàng từ Sapo thành công!");
+      await fetchCustomers(1, activeQuery);
+      await fetchLoyalMap();
+      setPage(1);
+    } catch (err: any) {
+      toast.error(err.message || "Không thể đồng bộ khách hàng từ Sapo");
+    } finally {
+      setSyncingSapo(false);
+    }
+  };
+
   const handleCopyPhone = (phone: string, e?: React.MouseEvent) => {
     if (e) e.stopPropagation();
     navigator.clipboard.writeText(phone);
@@ -223,11 +244,21 @@ export default function CustomersPage() {
           <div className="hidden sm:flex items-center gap-2 shrink-0 sm:ml-auto">
             <button
               type="button"
+              onClick={handleSyncFromSapo}
+              disabled={syncingSapo || loading}
+              className="py-2 px-3 text-xs font-semibold rounded-xl border border-emerald-200 dark:border-emerald-800/60 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-100 dark:hover:bg-emerald-900/50 transition flex items-center gap-1.5 cursor-pointer disabled:opacity-60 shadow-2xs whitespace-nowrap"
+              title="Đồng bộ toàn bộ danh bạ khách hàng mới nhất từ Sapo Omnichannel về hệ thống"
+            >
+              <span className={syncingSapo ? "animate-spin" : ""}>🔄</span>
+              <span>{syncingSapo ? "Đang đồng bộ Sapo..." : "Đồng bộ Sapo"}</span>
+            </button>
+            <button
+              type="button"
               onClick={() => {
                 fetchCustomers(page, activeQuery);
                 fetchLoyalMap();
               }}
-              disabled={loading}
+              disabled={loading || syncingSapo}
               className="py-2 px-3 text-xs font-semibold rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-zinc-700 dark:text-zinc-200 hover:bg-zinc-50 dark:hover:bg-zinc-700 transition flex items-center gap-1.5 cursor-pointer disabled:opacity-60 shadow-2xs"
             >
               <span className={loading ? "animate-spin" : ""}>🔄</span>
@@ -272,26 +303,35 @@ export default function CustomersPage() {
             </button>
           </div>
 
-          <div className="flex items-center gap-2">
-            <Link
-              href="/dashboard/orders"
-              className="flex-1 py-2 px-3 text-xs font-bold rounded-xl bg-blue-600 hover:bg-blue-700 text-white shadow-2xs flex items-center justify-center gap-1.5 active:scale-[0.98] transition cursor-pointer text-center"
+          <div className="grid grid-cols-3 gap-1.5 pt-0.5">
+            <button
+              type="button"
+              onClick={handleSyncFromSapo}
+              disabled={syncingSapo || loading}
+              className="h-9 px-1 text-[11px] sm:text-xs font-semibold rounded-xl border border-emerald-200 dark:border-emerald-800/60 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-100 dark:hover:bg-emerald-900/50 active:scale-[0.98] transition flex items-center justify-center gap-1 cursor-pointer disabled:opacity-60 whitespace-nowrap min-w-0 shadow-2xs"
             >
-              <span>📦</span>
-              <span>Xem đơn hàng</span>
-            </Link>
+              <span className={`shrink-0 ${syncingSapo ? "animate-spin" : ""}`}>🔄</span>
+              <span className="truncate">{syncingSapo ? "Đang kéo..." : "Đồng bộ Sapo"}</span>
+            </button>
             <button
               type="button"
               onClick={() => {
                 fetchCustomers(page, activeQuery);
                 fetchLoyalMap();
               }}
-              disabled={loading}
-              className="py-2 px-3 text-xs font-semibold rounded-xl border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-200 active:scale-95 transition flex items-center gap-1.5 cursor-pointer disabled:opacity-50 shrink-0"
+              disabled={loading || syncingSapo}
+              className="h-9 px-1 text-[11px] sm:text-xs font-semibold rounded-xl border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-200 active:scale-[0.98] transition flex items-center justify-center gap-1 cursor-pointer disabled:opacity-50 whitespace-nowrap min-w-0 shadow-2xs"
             >
-              <span className={loading ? "animate-spin" : ""}>🔄</span>
-              <span>Làm mới</span>
+              <span className={`shrink-0 ${loading ? "animate-spin" : ""}`}>🔄</span>
+              <span className="truncate">Làm mới</span>
             </button>
+            <Link
+              href="/dashboard/orders"
+              className="h-9 px-1 text-[11px] sm:text-xs font-bold rounded-xl bg-blue-600 hover:bg-blue-700 text-white shadow-2xs flex items-center justify-center gap-1 active:scale-[0.98] transition cursor-pointer text-center whitespace-nowrap min-w-0"
+            >
+              <span className="shrink-0">📦</span>
+              <span className="truncate">Đơn hàng</span>
+            </Link>
           </div>
         </div>
       </div>
@@ -428,15 +468,26 @@ export default function CustomersPage() {
               <div className="text-xs sm:text-sm font-semibold text-zinc-800 dark:text-zinc-200">
                 Không tìm thấy khách hàng nào phù hợp
               </div>
-              {activeQuery && (
+              <div className="flex items-center justify-center gap-2 pt-1 flex-wrap">
+                {activeQuery && (
+                  <button
+                    type="button"
+                    onClick={handleClearSearch}
+                    className="px-3.5 py-1.5 text-xs font-semibold rounded-xl bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 hover:opacity-90 transition cursor-pointer"
+                  >
+                    Xóa tìm kiếm
+                  </button>
+                )}
                 <button
                   type="button"
-                  onClick={handleClearSearch}
-                  className="px-3.5 py-1.5 text-xs font-semibold rounded-xl bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 hover:opacity-90 transition cursor-pointer"
+                  onClick={handleSyncFromSapo}
+                  disabled={syncingSapo}
+                  className="px-3.5 py-1.5 text-xs font-semibold rounded-xl border border-emerald-300 dark:border-emerald-700 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-100 dark:hover:bg-emerald-900/50 transition cursor-pointer flex items-center gap-1.5"
                 >
-                  Xóa tìm kiếm
+                  <span className={syncingSapo ? "animate-spin" : ""}>🔄</span>
+                  <span>{syncingSapo ? "Đang kéo khách từ Sapo..." : "Kéo khách mới từ Sapo"}</span>
                 </button>
-              )}
+              </div>
             </div>
           ) : (
             <div className="space-y-3 sm:space-y-4">

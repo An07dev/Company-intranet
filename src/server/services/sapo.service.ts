@@ -549,6 +549,20 @@ export const SapoService = {
       }),
     });
   },
+
+  /**
+   * Lấy danh sách Webhook đã cấu hình trên Sapo
+   */
+  async getWebhooks(): Promise<{ webhooks: Array<{ id: number; address: string; format: string; topic: string; created_on: string; modified_on: string }> }> {
+    return sapoFetch<{ webhooks: any[] }>("/admin/webhooks.json");
+  },
+
+  /**
+   * Đếm số lượng Webhook trên Sapo
+   */
+  async getWebhooksCount(): Promise<{ count: number }> {
+    return sapoFetch<{ count: number }>("/admin/webhooks/count.json");
+  },
 };
 
 

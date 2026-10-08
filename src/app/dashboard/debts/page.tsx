@@ -299,22 +299,28 @@ export default function DebtsManagementPage() {
     }
   }, [mainSection, customerSubTab, fetchCustomers, fetchOrders, fetchSuppliers]);
 
-  // Handlers
   const handleRefreshAll = async () => {
     setRefreshing(true);
     try {
       if (mainSection === "customers") {
         const syncRes = await fetch("/api/sapo/debts/sync", { method: "POST" });
-        if (syncRes.ok) {
-          toast.success("Đã đồng bộ công nợ khách hàng từ Sapo!");
+        const syncJson = await syncRes.json();
+        if (syncRes.ok && syncJson.success) {
+          toast.success(syncJson.message || "Đã đồng bộ công nợ khách hàng từ Sapo!");
+        } else {
+          toast.error(syncJson.message || "Lỗi đồng bộ công nợ khách hàng từ Sapo");
         }
-        await Promise.all([fetchCustomerSummary(), customerSubTab === "customers" ? fetchCustomers() : fetchOrders()]);
+        await Promise.all([fetchCustomerSummary(), fetchCustomers(), fetchOrders()]);
       } else {
         const syncRes = await fetch("/api/sapo/debts/suppliers/sync", { method: "POST" });
-        if (syncRes.ok) {
-          const syncJson = await syncRes.json();
+        const syncJson = await syncRes.json();
+        if (syncRes.ok && syncJson.success) {
           const { synced } = syncJson.data || {};
-          toast.success(`Đã đồng bộ: ${synced?.suppliers || 23} NCC, ${synced?.receive_inventories || 707} đơn nhập kho!`);
+          toast.success(
+            `Đã đồng bộ: ${synced?.suppliers || 23} NCC, ${synced?.receive_inventories || 707} đơn nhập kho, ${synced?.supplier_returns || 38} phiếu trả hàng!`
+          );
+        } else {
+          toast.error(syncJson.message || "Lỗi khi đồng bộ dữ liệu từ Sapo");
         }
         await Promise.all([fetchSupplierSummary(), fetchSuppliers()]);
       }
@@ -557,17 +563,21 @@ export default function DebtsManagementPage() {
             type="button"
             onClick={handleRefreshAll}
             disabled={refreshing}
-            className={`p-1.5 sm:px-3.5 sm:py-1.5 rounded-xl text-white font-semibold text-xs transition-colors flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50 shadow-2xs shrink-0 ${
+            className={`px-2.5 sm:px-3.5 py-1.5 rounded-xl text-white font-semibold text-xs transition-colors flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50 shadow-2xs shrink-0 whitespace-nowrap ${
               mainSection === "suppliers"
                 ? "bg-indigo-600 hover:bg-indigo-700"
                 : "bg-zinc-900 hover:bg-zinc-800 dark:bg-zinc-100 dark:hover:bg-white dark:text-zinc-900"
             }`}
-            title="Đồng bộ lại từ Sapo"
+            title="Đồng bộ lại dữ liệu từ Sapo Omnichannel"
             aria-label="Đồng bộ lại từ Sapo"
           >
-            <span className={refreshing ? "animate-spin" : ""}>🔄</span>
-            <span className="hidden sm:inline">
-              {refreshing ? "Đang đồng bộ..." : mainSection === "suppliers" ? "Đồng bộ NCC Sapo" : "Đồng bộ Sapo"}
+            <span className={`shrink-0 ${refreshing ? "animate-spin" : ""}`}>🔄</span>
+            <span className="text-[11px] sm:text-xs">
+              {refreshing
+                ? "Đang đồng bộ..."
+                : mainSection === "suppliers"
+                  ? "Đồng bộ NCC Sapo"
+                  : "Đồng bộ Sapo"}
             </span>
           </button>
         </div>

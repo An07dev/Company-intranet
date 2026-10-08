@@ -85,6 +85,25 @@ export default function InventoryPage() {
     return () => clearTimeout(timer);
   }, [search]);
 
+  const [syncingSapo, setSyncingSapo] = useState(false);
+
+  const handleSyncFromSapo = async () => {
+    setSyncingSapo(true);
+    try {
+      const res = await fetch("/api/sapo/inventory/sync", { method: "POST" });
+      const json = await res.json();
+      if (!res.ok || !json.success) {
+        throw new Error(json.message || "Lỗi đồng bộ sản phẩm & tồn kho từ Sapo");
+      }
+      toast.success(json.message || "Đã đồng bộ sản phẩm & tồn kho từ Sapo thành công!");
+      await fetchInventory(false);
+    } catch (err: any) {
+      toast.error(err.message || "Không thể đồng bộ kho hàng từ Sapo");
+    } finally {
+      setSyncingSapo(false);
+    }
+  };
+
   // Fetch Inventory from Server API with Pagination
   const fetchInventory = useCallback(
     async (isManualRefresh = false) => {
@@ -338,8 +357,18 @@ export default function InventoryPage() {
           <div className="hidden sm:flex items-center gap-2 shrink-0">
             <button
               type="button"
+              onClick={handleSyncFromSapo}
+              disabled={syncingSapo || loading || refreshing}
+              className="py-2 px-3 text-xs font-semibold rounded-xl border border-amber-200 dark:border-amber-800/60 bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 hover:bg-amber-100 dark:hover:bg-amber-900/50 transition flex items-center gap-1.5 cursor-pointer disabled:opacity-60 shadow-2xs whitespace-nowrap"
+              title="Đồng bộ toàn bộ sản phẩm và số lượng tồn kho mới nhất từ Sapo Omnichannel"
+            >
+              <span className={syncingSapo ? "animate-spin" : ""}>🔄</span>
+              <span>{syncingSapo ? "Đang đồng bộ Sapo..." : "Đồng bộ Sapo"}</span>
+            </button>
+            <button
+              type="button"
               onClick={() => setIsCreateOpen(true)}
-              className="py-2 px-3.5 text-xs font-semibold rounded-xl bg-amber-600 hover:bg-amber-700 text-white transition flex items-center gap-1.5 shadow-2xs cursor-pointer"
+              className="py-2 px-3.5 text-xs font-semibold rounded-xl bg-amber-600 hover:bg-amber-700 text-white transition flex items-center gap-1.5 shadow-2xs cursor-pointer whitespace-nowrap"
             >
               <span>➕</span>
               <span>Nhập hàng / Thêm SKU</span>
@@ -347,7 +376,7 @@ export default function InventoryPage() {
             <button
               type="button"
               onClick={() => setIsScannerOpen(true)}
-              className="py-2 px-3.5 text-xs font-semibold rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white transition flex items-center gap-1.5 shadow-2xs cursor-pointer"
+              className="py-2 px-3.5 text-xs font-semibold rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white transition flex items-center gap-1.5 shadow-2xs cursor-pointer whitespace-nowrap"
             >
               <span>📷</span>
               <span>Quét Mã QR</span>
@@ -355,7 +384,7 @@ export default function InventoryPage() {
             <button
               type="button"
               onClick={handleExportCSV}
-              className="py-2 px-3 text-xs font-semibold rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-zinc-700 dark:text-zinc-200 hover:bg-zinc-50 dark:hover:bg-zinc-700 transition flex items-center gap-1.5 shadow-2xs cursor-pointer"
+              className="py-2 px-3 text-xs font-semibold rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-zinc-700 dark:text-zinc-200 hover:bg-zinc-50 dark:hover:bg-zinc-700 transition flex items-center gap-1.5 shadow-2xs cursor-pointer whitespace-nowrap"
             >
               <span>📊</span>
               <span>Xuất CSV</span>
@@ -363,15 +392,15 @@ export default function InventoryPage() {
             <button
               type="button"
               onClick={() => fetchInventory(true)}
-              disabled={loading || refreshing}
-              className="py-2 px-3 text-xs font-semibold rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-zinc-700 dark:text-zinc-200 hover:bg-zinc-50 dark:hover:bg-zinc-700 transition flex items-center gap-1.5 shadow-2xs disabled:opacity-60 cursor-pointer"
+              disabled={loading || refreshing || syncingSapo}
+              className="py-2 px-3 text-xs font-semibold rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-zinc-700 dark:text-zinc-200 hover:bg-zinc-50 dark:hover:bg-zinc-700 transition flex items-center gap-1.5 shadow-2xs disabled:opacity-60 cursor-pointer whitespace-nowrap"
             >
               <span className={`inline-block ${refreshing ? "animate-spin" : ""}`}>🔄</span>
-              <span>{refreshing ? "Đang đồng bộ..." : "Làm mới"}</span>
+              <span>{refreshing ? "Đang tải..." : "Làm mới"}</span>
             </button>
             <Link
               href="/dashboard/suppliers"
-              className="py-2 px-3.5 text-xs font-semibold rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-zinc-700 dark:text-zinc-200 hover:bg-zinc-50 dark:hover:bg-zinc-700 transition flex items-center gap-1.5 shadow-2xs"
+              className="py-2 px-3.5 text-xs font-semibold rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-zinc-700 dark:text-zinc-200 hover:bg-zinc-50 dark:hover:bg-zinc-700 transition flex items-center gap-1.5 shadow-2xs whitespace-nowrap"
             >
               <span>🏭</span>
               <span>NCC</span>
@@ -379,45 +408,45 @@ export default function InventoryPage() {
           </div>
         </div>
 
-        {/* Mobile Toolbar (sm:hidden) */}
-        <div className="sm:hidden pt-2.5 border-t border-zinc-100 dark:border-zinc-800/80 flex items-center gap-2">
-          {/* Nút 1: Quét QR Tồn kho (Camera mobile cực tiện) */}
+        {/* Mobile Toolbar (sm:hidden) - 1 hàng gọn gàng, không bị mất text hay tràn viền */}
+        <div className="sm:hidden pt-2.5 border-t border-zinc-100 dark:border-zinc-800/80 flex items-center gap-1.5">
+          {/* Nút 1: Quét mã QR */}
           <button
             type="button"
             onClick={() => setIsScannerOpen(true)}
-            className="flex-1 py-2 px-2.5 text-xs font-bold rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white shadow-2xs flex items-center justify-center gap-1.5 active:scale-[0.98] transition cursor-pointer"
+            className="flex-1 h-9 px-2 text-xs font-bold rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white shadow-2xs flex items-center justify-center gap-1.5 active:scale-[0.98] transition cursor-pointer whitespace-nowrap"
           >
-            <span>📷</span>
-            <span>Quét QR</span>
+            <span className="shrink-0">📷</span>
+            <span>Quét mã QR</span>
           </button>
 
           {/* Nút 2: Nhập hàng */}
           <button
             type="button"
             onClick={() => setIsCreateOpen(true)}
-            className="flex-1 py-2 px-2.5 text-xs font-bold rounded-xl bg-amber-600 hover:bg-amber-700 text-white shadow-2xs flex items-center justify-center gap-1.5 active:scale-[0.98] transition cursor-pointer"
+            className="flex-1 h-9 px-2 text-xs font-bold rounded-xl bg-amber-600 hover:bg-amber-700 text-white shadow-2xs flex items-center justify-center gap-1.5 active:scale-[0.98] transition cursor-pointer whitespace-nowrap"
           >
-            <span>➕</span>
+            <span className="shrink-0">➕</span>
             <span>Nhập hàng</span>
           </button>
 
-          {/* Nút 3: Làm mới nhanh */}
+          {/* Nút 3: Làm mới tồn kho */}
           <button
             type="button"
             onClick={() => fetchInventory(true)}
-            disabled={loading || refreshing}
-            className="w-9 h-9 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-200 active:scale-95 transition flex items-center justify-center cursor-pointer disabled:opacity-50 shrink-0"
+            disabled={loading || refreshing || syncingSapo}
+            className="h-9 w-9 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-200 active:scale-95 transition flex items-center justify-center cursor-pointer disabled:opacity-50 shrink-0 shadow-2xs"
             title="Làm mới tồn kho"
           >
             <span className={`inline-block ${refreshing ? "animate-spin" : ""}`}>🔄</span>
           </button>
 
-          {/* Nút 4: Menu More (Xuất CSV, Nhà cung cấp) */}
+          {/* Nút 4: Menu More (Đồng bộ Sapo, Xuất CSV, Nhà cung cấp) */}
           <div className="relative shrink-0" ref={moreMenuRef}>
             <button
               type="button"
               onClick={() => setShowMoreMenu((prev) => !prev)}
-              className="w-9 h-9 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-200 active:scale-95 transition flex items-center justify-center cursor-pointer font-bold text-base"
+              className="h-9 w-9 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-200 active:scale-95 transition flex items-center justify-center cursor-pointer font-bold text-base shadow-2xs"
               title="Tùy chọn khác"
             >
               ⋯
@@ -425,6 +454,18 @@ export default function InventoryPage() {
 
             {showMoreMenu && (
               <div className="absolute right-0 mt-2 w-52 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl shadow-xl p-1.5 z-50 animate-in fade-in zoom-in-95 duration-150 text-xs">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowMoreMenu(false);
+                    handleSyncFromSapo();
+                  }}
+                  disabled={syncingSapo}
+                  className="w-full text-left p-2.5 rounded-xl hover:bg-zinc-100 dark:hover:bg-zinc-800 flex items-center gap-2.5 text-zinc-700 dark:text-zinc-300 font-medium cursor-pointer"
+                >
+                  <span className={`text-sm ${syncingSapo ? "animate-spin" : ""}`}>🔄</span>
+                  <span>{syncingSapo ? "Đang đồng bộ..." : "Đồng bộ kho từ Sapo"}</span>
+                </button>
                 <button
                   type="button"
                   onClick={() => {
@@ -516,7 +557,7 @@ export default function InventoryPage() {
                 setStockFilter("all");
                 setCurrentPage(1);
               }}
-              className={`px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-lg sm:rounded-xl transition-all whitespace-nowrap text-xs font-semibold shrink-0 cursor-pointer flex items-center gap-1.5 active:scale-95 ${
+              className={`px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg sm:rounded-xl transition-all whitespace-nowrap text-[11px] sm:text-xs font-semibold shrink-0 cursor-pointer flex items-center gap-1 sm:gap-1.5 active:scale-95 ${
                 stockFilter === "all"
                   ? "bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 shadow-2xs"
                   : "text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 bg-zinc-50 dark:bg-zinc-800/60"
@@ -538,7 +579,7 @@ export default function InventoryPage() {
                 setStockFilter("in_stock");
                 setCurrentPage(1);
               }}
-              className={`px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-lg sm:rounded-xl transition-all whitespace-nowrap text-xs font-semibold shrink-0 cursor-pointer flex items-center gap-1.5 active:scale-95 ${
+              className={`px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg sm:rounded-xl transition-all whitespace-nowrap text-[11px] sm:text-xs font-semibold shrink-0 cursor-pointer flex items-center gap-1 sm:gap-1.5 active:scale-95 ${
                 stockFilter === "in_stock"
                   ? "bg-emerald-600 text-white shadow-2xs"
                   : "text-emerald-700 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 bg-emerald-50/50 dark:bg-emerald-950/20"
@@ -560,7 +601,7 @@ export default function InventoryPage() {
                 setStockFilter("low_stock");
                 setCurrentPage(1);
               }}
-              className={`px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-lg sm:rounded-xl transition-all whitespace-nowrap text-xs font-semibold shrink-0 cursor-pointer flex items-center gap-1.5 active:scale-95 ${
+              className={`px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg sm:rounded-xl transition-all whitespace-nowrap text-[11px] sm:text-xs font-semibold shrink-0 cursor-pointer flex items-center gap-1 sm:gap-1.5 active:scale-95 ${
                 stockFilter === "low_stock"
                   ? "bg-amber-600 text-white shadow-2xs"
                   : "text-amber-700 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-950/40 bg-amber-50/50 dark:bg-amber-950/20"
@@ -582,7 +623,7 @@ export default function InventoryPage() {
                 setStockFilter("out_of_stock");
                 setCurrentPage(1);
               }}
-              className={`px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-lg sm:rounded-xl transition-all whitespace-nowrap text-xs font-semibold shrink-0 cursor-pointer flex items-center gap-1.5 active:scale-95 ${
+              className={`px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg sm:rounded-xl transition-all whitespace-nowrap text-[11px] sm:text-xs font-semibold shrink-0 cursor-pointer flex items-center gap-1 sm:gap-1.5 active:scale-95 ${
                 stockFilter === "out_of_stock"
                   ? "bg-rose-600 text-white shadow-2xs"
                   : "text-rose-700 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 bg-rose-50/50 dark:bg-rose-950/20"
