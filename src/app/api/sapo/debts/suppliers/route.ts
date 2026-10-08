@@ -51,7 +51,7 @@ export async function GET(request: NextRequest) {
     const search = (searchParams.get("search") || "").trim().toLowerCase();
     const supplierId = searchParams.get("supplier_id") ? parseInt(searchParams.get("supplier_id")!, 10) : null;
     const page = Math.max(1, parseInt(searchParams.get("page") || "1", 10));
-    const limit = Math.max(1, Math.min(100, parseInt(searchParams.get("limit") || "25", 10)));
+    const limit = Math.max(1, Math.min(100, parseInt(searchParams.get("limit") || "10", 10)));
 
     // Xác định khoảng thời gian báo cáo
     const now = new Date();

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { useToast } from "@/context/ToastContext";
 
 export interface SupplierDebtItem {
@@ -30,6 +30,8 @@ interface SupplierDebtsTableProps {
   totalCount: number;
   onPageChange: (p: number) => void;
   onViewSupplierDetail: (supplier: SupplierDebtItem) => void;
+  limit?: number;
+  onLimitChange?: (newLimit: number) => void;
 }
 
 // Hàm sinh chữ cái đại diện Avatar (ví dụ: Túi vải -> TÚ, GNEST -> GN)
@@ -70,9 +72,33 @@ export function SupplierDebtsTable({
   totalCount,
   onPageChange,
   onViewSupplierDetail,
+  limit = 10,
+  onLimitChange,
 }: SupplierDebtsTableProps) {
   const { toast } = useToast();
   const [selectedIds, setSelectedIds] = useState<number[]>([]);
+
+  // Tính toán danh sách số trang hiển thị
+  const paginationItems = useMemo(() => {
+    const items: (number | string)[] = [];
+    if (totalPages <= 7) {
+      for (let i = 1; i <= totalPages; i++) {
+        items.push(i);
+      }
+    } else {
+      if (page <= 4) {
+        items.push(1, 2, 3, 4, 5, "...", totalPages);
+      } else if (page >= totalPages - 3) {
+        items.push(1, "...", totalPages - 4, totalPages - 3, totalPages - 2, totalPages - 1, totalPages);
+      } else {
+        items.push(1, "...", page - 1, page, page + 1, "...", totalPages);
+      }
+    }
+    return items;
+  }, [totalPages, page]);
+
+  const startIndex = totalCount > 0 ? (page - 1) * limit + 1 : 0;
+  const endIndex = Math.min(page * limit, totalCount);
 
   // Định dạng số tiền hiển thị chuẩn theo Sapo Live
   const formatTableCell = (val: number, type: "dau" | "tang" | "giam" | "cuoi") => {
@@ -463,31 +489,154 @@ export function SupplierDebtsTable({
       </div>
 
       {/* Pagination Footer */}
-      {totalPages > 1 && (
-        <div className="p-3 sm:p-4 border-t border-zinc-200/80 dark:border-zinc-800 flex items-center justify-between text-xs text-zinc-500">
-          <div>
-            Trang {page} / {totalPages} ({totalCount} nhà cung cấp)
+      <div className="p-3.5 sm:p-4 border-t border-zinc-200/80 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-950/20 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs">
+        {/* Left: Thông tin số lượng & Chọn số dòng/trang */}
+        <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2.5 sm:gap-4 text-zinc-500 dark:text-zinc-400">
+          <div className="font-mono text-[11px] sm:text-xs">
+            {totalCount > 0 ? (
+              <>
+                Hiển thị{" "}
+                <strong className="text-zinc-900 dark:text-zinc-100">{startIndex}</strong> -{" "}
+                <strong className="text-zinc-900 dark:text-zinc-100">{endIndex}</strong> /{" "}
+                <strong className="text-zinc-900 dark:text-zinc-100">{totalCount.toLocaleString("vi-VN")}</strong> nhà cung cấp
+              </>
+            ) : (
+              <span>0 nhà cung cấp</span>
+            )}
           </div>
-          <div className="flex items-center gap-1.5">
-            <button
-              type="button"
-              disabled={page <= 1}
-              onClick={() => onPageChange(page - 1)}
-              className="px-3 py-1.5 rounded-lg border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 font-medium disabled:opacity-40 disabled:cursor-not-allowed hover:bg-zinc-50 dark:hover:bg-zinc-700 transition-colors"
-            >
-              Trước
-            </button>
-            <button
-              type="button"
-              disabled={page >= totalPages}
-              onClick={() => onPageChange(page + 1)}
-              className="px-3 py-1.5 rounded-lg border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 font-medium disabled:opacity-40 disabled:cursor-not-allowed hover:bg-zinc-50 dark:hover:bg-zinc-700 transition-colors"
-            >
-              Sau
-            </button>
-          </div>
+
+          {onLimitChange && (
+            <div className="flex items-center gap-1.5 text-[11px] sm:text-xs">
+              <span className="text-zinc-400 hidden xs:inline">Hiển thị:</span>
+              <select
+                value={limit}
+                onChange={(e) => onLimitChange(Number(e.target.value))}
+                className="px-2 py-1 rounded-lg border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-zinc-800 dark:text-zinc-200 font-mono text-[11px] sm:text-xs focus:outline-hidden focus:ring-1 focus:ring-indigo-500 cursor-pointer shadow-2xs"
+              >
+                <option value={10}>10 / trang</option>
+                <option value={20}>20 / trang</option>
+                <option value={50}>50 / trang</option>
+                <option value={100}>100 / trang</option>
+              </select>
+            </div>
+          )}
         </div>
-      )}
+
+        {/* Right: Điều hướng phân trang */}
+        {totalCount > 0 && (
+          <div>
+            {/* Desktop Pagination (hidden sm:flex) */}
+            <div className="hidden sm:flex items-center gap-1">
+              {/* Về trang đầu */}
+              <button
+                type="button"
+                disabled={page <= 1}
+                onClick={() => onPageChange(1)}
+                className="p-1.5 rounded-lg border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-zinc-600 dark:text-zinc-400 disabled:opacity-30 disabled:cursor-not-allowed hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer shadow-2xs"
+                title="Về trang đầu"
+              >
+                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 19l-7-7 7-7m8 14l-7-7 7-7" />
+                </svg>
+              </button>
+
+              {/* Trang trước */}
+              <button
+                type="button"
+                disabled={page <= 1}
+                onClick={() => onPageChange(page - 1)}
+                className="p-1.5 rounded-lg border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-zinc-600 dark:text-zinc-400 disabled:opacity-30 disabled:cursor-not-allowed hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer shadow-2xs"
+                title="Trang trước"
+              >
+                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                </svg>
+              </button>
+
+              {/* Dãy số trang */}
+              {paginationItems.map((item, idx) => {
+                if (item === "...") {
+                  return (
+                    <span
+                      key={`dots-${idx}`}
+                      className="px-2 py-1 text-zinc-400 font-mono select-none"
+                    >
+                      …
+                    </span>
+                  );
+                }
+
+                const pageNum = item as number;
+                const isActive = pageNum === page;
+
+                return (
+                  <button
+                    key={pageNum}
+                    type="button"
+                    onClick={() => onPageChange(pageNum)}
+                    className={`min-w-8 h-8 px-2.5 rounded-lg font-mono text-xs font-semibold transition-all cursor-pointer ${
+                      isActive
+                        ? "bg-indigo-600 text-white shadow-2xs shadow-indigo-600/30 font-bold"
+                        : "border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800"
+                    }`}
+                  >
+                    {pageNum}
+                  </button>
+                );
+              })}
+
+              {/* Trang sau */}
+              <button
+                type="button"
+                disabled={page >= totalPages}
+                onClick={() => onPageChange(page + 1)}
+                className="p-1.5 rounded-lg border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-zinc-600 dark:text-zinc-400 disabled:opacity-30 disabled:cursor-not-allowed hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer shadow-2xs"
+                title="Trang sau"
+              >
+                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
+              </button>
+
+              {/* Đến trang cuối */}
+              <button
+                type="button"
+                disabled={page >= totalPages}
+                onClick={() => onPageChange(totalPages)}
+                className="p-1.5 rounded-lg border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-zinc-600 dark:text-zinc-400 disabled:opacity-30 disabled:cursor-not-allowed hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer shadow-2xs"
+                title="Trang cuối"
+              >
+                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 5l7 7-7 7M5 5l7 7-7 7" />
+                </svg>
+              </button>
+            </div>
+
+            {/* Mobile Pagination (sm:hidden) */}
+            <div className="sm:hidden flex items-center gap-1.5">
+              <button
+                type="button"
+                disabled={page <= 1}
+                onClick={() => onPageChange(page - 1)}
+                className="px-3 py-1.5 rounded-lg border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 font-medium text-xs disabled:opacity-30 disabled:cursor-not-allowed transition-colors cursor-pointer shadow-2xs"
+              >
+                ‹ Trước
+              </button>
+              <span className="px-2 py-1 text-xs font-mono font-medium text-zinc-700 dark:text-zinc-300">
+                {page} / {totalPages}
+              </span>
+              <button
+                type="button"
+                disabled={page >= totalPages}
+                onClick={() => onPageChange(page + 1)}
+                className="px-3 py-1.5 rounded-lg border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 font-medium text-xs disabled:opacity-30 disabled:cursor-not-allowed transition-colors cursor-pointer shadow-2xs"
+              >
+                Sau ›
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 }

@@ -130,6 +130,7 @@ export default function DebtsManagementPage() {
   const [loadingSuppliers, setLoadingSuppliers] = useState(true);
   const [supplierSearch, setSupplierSearch] = useState("");
   const [supplierPage, setSupplierPage] = useState(1);
+  const [supplierLimit, setSupplierLimit] = useState(10);
   const [supplierTotalPages, setSupplierTotalPages] = useState(1);
   const [supplierTotalCount, setSupplierTotalCount] = useState(0);
 
@@ -249,7 +250,7 @@ export default function DebtsManagementPage() {
         end_date: endDateStr,
         search: supplierSearch,
         page: String(supplierPage),
-        limit: "25",
+        limit: String(supplierLimit),
       });
       const res = await fetch(`/api/sapo/debts/suppliers?${params.toString()}`);
       const json = await res.json();
@@ -265,7 +266,17 @@ export default function DebtsManagementPage() {
     } finally {
       setLoadingSuppliers(false);
     }
-  }, [startDateStr, endDateStr, supplierSearch, supplierPage, toast]);
+  }, [startDateStr, endDateStr, supplierSearch, supplierPage, supplierLimit, toast]);
+
+  const handleSupplierSearchChange = (q: string) => {
+    setSupplierSearch(q);
+    setSupplierPage(1);
+  };
+
+  const handleSupplierLimitChange = (newLimit: number) => {
+    setSupplierLimit(newLimit);
+    setSupplierPage(1);
+  };
 
   // Effects loading based on mainSection
   useEffect(() => {
@@ -329,9 +340,24 @@ export default function DebtsManagementPage() {
     setIsSupplierDetailOpen(true);
   };
 
-  const handleExportCSV = () => {
+  const handleExportCSV = async () => {
     if (mainSection === "suppliers") {
-      if (suppliers.length === 0) {
+      let exportItems = suppliers;
+      if (supplierTotalCount > suppliers.length) {
+        try {
+          const res = await fetch(
+            `/api/sapo/debts/suppliers?type=suppliers&limit=1000&search=${encodeURIComponent(supplierSearch)}`
+          );
+          const json = await res.json();
+          if (json.success && json.data?.suppliers?.length > 0) {
+            exportItems = json.data.suppliers;
+          }
+        } catch {
+          // fallback to current page suppliers
+        }
+      }
+
+      if (exportItems.length === 0) {
         toast.info("Không có dữ liệu NCC để xuất");
         return;
       }
@@ -345,7 +371,7 @@ export default function DebtsManagementPage() {
         "Phải thu/trả cuối kỳ",
         "Số đơn nhập",
       ];
-      const rows = suppliers.map((s) => [
+      const rows = exportItems.map((s) => [
         `"${s.code}"`,
         `"${(s.name || "").replace(/"/g, '""')}"`,
         `"${s.phone || ""}"`,
@@ -643,12 +669,14 @@ export default function DebtsManagementPage() {
             suppliers={suppliers}
             loading={loadingSuppliers}
             searchQuery={supplierSearch}
-            onSearchChange={setSupplierSearch}
+            onSearchChange={handleSupplierSearchChange}
             page={supplierPage}
             totalPages={supplierTotalPages}
             totalCount={supplierTotalCount}
             onPageChange={setSupplierPage}
             onViewSupplierDetail={handleOpenSupplierDetail}
+            limit={supplierLimit}
+            onLimitChange={handleSupplierLimitChange}
           />
         </div>
       )}
