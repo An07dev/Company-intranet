@@ -891,5 +891,66 @@ export const MongoSapoSupplierReturnModel: Model<ISapoSupplierReturnDocument> =
   mongoose.models.SapoSupplierReturn ||
   mongoose.model<ISapoSupplierReturnDocument>("SapoSupplierReturn", SapoSupplierReturnSchema, "sapo_supplier_returns");
 
+// ==========================================
+// KHÁCH HÀNG THÂN THIẾT (LOYAL / VIP CUSTOMERS)
+// ==========================================
+export type LoyalCustomerTier = "standard" | "silver" | "gold" | "diamond";
+
+export interface ILoyalCustomerDocument {
+  id: string;
+  sapo_customer_id: number;
+  name: string;
+  phone?: string;
+  email?: string;
+  address?: string;
+  tier: LoyalCustomerTier;
+  discount_percent: number;
+  notes?: string;
+  total_spent: number;
+  orders_count: number;
+  last_order_name?: string;
+  created_at: string;
+  updated_at: string;
+  added_by?: string;
+}
+
+const LoyalCustomerSchema = new Schema<ILoyalCustomerDocument>(
+  {
+    id: { type: String, required: true, unique: true, index: true },
+    sapo_customer_id: { type: Number, required: true, unique: true, index: true },
+    name: { type: String, required: true, index: true },
+    phone: { type: String, index: true },
+    email: { type: String },
+    address: { type: String },
+    tier: {
+      type: String,
+      enum: ["standard", "silver", "gold", "diamond"],
+      default: "standard",
+      index: true,
+    },
+    discount_percent: { type: Number, default: 0 },
+    notes: { type: String },
+    total_spent: { type: Number, default: 0 },
+    orders_count: { type: Number, default: 0 },
+    last_order_name: { type: String },
+    created_at: { type: String, required: true },
+    updated_at: { type: String, required: true },
+    added_by: { type: String, default: "Hệ thống" },
+  },
+  {
+    timestamps: false,
+    versionKey: false,
+    collection: "loyal_customers",
+  }
+);
+
+LoyalCustomerSchema.index({ sapo_customer_id: 1 });
+LoyalCustomerSchema.index({ tier: 1, total_spent: -1 });
+
+export const MongoLoyalCustomerModel: Model<ILoyalCustomerDocument> =
+  mongoose.models.LoyalCustomer ||
+  mongoose.model<ILoyalCustomerDocument>("LoyalCustomer", LoyalCustomerSchema, "loyal_customers");
+
+
 
 
