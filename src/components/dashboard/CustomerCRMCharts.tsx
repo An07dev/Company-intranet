@@ -137,11 +137,8 @@ export function CustomerCRMCharts({ stats }: CustomerCRMChartsProps) {
             <div className="flex items-center justify-between">
               <h3 className="text-sm sm:text-base font-bold text-zinc-900 dark:text-zinc-100 flex items-center gap-1.5">
                 <span>🎯</span>
-                <span>Phân Tầng Hạn Mức Chi Tiêu (Customer Tiers)</span>
+                <span>Phân Tầng Hạn Mức Chi Tiêu</span>
               </h3>
-              <span className="text-[11px] px-2 py-0.5 rounded-full bg-blue-100 dark:bg-blue-950 text-blue-700 dark:text-blue-300 font-mono font-medium">
-                4 Hạng
-              </span>
             </div>
             <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-1">
               Phân loại tệp khách hàng theo hạn mức tích lũy để có chính sách chăm sóc phù hợp
@@ -152,27 +149,50 @@ export function CustomerCRMCharts({ stats }: CustomerCRMChartsProps) {
           <div className="my-4 space-y-2.5">
             {spendingTiers.map((tier, idx) => {
               const barWidth = Math.max((tier.count / maxTierCount) * 100, 4);
+              const match = tier.label.match(/^(.*?)\s*\((.*?)\)$/);
+              const tierTitle = match ? match[1].trim() : tier.label;
+              const tierRange = match ? match[2].trim() : "";
+
               return (
-                <div key={idx} className="p-2.5 rounded-xl bg-zinc-50/70 dark:bg-zinc-800/40 border border-zinc-100/80 dark:border-zinc-800 space-y-1.5">
-                  <div className="flex items-center justify-between text-xs">
-                    <div className="flex items-center gap-2">
+                <div
+                  key={idx}
+                  className="p-2.5 sm:p-3 rounded-xl bg-zinc-50/70 dark:bg-zinc-800/40 border border-zinc-100/80 dark:border-zinc-800 space-y-1.5"
+                >
+                  <div className="flex items-center justify-between text-xs gap-2">
+                    <div className="flex items-center gap-2 min-w-0">
                       <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: tier.color }} />
-                      <span className="font-semibold text-zinc-800 dark:text-zinc-200 truncate">
-                        {tier.label}
+                      <span className="font-bold text-zinc-900 dark:text-zinc-100 truncate">
+                        {tierTitle}
                       </span>
+                      {tierRange && (
+                        <span className="hidden sm:inline-block font-mono text-[11px] text-zinc-500 dark:text-zinc-400 bg-zinc-200/50 dark:bg-zinc-700/50 px-1.5 py-0.5 rounded shrink-0">
+                          {tierRange}
+                        </span>
+                      )}
                     </div>
-                    <div className="font-mono text-zinc-700 dark:text-zinc-300 shrink-0">
-                      <strong>{tier.count.toLocaleString("vi-VN")}</strong> khách ({tier.percentage}%)
+                    <div className="font-mono text-zinc-700 dark:text-zinc-300 shrink-0 text-xs whitespace-nowrap">
+                      <strong className="text-zinc-900 dark:text-zinc-100">{tier.count.toLocaleString("vi-VN")}</strong> khách{" "}
+                      <span className="text-zinc-400 text-[10px]">({tier.percentage}%)</span>
                     </div>
                   </div>
+
+                  {/* Trên Mobile: Hiển thị hạn mức chi tiêu trên 1 dòng riêng để không bị đè chữ hay tràn viền */}
+                  {tierRange && (
+                    <div className="sm:hidden flex items-center">
+                      <span className="inline-block px-1.5 py-0.5 rounded bg-zinc-200/50 dark:bg-zinc-700/50 text-[10px] font-mono text-zinc-600 dark:text-zinc-300">
+                        Hạn mức: {tierRange}
+                      </span>
+                    </div>
+                  )}
+
                   {/* Progress bar */}
-                  <div className="w-full bg-zinc-200/60 dark:bg-zinc-700/60 h-2 rounded-full overflow-hidden">
+                  <div className="w-full bg-zinc-200/60 dark:bg-zinc-700/60 h-1.5 sm:h-2 rounded-full overflow-hidden">
                     <div
                       style={{ width: `${barWidth}%`, backgroundColor: tier.color }}
                       className="h-full rounded-full transition-all duration-500"
                     />
                   </div>
-                  <p className="text-[11px] text-zinc-400">{tier.description}</p>
+                  <p className="text-[10px] sm:text-[11px] text-zinc-400 truncate">{tier.description}</p>
                 </div>
               );
             })}
@@ -185,9 +205,9 @@ export function CustomerCRMCharts({ stats }: CustomerCRMChartsProps) {
             </h4>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
               {orderFrequency.map((freq, idx) => (
-                <div key={idx} className="p-2 rounded-xl bg-zinc-50 dark:bg-zinc-800/40 text-center">
-                  <span className="text-[10px] text-zinc-400 block truncate">{freq.range}</span>
-                  <span className="text-xs font-bold font-mono text-zinc-800 dark:text-zinc-200 block mt-0.5">
+                <div key={idx} className="p-2 rounded-xl bg-zinc-50 dark:bg-zinc-800/40 text-center min-w-0">
+                  <span className="text-[10px] text-zinc-400 block truncate" title={freq.range}>{freq.range}</span>
+                  <span className="text-xs font-bold font-mono text-zinc-800 dark:text-zinc-200 block mt-0.5 truncate">
                     {freq.count} <span className="font-normal text-[10px] text-zinc-400">({freq.percentage}%)</span>
                   </span>
                 </div>
@@ -214,22 +234,20 @@ export function CustomerCRMCharts({ stats }: CustomerCRMChartsProps) {
                 <button
                   type="button"
                   onClick={() => setActiveTab("leaderboard")}
-                  className={`px-3 py-1 rounded-lg font-medium transition cursor-pointer flex items-center gap-1 ${
-                    activeTab === "leaderboard"
-                      ? "bg-white dark:bg-zinc-900 text-blue-600 dark:text-blue-400 shadow-2xs font-bold"
-                      : "text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200"
-                  }`}
+                  className={`px-3 py-1 rounded-lg font-medium transition cursor-pointer flex items-center gap-1 ${activeTab === "leaderboard"
+                    ? "bg-white dark:bg-zinc-900 text-blue-600 dark:text-blue-400 shadow-2xs font-bold"
+                    : "text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200"
+                    }`}
                 >
                   <span>👑 Top VIP</span>
                 </button>
                 <button
                   type="button"
                   onClick={() => setActiveTab("cities")}
-                  className={`px-3 py-1 rounded-lg font-medium transition cursor-pointer flex items-center gap-1 ${
-                    activeTab === "cities"
-                      ? "bg-white dark:bg-zinc-900 text-blue-600 dark:text-blue-400 shadow-2xs font-bold"
-                      : "text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200"
-                  }`}
+                  className={`px-3 py-1 rounded-lg font-medium transition cursor-pointer flex items-center gap-1 ${activeTab === "cities"
+                    ? "bg-white dark:bg-zinc-900 text-blue-600 dark:text-blue-400 shadow-2xs font-bold"
+                    : "text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200"
+                    }`}
                 >
                   <span>📍 Tỉnh Thành</span>
                 </button>
@@ -253,27 +271,26 @@ export function CustomerCRMCharts({ stats }: CustomerCRMChartsProps) {
                 return (
                   <div key={c.id || idx} className="py-2.5 first:pt-0 last:pb-0 flex items-center gap-3">
                     <div
-                      className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-black shrink-0 ${
-                        rank === 1
-                          ? "bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300"
-                          : rank === 2
+                      className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-black shrink-0 ${rank === 1
+                        ? "bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300"
+                        : rank === 2
                           ? "bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300"
                           : rank === 3
-                          ? "bg-orange-100 text-orange-800 dark:bg-orange-950 dark:text-orange-300"
-                          : "bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400"
-                      }`}
+                            ? "bg-orange-100 text-orange-800 dark:bg-orange-950 dark:text-orange-300"
+                            : "bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400"
+                        }`}
                     >
                       {rank}
                     </div>
 
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between gap-2">
-                        <div className="flex items-center gap-2 truncate">
+                        <div className="flex items-center gap-1.5 truncate min-w-0">
                           <h4 className="text-xs font-bold text-zinc-900 dark:text-zinc-100 truncate">
                             {c.name}
                           </h4>
                           <span
-                            className="text-[10px] font-semibold px-1.5 py-0.2 rounded-full shrink-0"
+                            className="text-[9px] sm:text-[10px] font-semibold px-1.5 py-0.2 rounded-full shrink-0"
                             style={{
                               backgroundColor: `${c.tierColor}15`,
                               color: c.tierColor,
@@ -283,17 +300,17 @@ export function CustomerCRMCharts({ stats }: CustomerCRMChartsProps) {
                             {c.tier}
                           </span>
                         </div>
-                        <span className="text-xs font-bold font-mono text-emerald-600 dark:text-emerald-400 shrink-0">
+                        <span className="text-xs font-bold font-mono text-emerald-600 dark:text-emerald-400 shrink-0 whitespace-nowrap">
                           {c.totalSpentDisplay}
                         </span>
                       </div>
 
-                      <div className="flex items-center justify-between text-[11px] text-zinc-500 dark:text-zinc-400 mt-0.5">
-                        <span className="font-mono text-zinc-500">
+                      <div className="flex items-center justify-between text-[11px] text-zinc-500 dark:text-zinc-400 mt-0.5 gap-2">
+                        <span className="font-mono text-zinc-500 truncate min-w-0">
                           SĐT: {c.phoneMasked} • {c.city}
                         </span>
-                        <span className="font-mono text-indigo-600 dark:text-indigo-400 font-semibold text-[10px]">
-                          {c.ordersCount} đơn hàng
+                        <span className="font-mono text-indigo-600 dark:text-indigo-400 font-semibold text-[10px] shrink-0 whitespace-nowrap">
+                          {c.ordersCount} đơn
                         </span>
                       </div>
 
@@ -316,14 +333,14 @@ export function CustomerCRMCharts({ stats }: CustomerCRMChartsProps) {
 
                 return (
                   <div key={idx} className="py-2.5 first:pt-0 last:pb-0 space-y-1">
-                    <div className="flex items-center justify-between text-xs">
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm">📍</span>
-                        <span className="font-semibold text-zinc-800 dark:text-zinc-200">
+                    <div className="flex items-center justify-between text-xs gap-2">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <span className="text-sm shrink-0">📍</span>
+                        <span className="font-semibold text-zinc-800 dark:text-zinc-200 truncate">
                           {item.city}
                         </span>
                       </div>
-                      <span className="font-mono text-zinc-700 dark:text-zinc-300 font-bold">
+                      <span className="font-mono text-zinc-700 dark:text-zinc-300 font-bold shrink-0 whitespace-nowrap">
                         {item.count} khách ({item.percentage}%)
                       </span>
                     </div>
@@ -340,10 +357,10 @@ export function CustomerCRMCharts({ stats }: CustomerCRMChartsProps) {
           </div>
 
           {/* Footer note */}
-          <div className="pt-3 border-t border-zinc-100 dark:border-zinc-800 flex items-center justify-between text-[11px] text-zinc-500">
-            <span>Dữ liệu đồng bộ trực tiếp từ CRM Sapo Omnichannel</span>
-            <Link href="/dashboard/customers" className="text-blue-600 dark:text-blue-400 hover:underline font-semibold">
-              Quản lý chi tiết {summary.totalCustomers} khách hàng →
+          <div className="pt-3 border-t border-zinc-100 dark:border-zinc-800 flex flex-col sm:flex-row sm:items-center justify-between text-[11px] text-zinc-500 gap-1 sm:gap-2">
+            <span className="truncate">Dữ liệu đồng bộ trực tiếp từ CRM Sapo Omnichannel</span>
+            <Link href="/dashboard/customers" className="text-blue-600 dark:text-blue-400 hover:underline font-semibold shrink-0">
+              Quản lý chi tiết {summary.totalCustomers.toLocaleString("vi-VN")} khách hàng →
             </Link>
           </div>
         </div>

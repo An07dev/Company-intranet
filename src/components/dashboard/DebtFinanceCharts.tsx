@@ -9,12 +9,13 @@ interface DebtFinanceChartsProps {
 }
 
 function formatVND(val: number): string {
-  if (!val || val === 0) return "0 ₫";
-  return val.toLocaleString("vi-VN") + " ₫";
+  if (!val || val === 0) return "0\u00A0₫";
+  return (val || 0).toLocaleString("vi-VN") + "\u00A0₫";
 }
 
 export function DebtFinanceCharts({ stats }: DebtFinanceChartsProps) {
   const [activeTopTab, setActiveTopTab] = useState<"customers" | "suppliers">("customers");
+  const [balanceView, setBalanceView] = useState<"all" | "customers" | "suppliers">("all");
 
   const {
     summary,
@@ -25,6 +26,14 @@ export function DebtFinanceCharts({ stats }: DebtFinanceChartsProps) {
     topDebtors,
     topSuppliers,
   } = stats;
+
+  // Tỷ lệ so sánh trực quan Phải Thu vs Phải Trả
+  const totalBalanceComparison = Math.abs(customerBalance.no_cuoi_ky) + Math.abs(supplierBalance.no_cuoi_ky);
+  const custShare =
+    totalBalanceComparison > 0
+      ? Math.round((Math.abs(customerBalance.no_cuoi_ky) / totalBalanceComparison) * 100)
+      : 50;
+  const suppShare = 100 - custShare;
 
   // Max value cho so sánh thanh đối xứng
   const maxBalanceVal = Math.max(
@@ -176,131 +185,201 @@ export function DebtFinanceCharts({ stats }: DebtFinanceChartsProps) {
             CỘT TRÁI (6 CỘT): CÂN ĐỐI CƠ CẤU & PHÂN TÍCH TUỔI NỢ
            ===================================================================== */}
         <div className="lg:col-span-6 space-y-4 sm:space-y-6">
-          {/* Biểu đồ 1: Cân đối tài chính Khách hàng vs Nhà cung cấp */}
-          <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-4 sm:p-5 shadow-2xs sm:shadow-sm space-y-4">
-            <div className="flex items-center justify-between">
+          {/* Biểu đồ 1: Cân đối tài chính Khách hàng vs Nhà cung cấp (Tối ưu Mobile gọn gàng, thoáng đãng) */}
+          <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-3.5 sm:p-5 shadow-2xs sm:shadow-sm space-y-3.5">
+            {/* Header & Tab Switcher */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
               <h3 className="text-xs sm:text-sm font-bold text-zinc-900 dark:text-zinc-100 flex items-center gap-1.5">
                 <span>📊</span>
-                <span>Cân Đối Cơ Cấu Công Nợ Sapo</span>
+                <span className="sm:hidden">Cân Đối Công Nợ Sapo</span>
+                <span className="hidden sm:inline">Cân Đối Cơ Cấu Công Nợ Sapo</span>
               </h3>
-              <div className="flex items-center gap-2 text-[10px] font-mono">
-                <span className="flex items-center gap-1 text-rose-600 dark:text-rose-400 font-semibold">
-                  <span className="w-2 h-2 rounded-full bg-rose-500"></span> Khách hàng
-                </span>
-                <span className="flex items-center gap-1 text-indigo-600 dark:text-indigo-400 font-semibold">
-                  <span className="w-2 h-2 rounded-full bg-indigo-500"></span> Nhà cung cấp
-                </span>
+
+              {/* Bộ chuyển đổi phân hệ: Cực kỳ gọn và tránh rối mắt trên điện thoại */}
+              <div className="inline-flex p-0.5 rounded-xl bg-zinc-100 dark:bg-zinc-800 text-[11px] self-start sm:self-auto border border-zinc-200/60 dark:border-zinc-700/60">
+                <button
+                  type="button"
+                  onClick={() => setBalanceView("all")}
+                  className={`px-2.5 py-1 rounded-lg font-medium transition cursor-pointer flex items-center gap-1 ${
+                    balanceView === "all"
+                      ? "bg-white dark:bg-zinc-900 text-zinc-900 dark:text-white shadow-2xs font-bold"
+                      : "text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200"
+                  }`}
+                >
+                  <span>⚖️ Đối soát</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setBalanceView("customers")}
+                  className={`px-2.5 py-1 rounded-lg font-medium transition cursor-pointer flex items-center gap-1 ${
+                    balanceView === "customers"
+                      ? "bg-white dark:bg-zinc-900 text-rose-600 dark:text-rose-400 shadow-2xs font-bold"
+                      : "text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200"
+                  }`}
+                >
+                  <span>👥 Khách nợ</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setBalanceView("suppliers")}
+                  className={`px-2.5 py-1 rounded-lg font-medium transition cursor-pointer flex items-center gap-1 ${
+                    balanceView === "suppliers"
+                      ? "bg-white dark:bg-zinc-900 text-indigo-600 dark:text-indigo-400 shadow-2xs font-bold"
+                      : "text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200"
+                  }`}
+                >
+                  <span>🏭 NCC</span>
+                </button>
               </div>
             </div>
 
-            <div className="space-y-3 pt-1">
-              {/* Mục 1: Nợ đầu kỳ */}
-              <div className="space-y-1">
-                <div className="flex justify-between text-xs">
-                  <span className="text-zinc-500 font-medium">Nợ Đầu Kỳ:</span>
-                  <div className="font-mono text-[11px] flex gap-3">
-                    <span className="text-rose-600 dark:text-rose-400 font-medium">
-                      KH: {formatVND(customerBalance.no_dau_ky)}
+            {/* 2 Khung Phân Hệ Rõ Ràng (Tách riêng Khách Hàng và NCC, không bị trộn lẫn số liệu) */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 sm:gap-3">
+              {/* KHỐI 1: KHÁCH HÀNG (PHẢI THU) */}
+              {(balanceView === "all" || balanceView === "customers") && (
+                <div
+                  className={`p-3 rounded-xl sm:rounded-2xl border transition-all ${
+                    balanceView === "customers" ? "sm:col-span-2" : ""
+                  } bg-rose-50/50 dark:bg-rose-950/20 border-rose-200/80 dark:border-rose-900/50 space-y-2`}
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-1.5">
+                      <span className="w-2 h-2 rounded-full bg-rose-500 shrink-0"></span>
+                      <span className="text-xs font-bold text-rose-900 dark:text-rose-200">
+                        Khách Hàng (Phải Thu)
+                      </span>
+                    </div>
+                    <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-rose-100 dark:bg-rose-900/60 text-rose-700 dark:text-rose-300 font-semibold font-mono">
+                      {summary.totalDebtors} khách
                     </span>
-                    <span className="text-indigo-600 dark:text-indigo-400 font-medium">
-                      NCC: {formatVND(supplierBalance.no_dau_ky)}
+                  </div>
+
+                  {/* Số nợ cuối kỳ nổi bật */}
+                  <div className="p-2 rounded-lg bg-white/90 dark:bg-zinc-900/80 border border-rose-100 dark:border-rose-900/40 flex items-center justify-between">
+                    <span className="text-[11px] text-zinc-500 dark:text-zinc-400 font-medium">Cuối kỳ còn nợ:</span>
+                    <span className="text-xs sm:text-sm font-black font-mono text-rose-600 dark:text-rose-400 whitespace-nowrap">
+                      {formatVND(customerBalance.no_cuoi_ky)}
                     </span>
+                  </div>
+
+                  {/* Luồng luân chuyển công nợ 3 dòng */}
+                  <div className="space-y-1 text-xs pt-0.5">
+                    <div className="flex items-center justify-between text-zinc-600 dark:text-zinc-400 text-[11px]">
+                      <span>Nợ đầu kỳ:</span>
+                      <span className="font-mono font-medium text-zinc-800 dark:text-zinc-200 whitespace-nowrap">
+                        {formatVND(customerBalance.no_dau_ky)}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between text-zinc-600 dark:text-zinc-400 text-[11px]">
+                      <span>Phát sinh bán (+):</span>
+                      <span className="font-mono font-medium text-rose-600 dark:text-rose-400 whitespace-nowrap">
+                        +{formatVND(customerBalance.no_tang_trong_ky)}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between text-zinc-600 dark:text-zinc-400 text-[11px]">
+                      <span>Đã thu hồi (-):</span>
+                      <span className="font-mono font-medium text-emerald-600 dark:text-emerald-400 whitespace-nowrap">
+                        -{formatVND(customerBalance.no_giam_trong_ky)}
+                      </span>
+                    </div>
                   </div>
                 </div>
-                <div className="grid grid-cols-2 gap-2 h-2">
-                  <div className="w-full bg-zinc-100 dark:bg-zinc-800 rounded-full overflow-hidden">
-                    <div
-                      style={{ width: `${Math.min((customerBalance.no_dau_ky / maxBalanceVal) * 100, 100)}%` }}
-                      className="h-full bg-rose-500 rounded-full"
-                    />
+              )}
+
+              {/* KHỐI 2: NHÀ CUNG CẤP (PHẢI TRẢ) */}
+              {(balanceView === "all" || balanceView === "suppliers") && (
+                <div
+                  className={`p-3 rounded-xl sm:rounded-2xl border transition-all ${
+                    balanceView === "suppliers" ? "sm:col-span-2" : ""
+                  } bg-indigo-50/50 dark:bg-indigo-950/20 border-indigo-200/80 dark:border-indigo-900/50 space-y-2`}
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-1.5">
+                      <span className="w-2 h-2 rounded-full bg-indigo-500 shrink-0"></span>
+                      <span className="text-xs font-bold text-indigo-900 dark:text-indigo-200">
+                        Nhà Cung Cấp (Phải Trả)
+                      </span>
+                    </div>
+                    <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-indigo-100 dark:bg-indigo-900/60 text-indigo-700 dark:text-indigo-300 font-semibold font-mono">
+                      {summary.totalSuppliers} NCC
+                    </span>
                   </div>
-                  <div className="w-full bg-zinc-100 dark:bg-zinc-800 rounded-full overflow-hidden">
-                    <div
-                      style={{ width: `${Math.min((Math.abs(supplierBalance.no_dau_ky) / maxBalanceVal) * 100, 100)}%` }}
-                      className="h-full bg-indigo-500 rounded-full"
-                    />
+
+                  {/* Số nợ cuối kỳ nổi bật */}
+                  <div className="p-2 rounded-lg bg-white/90 dark:bg-zinc-900/80 border border-indigo-100 dark:border-indigo-900/40 flex items-center justify-between">
+                    <span className="text-[11px] text-zinc-500 dark:text-zinc-400 font-medium">Cuối kỳ phải trả:</span>
+                    <span className="text-xs sm:text-sm font-black font-mono text-indigo-600 dark:text-indigo-400 whitespace-nowrap">
+                      {formatVND(supplierBalance.no_cuoi_ky)}
+                    </span>
+                  </div>
+
+                  {/* Luồng luân chuyển công nợ 3 dòng */}
+                  <div className="space-y-1 text-xs pt-0.5">
+                    <div className="flex items-center justify-between text-zinc-600 dark:text-zinc-400 text-[11px]">
+                      <span>Nợ đầu kỳ:</span>
+                      <span className="font-mono font-medium text-zinc-800 dark:text-zinc-200 whitespace-nowrap">
+                        {formatVND(supplierBalance.no_dau_ky)}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between text-zinc-600 dark:text-zinc-400 text-[11px]">
+                      <span>Phát sinh nhập (+):</span>
+                      <span className="font-mono font-medium text-indigo-600 dark:text-indigo-400 whitespace-nowrap">
+                        +{formatVND(supplierBalance.no_tang_trong_ky)}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between text-zinc-600 dark:text-zinc-400 text-[11px]">
+                      <span>Đã thanh toán (-):</span>
+                      <span className="font-mono font-medium text-emerald-600 dark:text-emerald-400 whitespace-nowrap">
+                        -{formatVND(supplierBalance.no_giam_trong_ky)}
+                      </span>
+                    </div>
                   </div>
                 </div>
+              )}
+            </div>
+
+            {/* HỘP TỔNG KẾT: Vị Thế Chênh Lệch Ròng & Thanh Cân Đối Tỷ Lệ */}
+            <div className="p-2.5 sm:p-3 rounded-xl bg-zinc-50/80 dark:bg-zinc-800/40 border border-zinc-200/80 dark:border-zinc-800 space-y-1.5">
+              <div className="flex items-center justify-between text-xs gap-2">
+                <span className="text-zinc-600 dark:text-zinc-400 text-[11px] font-medium">
+                  Chênh lệch ròng (Thu - Trả):
+                </span>
+                <span
+                  className={`font-mono font-bold text-xs sm:text-sm whitespace-nowrap ${
+                    summary.netReceivable >= 0
+                      ? "text-emerald-600 dark:text-emerald-400"
+                      : "text-rose-600 dark:text-rose-400"
+                  }`}
+                >
+                  {summary.netReceivable >= 0 ? "+" : ""}
+                  {formatVND(summary.netReceivable)}
+                </span>
               </div>
 
-              {/* Mục 2: Nợ tăng trong kỳ */}
-              <div className="space-y-1">
-                <div className="flex justify-between text-xs">
-                  <span className="text-zinc-500 font-medium">Nợ Tăng Trong Kỳ (Bán / Nhập):</span>
-                  <div className="font-mono text-[11px] flex gap-3">
-                    <span className="text-rose-600 dark:text-rose-400 font-medium">
-                      KH: +{formatVND(customerBalance.no_tang_trong_ky)}
-                    </span>
-                    <span className="text-indigo-600 dark:text-indigo-400 font-medium">
-                      NCC: +{formatVND(supplierBalance.no_tang_trong_ky)}
-                    </span>
-                  </div>
-                </div>
-                <div className="grid grid-cols-2 gap-2 h-2">
-                  <div className="w-full bg-zinc-100 dark:bg-zinc-800 rounded-full overflow-hidden">
+              {/* Thanh tỷ lệ so sánh trực quan giữa Phải Thu vs Phải Trả */}
+              {totalBalanceComparison > 0 && (
+                <div className="space-y-1">
+                  <div className="w-full bg-zinc-200 dark:bg-zinc-700 h-1.5 rounded-full overflow-hidden flex">
                     <div
-                      style={{ width: `${Math.min((customerBalance.no_tang_trong_ky / maxBalanceVal) * 100, 100)}%` }}
-                      className="h-full bg-rose-500 rounded-full"
+                      style={{ width: `${custShare}%` }}
+                      className="h-full bg-rose-500 transition-all duration-500"
+                      title={`Phải thu: ${formatVND(Math.abs(customerBalance.no_cuoi_ky))} (${custShare}%)`}
+                    />
+                    <div
+                      style={{ width: `${suppShare}%` }}
+                      className="h-full bg-indigo-500 transition-all duration-500"
+                      title={`Phải trả: ${formatVND(Math.abs(supplierBalance.no_cuoi_ky))} (${suppShare}%)`}
                     />
                   </div>
-                  <div className="w-full bg-zinc-100 dark:bg-zinc-800 rounded-full overflow-hidden">
-                    <div
-                      style={{ width: `${Math.min((supplierBalance.no_tang_trong_ky / maxBalanceVal) * 100, 100)}%` }}
-                      className="h-full bg-indigo-500 rounded-full"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              {/* Mục 3: Nợ giảm trong kỳ */}
-              <div className="space-y-1">
-                <div className="flex justify-between text-xs">
-                  <span className="text-zinc-500 font-medium">Nợ Giảm Trong Kỳ (Đã Thu / Trả):</span>
-                  <div className="font-mono text-[11px] flex gap-3">
-                    <span className="text-emerald-600 dark:text-emerald-400 font-medium">
-                      KH: -{formatVND(customerBalance.no_giam_trong_ky)}
+                  <div className="flex items-center justify-between text-[10px] font-mono text-zinc-400">
+                    <span className="text-rose-600 dark:text-rose-400 font-semibold">Thu: {custShare}%</span>
+                    <span className="text-emerald-600 dark:text-emerald-400 font-semibold">
+                      {summary.netReceivable >= 0 ? "✓ Thu > Trả (An toàn)" : "⚠ Trả > Thu"}
                     </span>
-                    <span className="text-emerald-600 dark:text-emerald-400 font-medium">
-                      NCC: -{formatVND(supplierBalance.no_giam_trong_ky)}
-                    </span>
+                    <span className="text-indigo-600 dark:text-indigo-400 font-semibold">Trả: {suppShare}%</span>
                   </div>
                 </div>
-                <div className="grid grid-cols-2 gap-2 h-2">
-                  <div className="w-full bg-zinc-100 dark:bg-zinc-800 rounded-full overflow-hidden">
-                    <div
-                      style={{ width: `${Math.min((customerBalance.no_giam_trong_ky / maxBalanceVal) * 100, 100)}%` }}
-                      className="h-full bg-emerald-500 rounded-full"
-                    />
-                  </div>
-                  <div className="w-full bg-zinc-100 dark:bg-zinc-800 rounded-full overflow-hidden">
-                    <div
-                      style={{ width: `${Math.min((supplierBalance.no_giam_trong_ky / maxBalanceVal) * 100, 100)}%` }}
-                      className="h-full bg-emerald-500 rounded-full"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              {/* Mục 4: Phải thu / Trả cuối kỳ */}
-              <div className="p-2.5 rounded-xl bg-zinc-50 dark:bg-zinc-800/40 border border-zinc-100 dark:border-zinc-800/80 space-y-1.5">
-                <div className="flex justify-between text-xs font-semibold text-zinc-800 dark:text-zinc-200">
-                  <span>Phải Thu / Trả Cuối Kỳ:</span>
-                  <div className="font-mono text-xs flex gap-3">
-                    <span className="text-rose-600 dark:text-rose-400 font-bold">
-                      KH: {formatVND(customerBalance.no_cuoi_ky)}
-                    </span>
-                    <span className="text-indigo-600 dark:text-indigo-400 font-bold">
-                      NCC: {formatVND(supplierBalance.no_cuoi_ky)}
-                    </span>
-                  </div>
-                </div>
-                <div className="flex items-center justify-between text-[11px] text-zinc-500">
-                  <span>Vị thế chênh lệch ròng (Phải thu - Phải trả):</span>
-                  <span className="font-mono font-bold text-emerald-600 dark:text-emerald-400">
-                    +{formatVND(summary.netReceivable)}
-                  </span>
-                </div>
-              </div>
+              )}
             </div>
           </div>
 

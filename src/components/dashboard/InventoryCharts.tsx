@@ -138,9 +138,7 @@ export function InventoryCharts({ stats }: InventoryChartsProps) {
                 <span>🛡️</span>
                 <span>Sức Khỏe Kho &amp; Trạng Thái Tồn</span>
               </h3>
-              <span className="text-[11px] px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 font-mono font-medium">
-                {branch.name}
-              </span>
+
             </div>
             <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-1">
               Phân loại 432 sản phẩm theo mức độ đáp ứng đơn hàng và phổ giá bán
@@ -220,19 +218,23 @@ export function InventoryCharts({ stats }: InventoryChartsProps) {
           </div>
 
           {/* Footer note */}
-          <div className="pt-3 border-t border-zinc-100 dark:border-zinc-800 flex items-center justify-between text-[11px] text-zinc-500">
-            <span>Địa chỉ: {branch.address}</span>
-            <span className="text-emerald-600 dark:text-emerald-400 font-medium">Kho chính</span>
+          <div className="pt-2.5 sm:pt-3 border-t border-zinc-100 dark:border-zinc-800 flex items-center justify-between text-[11px] text-zinc-500">
+            <span className="truncate">📍 {branch.address}</span>
           </div>
         </div>
 
         {/* Cột Phải (7 cols): Top mặt hàng tồn kho nhiều nhất & Top giá trị tồn kho */}
-        <div className="lg:col-span-7 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-4 sm:p-5 shadow-2xs sm:shadow-sm flex flex-col justify-between">
+        <div className="lg:col-span-7 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-3.5 sm:p-5 shadow-2xs sm:shadow-sm flex flex-col justify-between">
           <div>
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 sm:gap-2.5">
               <h3 className="text-sm sm:text-base font-bold text-zinc-900 dark:text-zinc-100 flex items-center gap-1.5">
                 <span>🏆</span>
-                <span>
+                <span className="sm:hidden">
+                  {activeTab === "stock"
+                    ? "Top Mặt Hàng Tồn Lớn Nhất"
+                    : "Top Mặt Hàng Giá Trị Cao Nhất"}
+                </span>
+                <span className="hidden sm:inline">
                   {activeTab === "stock"
                     ? "Top Mặt Hàng Số Lượng Tồn Lớn Nhất"
                     : "Top Mặt Hàng Có Giá Trị Lưu Kho Cao Nhất"}
@@ -240,26 +242,24 @@ export function InventoryCharts({ stats }: InventoryChartsProps) {
               </h3>
 
               {/* Tab Switcher */}
-              <div className="inline-flex p-0.5 rounded-xl bg-zinc-100 dark:bg-zinc-800 text-[11px] self-start sm:self-auto">
+              <div className="inline-flex p-0.5 rounded-xl bg-zinc-100 dark:bg-zinc-800 text-[11px] self-start sm:self-auto border border-zinc-200/60 dark:border-zinc-700/60">
                 <button
                   type="button"
                   onClick={() => setActiveTab("stock")}
-                  className={`px-3 py-1 rounded-lg font-medium transition cursor-pointer flex items-center gap-1 ${
-                    activeTab === "stock"
-                      ? "bg-white dark:bg-zinc-900 text-emerald-600 dark:text-emerald-400 shadow-2xs font-bold"
-                      : "text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200"
-                  }`}
+                  className={`px-2.5 sm:px-3 py-1 rounded-lg font-medium transition cursor-pointer flex items-center gap-1 ${activeTab === "stock"
+                    ? "bg-white dark:bg-zinc-900 text-emerald-600 dark:text-emerald-400 shadow-2xs font-bold"
+                    : "text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200"
+                    }`}
                 >
                   <span>📦 Theo Số Lượng</span>
                 </button>
                 <button
                   type="button"
                   onClick={() => setActiveTab("value")}
-                  className={`px-3 py-1 rounded-lg font-medium transition cursor-pointer flex items-center gap-1 ${
-                    activeTab === "value"
-                      ? "bg-white dark:bg-zinc-900 text-emerald-600 dark:text-emerald-400 shadow-2xs font-bold"
-                      : "text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200"
-                  }`}
+                  className={`px-2.5 sm:px-3 py-1 rounded-lg font-medium transition cursor-pointer flex items-center gap-1 ${activeTab === "value"
+                    ? "bg-white dark:bg-zinc-900 text-emerald-600 dark:text-emerald-400 shadow-2xs font-bold"
+                    : "text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200"
+                    }`}
                 >
                   <span>💰 Theo Giá Trị</span>
                 </button>
@@ -274,22 +274,21 @@ export function InventoryCharts({ stats }: InventoryChartsProps) {
           </div>
 
           {/* Danh sách sản phẩm nổi bật */}
-          <div className="my-4 divide-y divide-zinc-100 dark:divide-zinc-800/80">
+          <div className="my-3 sm:my-4 divide-y divide-zinc-100 dark:divide-zinc-800/80">
             {activeTab === "stock" && (
               topStockProducts.map((prod, idx) => {
                 const rank = idx + 1;
                 const barWidth = Math.max((prod.stock / maxStock) * 100, 4);
 
                 return (
-                  <div key={prod.id || idx} className="py-2.5 first:pt-0 last:pb-0 flex items-center gap-3">
+                  <div key={prod.id || idx} className="py-2.5 first:pt-0 last:pb-0 flex items-center gap-2.5 sm:gap-3">
                     <div
-                      className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-black shrink-0 ${
-                        rank === 1
-                          ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300"
-                          : rank === 2
+                      className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-black shrink-0 ${rank === 1
+                        ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300"
+                        : rank === 2
                           ? "bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300"
                           : "bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400"
-                      }`}
+                        }`}
                     >
                       {rank}
                     </div>
@@ -304,29 +303,40 @@ export function InventoryCharts({ stats }: InventoryChartsProps) {
                     </div>
 
                     {/* Info */}
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center justify-between gap-2">
-                        <h4 className="text-xs font-semibold text-zinc-900 dark:text-zinc-100 truncate" title={prod.name}>
-                          {prod.name}
-                        </h4>
-                        <span className="text-xs font-bold font-mono text-emerald-600 dark:text-emerald-400 shrink-0">
-                          {prod.stock.toLocaleString("vi-VN")} cái
-                        </span>
-                      </div>
+                    <div className="flex-1 min-w-0 space-y-1">
+                      {/* Dòng 1: Tên sản phẩm hiển thị đầy đủ, cho phép xuống dòng thay vì bị cắt ngắn */}
+                      <h4
+                        className="text-xs sm:text-sm font-semibold text-zinc-900 dark:text-zinc-100 line-clamp-2 leading-snug hover:text-emerald-600 cursor-pointer"
+                        title={prod.name}
+                      >
+                        {prod.name}
+                      </h4>
 
-                      <div className="flex items-center justify-between text-[11px] text-zinc-500 dark:text-zinc-400 mt-0.5">
-                        <span className="font-mono text-zinc-600 dark:text-zinc-300 truncate max-w-[150px]">
-                          {prod.priceDisplay}
-                        </span>
-                        {prod.sku && (
-                          <span className="font-mono text-[10px] bg-zinc-100 dark:bg-zinc-800 px-1.5 py-0.5 rounded text-zinc-500">
-                            {prod.sku}
+                      {/* Dòng 2: Giá & Tồn kho & SKU */}
+                      <div className="flex items-center justify-between text-[11px] text-zinc-500 dark:text-zinc-400 gap-1.5 flex-wrap">
+                        <div className="flex items-center gap-1.5 min-w-0">
+                          <span className="font-mono text-zinc-700 dark:text-zinc-300 font-medium text-[10px] sm:text-[11px] whitespace-nowrap">
+                            {prod.priceDisplay}
                           </span>
-                        )}
+                          {prod.sku && (
+                            <span
+                              className="hidden sm:inline-block font-mono text-[10px] bg-zinc-100 dark:bg-zinc-800 px-1.5 py-0.5 rounded text-zinc-500 max-w-[150px] truncate"
+                              title={prod.sku}
+                            >
+                              {prod.sku}
+                            </span>
+                          )}
+                        </div>
+
+                        <div className="flex items-center gap-1 font-mono text-[10px] sm:text-[11px] shrink-0">
+                          <span className="font-bold text-emerald-600 dark:text-emerald-400">
+                            {prod.stock.toLocaleString("vi-VN")} cái
+                          </span>
+                        </div>
                       </div>
 
-                      {/* Bar */}
-                      <div className="w-full bg-zinc-100 dark:bg-zinc-800 h-1.5 rounded-full overflow-hidden mt-1.5">
+                      {/* Dòng 3: Progress Bar */}
+                      <div className="w-full bg-zinc-100 dark:bg-zinc-800 h-1 sm:h-1.5 rounded-full overflow-hidden mt-1">
                         <div
                           style={{ width: `${barWidth}%` }}
                           className="h-full bg-gradient-to-r from-emerald-500 to-teal-400 rounded-full transition-all duration-500"
@@ -344,15 +354,14 @@ export function InventoryCharts({ stats }: InventoryChartsProps) {
                 const barWidth = Math.max((prod.totalValue / maxValue) * 100, 4);
 
                 return (
-                  <div key={prod.id || idx} className="py-2.5 first:pt-0 last:pb-0 flex items-center gap-3">
+                  <div key={prod.id || idx} className="py-2.5 first:pt-0 last:pb-0 flex items-center gap-2.5 sm:gap-3">
                     <div
-                      className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-black shrink-0 ${
-                        rank === 1
-                          ? "bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300"
-                          : rank === 2
+                      className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-black shrink-0 ${rank === 1
+                        ? "bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300"
+                        : rank === 2
                           ? "bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300"
                           : "bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400"
-                      }`}
+                        }`}
                     >
                       {rank}
                     </div>
@@ -365,26 +374,34 @@ export function InventoryCharts({ stats }: InventoryChartsProps) {
                       )}
                     </div>
 
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center justify-between gap-2">
-                        <h4 className="text-xs font-semibold text-zinc-900 dark:text-zinc-100 truncate" title={prod.name}>
-                          {prod.name}
-                        </h4>
+                    <div className="flex-1 min-w-0 space-y-1">
+                      {/* Dòng 1: Tên sản phẩm */}
+                      <h4
+                        className="text-xs sm:text-sm font-semibold text-zinc-900 dark:text-zinc-100 line-clamp-2 leading-snug hover:text-amber-600 cursor-pointer"
+                        title={prod.name}
+                      >
+                        {prod.name}
+                      </h4>
+
+                      {/* Dòng 2: Đơn giá & Tồn kho & Tổng giá trị */}
+                      <div className="flex items-center justify-between text-[11px] text-zinc-500 dark:text-zinc-400 gap-1.5 flex-wrap">
+                        <div className="flex items-center gap-1.5 font-mono text-[10px] sm:text-[11px]">
+                          <span className="text-zinc-500 dark:text-zinc-400 whitespace-nowrap">
+                            Đơn giá: ₫{prod.price.toLocaleString("vi-VN")}
+                          </span>
+                          <span className="text-zinc-300 dark:text-zinc-600">•</span>
+                          <span className="text-emerald-600 dark:text-emerald-400 font-semibold whitespace-nowrap">
+                            Tồn {prod.stock.toLocaleString("vi-VN")} cái
+                          </span>
+                        </div>
+
                         <span className="text-xs font-bold font-mono text-amber-600 dark:text-amber-400 shrink-0">
                           {prod.totalValueDisplay}
                         </span>
                       </div>
 
-                      <div className="flex items-center justify-between text-[11px] text-zinc-500 dark:text-zinc-400 mt-0.5">
-                        <span className="font-mono text-zinc-500">
-                          Đơn giá: ₫{prod.price.toLocaleString("vi-VN")}
-                        </span>
-                        <span className="font-mono text-emerald-600 dark:text-emerald-400 font-semibold text-[10px]">
-                          Tồn {prod.stock.toLocaleString("vi-VN")} cái
-                        </span>
-                      </div>
-
-                      <div className="w-full bg-zinc-100 dark:bg-zinc-800 h-1.5 rounded-full overflow-hidden mt-1.5">
+                      {/* Dòng 3: Progress Bar */}
+                      <div className="w-full bg-zinc-100 dark:bg-zinc-800 h-1 sm:h-1.5 rounded-full overflow-hidden mt-1">
                         <div
                           style={{ width: `${barWidth}%` }}
                           className="h-full bg-gradient-to-r from-amber-400 to-emerald-500 rounded-full transition-all duration-500"
@@ -398,10 +415,14 @@ export function InventoryCharts({ stats }: InventoryChartsProps) {
           </div>
 
           {/* Footer note */}
-          <div className="pt-3 border-t border-zinc-100 dark:border-zinc-800 flex items-center justify-between text-[11px] text-zinc-500">
+          <div className="pt-3 border-t border-zinc-100 dark:border-zinc-800 flex flex-col sm:flex-row sm:items-center justify-between gap-1.5 text-[11px] text-zinc-500">
             <span>Đồng bộ 2 chiều dữ liệu với Sapo Kho &amp; Shopee</span>
-            <Link href="/dashboard/inventory" className="text-emerald-600 dark:text-emerald-400 hover:underline font-semibold">
-              Chi tiết tồn kho toàn bộ {summary.totalProducts} sản phẩm →
+            <Link
+              href="/dashboard/inventory"
+              className="text-emerald-600 dark:text-emerald-400 hover:underline font-semibold inline-flex items-center gap-1"
+            >
+              <span>Toàn bộ {summary.totalProducts} sản phẩm</span>
+              <span>→</span>
             </Link>
           </div>
         </div>
