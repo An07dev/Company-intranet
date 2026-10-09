@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { OrderModel } from "@/server/models/order.model";
+import { OrderModel, resolveSapoOrderSn } from "@/server/models/order.model";
 import { LogModel } from "@/server/models/log.model";
 import { ShopeeOrder } from "@/types";
 
@@ -69,7 +69,7 @@ export async function POST(request: NextRequest) {
     const mappedOrders: ShopeeOrder[] = [];
 
     for (const o of rawOrders) {
-      const orderSn = String(o.order_number || o.name || o.reference_order_number || o.id);
+      const orderSn = resolveSapoOrderSn(o) || String(o.id || Date.now());
       const rawSource = String(o.source_name || o.channel || "sapo").toLowerCase();
 
       let shopSource = "sapo_web";

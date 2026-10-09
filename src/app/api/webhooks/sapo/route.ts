@@ -1,9 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
-import { OrderModel } from "@/server/models/order.model";
+import crypto from "crypto";
+import { OrderModel, resolveSapoOrderSn } from "@/server/models/order.model";
 import { LogModel } from "@/server/models/log.model";
 import { ShopeeOrder } from "@/types";
 import { connectToDatabase } from "@/server/db";
 import { MongoShopeeProductModel } from "@/server/db/schema";
+import { invalidateShopeeStatsCache } from "@/app/api/dashboard/shopee-stats/route";
+import { invalidateInventoryStatsCache } from "@/app/api/dashboard/inventory-stats/route";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -38,11 +41,58 @@ export async function GET() {
 
 /**
  * POST /api/webhooks/sapo
- * Nhận dữ liệu webhook đơn hàng & sản phẩm từ Sapo
+ * Nhận dữ liệu webhook đơn hàng & sản phẩm từ Sapo (Kèm xác thực HMAC SHA-256)
  */
 export async function POST(request: NextRequest) {
   try {
-    const rawData = await request.json();
+    const rawBody = await request.text();
+
+    if (!rawBody || rawBody.trim() === "") {
+      return NextResponse.json(
+        { success: false, message: "Payload rỗng hoặc không hợp lệ" },
+        { status: 400, headers: corsHeaders }
+      );
+    }
+
+    // -------------------------------------------------------------
+    // XÁC THỰC BẢO MẬT CHỮ KÝ HMAC SHA-256 TỪ SAPO
+    // -------------------------------------------------------------
+    const sapoHmac = request.headers.get("x-sapo-hmac-sha256");
+    const secret = process.env.SAPO_API_SECRET || "b4ddea44a45447a1ab29e3680fc76c16";
+
+    if (sapoHmac) {
+      const calculatedHmac = crypto.createHmac("sha256", secret).update(rawBody, "utf8").digest("base64");
+      const hmacBuffer = Buffer.from(sapoHmac, "utf8");
+      const calcBuffer = Buffer.from(calculatedHmac, "utf8");
+
+      const isValid =
+        hmacBuffer.length === calcBuffer.length &&
+        crypto.timingSafeEqual(hmacBuffer, calcBuffer);
+
+      if (!isValid) {
+        console.error("[Sapo Webhook] ❌ Xác thực chữ ký HMAC SHA-256 thất bại! Request bị từ chối.");
+        return NextResponse.json(
+          { success: false, message: "Chữ ký xác thực Webhook không hợp lệ (Invalid HMAC)" },
+          { status: 401, headers: corsHeaders }
+        );
+      }
+    } else if (process.env.NODE_ENV === "production" && process.env.SAPO_ENFORCE_HMAC === "true") {
+      console.warn("[Sapo Webhook] ⚠️ Thiếu header X-Sapo-Hmac-Sha256 trên môi trường Production.");
+      return NextResponse.json(
+        { success: false, message: "Yêu cầu chữ ký xác thực Webhook (Missing X-Sapo-Hmac-Sha256)" },
+        { status: 401, headers: corsHeaders }
+      );
+    }
+
+    let rawData: any;
+    try {
+      rawData = JSON.parse(rawBody);
+    } catch {
+      return NextResponse.json(
+        { success: false, message: "Payload JSON không hợp lệ" },
+        { status: 400, headers: corsHeaders }
+      );
+    }
 
     if (!rawData || typeof rawData !== "object") {
       return NextResponse.json(
@@ -141,6 +191,8 @@ export async function POST(request: NextRequest) {
           { upsert: true }
         );
 
+        invalidateInventoryStatsCache();
+
         return NextResponse.json(
           {
             success: true,
@@ -162,16 +214,20 @@ export async function POST(request: NextRequest) {
     console.log("Kênh phát sinh (source_name):", orderData.source_name || orderData.channel);
     console.log("Tổng tiền:", orderData.total_price);
 
-    // Xác định mã đơn hàng duy nhất
-    const orderSn = String(
-      orderData.order_number ||
-      orderData.name ||
-      orderData.reference_order_number ||
-      orderData.id
-    );
+    // Xác định mã đơn hàng duy nhất bằng hàm chuẩn hóa (ưu tiên mã sàn thực tế như Shopee 2610096RRSDNPS)
+    const orderSn = resolveSapoOrderSn(orderData) || String(orderData.id || Date.now());
 
     // Xác định tên sàn / nguồn (Shopee, Lazada, TikTok, Website, POS...)
-    const shopSource = (orderData.source_name || orderData.channel || "sapo").toLowerCase();
+    const rawSource = String(orderData.source_name || orderData.channel || "sapo").toLowerCase();
+    let shopSource = "sapo_web";
+    if (rawSource.includes("shopee")) shopSource = "sapo_shopee";
+    else if (rawSource.includes("tiktok")) shopSource = "sapo_tiktok";
+    else if (rawSource.includes("lazada")) shopSource = "sapo_lazada";
+    else if (rawSource === "admin" || rawSource.includes("pos")) shopSource = "sapo_pos";
+    else if (rawSource.includes("facebook")) shopSource = "sapo_facebook";
+    else if (rawSource.includes("zalo")) shopSource = "sapo_zalo";
+    else if (rawSource.includes("web") || rawSource.includes("online")) shopSource = "sapo_web";
+    else shopSource = `sapo_${rawSource}`;
 
     // Lấy thông tin khách hàng
     const buyerName =
@@ -216,7 +272,7 @@ export async function POST(request: NextRequest) {
 
     const mappedOrder: ShopeeOrder = {
       order_sn: orderSn,
-      shop_username: `sapo_${shopSource}`,
+      shop_username: shopSource,
       buyer_username: buyerName,
       total_amount: Number(orderData.total_price) || 0,
       payment_method: orderData.gateway || "Chưa rõ",
@@ -234,6 +290,7 @@ export async function POST(request: NextRequest) {
     // Lưu / Cập nhật vào MongoDB thông qua OrderModel
     try {
       const syncResult = await OrderModel.upsertOrders([mappedOrder], mappedOrder.shop_username);
+      invalidateShopeeStatsCache();
       console.log(`[Sapo Webhook] Đã lưu thành công đơn #${orderSn} vào Database (Thêm mới: ${syncResult.inserted}, Cập nhật: ${syncResult.updated}, Trạng thái: ${orderStatus})`);
 
       const logMsg = isCancelled

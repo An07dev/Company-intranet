@@ -159,6 +159,43 @@ function parseSapoErrorDetail(
 }
 
 /**
+ * GET /api/sapo/inventory
+ * Truy vấn danh sách sản phẩm và tồn kho đồng bộ từ Sapo
+ */
+export async function GET(request: NextRequest) {
+  try {
+    await connectToDatabase();
+    const { searchParams } = new URL(request.url);
+    const page = Math.max(1, parseInt(searchParams.get("page") || "1"));
+    const limit = Math.max(1, Math.min(100, parseInt(searchParams.get("limit") || "20")));
+    const skip = (page - 1) * limit;
+
+    const [products, total] = await Promise.all([
+      MongoShopeeProductModel.find({}).sort({ updatedAt: -1 }).skip(skip).limit(limit).lean(),
+      MongoShopeeProductModel.countDocuments({}),
+    ]);
+
+    return NextResponse.json({
+      success: true,
+      data: {
+        products,
+        pagination: {
+          page,
+          limit,
+          total,
+          totalPages: Math.ceil(total / limit),
+        },
+      },
+    });
+  } catch (error: any) {
+    return NextResponse.json(
+      { success: false, message: error.message || "Lỗi truy vấn dữ liệu tồn kho Sapo" },
+      { status: 500 }
+    );
+  }
+}
+
+/**
  * PUT /api/sapo/inventory
  * Điều chỉnh tồn kho thực tế (Kiểm kho / Cập nhật số lượng khả dụng) 2 chiều lên Sapo
  */

@@ -3,6 +3,8 @@ import { ProductModel } from "@/server/models/product.model";
 import { SapoService } from "@/server/services/sapo.service";
 import { connectToDatabase } from "@/server/db";
 import { MongoShopeeProductModel } from "@/server/db/schema";
+import { invalidateShopeeStatsCache } from "@/app/api/dashboard/shopee-stats/route";
+import { invalidateInventoryStatsCache } from "@/app/api/dashboard/inventory-stats/route";
 
 // Headers hỗ trợ CORS để Chrome Extension bắn dữ liệu trực tiếp không bị chặn
 const corsHeaders = {
@@ -38,6 +40,9 @@ export async function POST(request: NextRequest) {
     }
 
     const result = await ProductModel.upsertProducts(products, shop_username || "baobiyensen");
+
+    invalidateInventoryStatsCache();
+    invalidateShopeeStatsCache();
 
     console.log(
       `[Shopee Product Sync] Đã đồng bộ ${result.total} sản phẩm (Mới: ${result.inserted}, Cập nhật: ${result.updated})`

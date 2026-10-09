@@ -44,6 +44,7 @@ export class LogModel {
       message: input.message,
       details: input.details || {},
       duration_ms: input.duration_ms,
+      timestamp: new Date(now),
       createdAt: now,
     });
 
@@ -58,17 +59,21 @@ export class LogModel {
     await connectToDatabase();
 
     const now = new Date().toISOString();
-    const docs = logs.map(l => ({
-      id: l.id || `log_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
-      level: l.level || "info",
-      type: l.type || "system",
-      source: l.source || "chrome_extension",
-      shop_username: l.shop_username || "baobiyensen",
-      message: l.message,
-      details: l.details || {},
-      duration_ms: l.duration_ms,
-      createdAt: l.createdAt || now,
-    }));
+    const docs = logs.map(l => {
+      const logCreated = l.createdAt || now;
+      return {
+        id: l.id || `log_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+        level: l.level || "info",
+        type: l.type || "system",
+        source: l.source || "chrome_extension",
+        shop_username: l.shop_username || "baobiyensen",
+        message: l.message,
+        details: l.details || {},
+        duration_ms: l.duration_ms,
+        timestamp: new Date(logCreated),
+        createdAt: logCreated,
+      };
+    });
 
     const result = await MongoShopeeLogModel.insertMany(docs);
     return result.length;

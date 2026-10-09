@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { connectToDatabase } from "@/server/db";
 import {
   MongoUserModel,
@@ -123,12 +123,19 @@ let cachedStats: {
 const CACHE_TTL_MS = 30 * 1000;
 let isSeededChecked = false;
 
+export function invalidateDashboardStatsCache() {
+  cachedStats = null;
+}
+
 const WEEKDAY_NAMES = ["Chủ Nhật", "Thứ 2", "Thứ 3", "Thứ 4", "Thứ 5", "Thứ 6", "Thứ 7"];
 
-export async function GET() {
+export async function GET(request?: NextRequest) {
   try {
+    const url = request?.url ? new URL(request.url) : null;
+    const forceRefresh = url?.searchParams.get("refresh") === "true";
+
     const now = Date.now();
-    if (cachedStats && now - cachedStats.timestamp < CACHE_TTL_MS) {
+    if (!forceRefresh && cachedStats && now - cachedStats.timestamp < CACHE_TTL_MS) {
       return NextResponse.json<ApiResponse<DashboardStatsResponse>>(
         {
           success: true,

@@ -424,7 +424,159 @@ export default function ShopeeProductsPage() {
             </p>
           </div>
         ) : (
-          <div className="overflow-x-auto">
+          <div>
+            {/* =========================================================================
+                GIAO DIỆN MOBILE: DANH SÁCH SẢN PHẨM DẠNG THẺ (CARD VIEW - md:hidden)
+               ========================================================================= */}
+            <div className="md:hidden divide-y divide-zinc-200 dark:divide-zinc-800">
+              {products.map((p, idx) => {
+                const varCount = (p.variations || []).length;
+                const rowNumber = (currentPage - 1) * pageSize + idx + 1;
+
+                return (
+                  <div
+                    key={p.item_id || p.id}
+                    onClick={() => setSelectedProduct(p)}
+                    className="p-3.5 space-y-2.5 transition active:bg-zinc-50 dark:active:bg-zinc-800/40 cursor-pointer"
+                  >
+                    {/* Hàng 1: Ảnh + Tên + Mã SKU */}
+                    <div className="flex items-start gap-3">
+                      <div className="relative shrink-0">
+                        {p.image ? (
+                          <img
+                            src={p.image}
+                            alt={p.name}
+                            referrerPolicy="no-referrer"
+                            onError={(e) => {
+                              (e.currentTarget as HTMLElement).style.display = "none";
+                              const fallback = e.currentTarget.parentElement?.querySelector(".img-fallback-m");
+                              if (fallback) (fallback as HTMLElement).style.display = "flex";
+                            }}
+                            className="w-14 h-14 rounded-xl object-cover border border-zinc-200 dark:border-zinc-700 shadow-2xs"
+                          />
+                        ) : null}
+                        <div
+                          className="img-fallback-m w-14 h-14 rounded-xl bg-orange-100 dark:bg-orange-950/40 text-orange-600 items-center justify-center text-xl font-bold shadow-2xs"
+                          style={{ display: p.image ? "none" : "flex" }}
+                        >
+                          📦
+                        </div>
+                        <span className="absolute -top-1.5 -left-1.5 w-5 h-5 bg-zinc-800/80 text-white rounded-full text-[10px] font-mono flex items-center justify-center">
+                          {rowNumber}
+                        </span>
+                      </div>
+
+                      <div className="min-w-0 flex-1 space-y-1">
+                        <h4 className="font-semibold text-xs text-zinc-900 dark:text-white line-clamp-2 leading-snug">
+                          {p.name}
+                        </h4>
+                        <div className="flex items-center gap-1.5 text-[11px] text-zinc-500 font-mono">
+                          <span className="truncate max-w-[130px]">
+                            {p.parent_sku || `ID: ${p.item_id}`}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={(e) => handleCopy(p.item_id, "ID sản phẩm", e)}
+                            className="hover:text-orange-600 p-0.5"
+                            title="Sao chép ID"
+                          >
+                            📋
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Hàng 2: Giá bán & Tồn kho & Phân loại */}
+                    <div className="flex items-center justify-between gap-2 pt-1 border-t border-zinc-100 dark:border-zinc-800/80 text-xs">
+                      <div>
+                        <div className="text-[10px] text-zinc-400">Giá bán</div>
+                        <div className="font-bold text-orange-600 dark:text-orange-400 font-mono text-sm">
+                          {p.price_display && p.price_display !== "₫0" && p.price_display !== "₫"
+                            ? p.price_display
+                            : p.price_min > 0
+                              ? `₫${p.price_min.toLocaleString("vi-VN")}`
+                              : "--"}
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-1.5">
+                        {p.stock > 0 ? (
+                          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
+                            Còn {p.stock.toLocaleString("vi-VN")}
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-rose-100 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800">
+                            Hết hàng
+                          </span>
+                        )}
+
+                        {varCount > 0 && (
+                          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300">
+                            {varCount} loại
+                          </span>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Hàng 3: Thao tác & Doanh số */}
+                    <div className="flex items-center justify-between text-[11px] text-zinc-500 pt-1">
+                      <span>Đã bán 30d: <strong className="text-zinc-900 dark:text-white font-mono">{Number(p.sales_30d || 0).toLocaleString("vi-VN")}</strong></span>
+                      <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+                        {p.product_url && (
+                          <a
+                            href={p.product_url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-orange-600 dark:text-orange-400 font-semibold hover:underline flex items-center gap-0.5 text-[11px]"
+                          >
+                            <span>Shopee</span>
+                            <span>↗</span>
+                          </a>
+                        )}
+                        <button
+                          type="button"
+                          onClick={() => setSelectedProduct(p)}
+                          className="px-2.5 py-1 rounded-lg bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-200 font-semibold hover:bg-zinc-200 text-[11px]"
+                        >
+                          Chi tiết
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+
+              {/* Mobile Pagination Bar */}
+              <div className="flex items-center justify-between gap-2 p-3 bg-zinc-50/50 dark:bg-zinc-900/50 text-xs border-t border-zinc-200 dark:border-zinc-800">
+                <button
+                  type="button"
+                  onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                  disabled={currentPage === 1}
+                  className="px-3 py-1.5 rounded-lg border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 disabled:opacity-40 font-semibold cursor-pointer"
+                >
+                  ‹ Trước
+                </button>
+                <div className="text-center font-semibold text-zinc-700 dark:text-zinc-300">
+                  <span>Trang {currentPage} / {totalPages}</span>
+                  <div className="text-[10px] font-normal text-zinc-400">
+                    {totalRecords.toLocaleString("vi-VN")} sản phẩm
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                  disabled={currentPage === totalPages}
+                  className="px-3 py-1.5 rounded-lg border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 disabled:opacity-40 font-semibold cursor-pointer"
+                >
+                  Sau ›
+                </button>
+              </div>
+            </div>
+
+            {/* =========================================================================
+                GIAO DIỆN DESKTOP: BẢNG DỮ LIỆU ĐẦY ĐỦ (TABLE VIEW - hidden md:block)
+               ========================================================================= */}
+            <div className="hidden md:block overflow-x-auto">
             <table className="w-full text-left text-xs">
               <thead className="bg-zinc-100/60 dark:bg-zinc-800/50 text-zinc-700 dark:text-zinc-200 font-semibold uppercase tracking-wider border-b border-zinc-200 dark:border-zinc-800">
                 <tr>
@@ -599,12 +751,13 @@ export default function ShopeeProductsPage() {
                 })}
               </tbody>
             </table>
+            </div>
           </div>
         )}
 
-        {/* 5. Pagination */}
+        {/* 5. Pagination Desktop */}
         {!loading && totalRecords > 0 && (
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 px-6 py-4 border-t border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-900/50">
+          <div className="hidden md:flex items-center justify-between gap-4 px-6 py-4 border-t border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-900/50">
             <span className="text-xs text-zinc-500 dark:text-zinc-400">
               Hiển thị{" "}
               <strong>

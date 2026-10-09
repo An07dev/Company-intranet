@@ -163,21 +163,28 @@ export function toSafeProduct(doc: IShopeeProductDocument): ShopeeProduct {
 
 export class ProductModel {
   /**
-   * Lưu hoặc cập nhật hàng loạt sản phẩm từ Shopee (chống trùng lặp theo item_id)
+   * Lưu hoặc cập nhật hàng loạt sản phẩm từ Shopee (Atomic bulkWrite, chống N+1 roundtrips & race condition)
    */
   static async upsertProducts(products: ShopeeProduct[], shopUsername = "baobiyensen") {
     await connectToDatabase();
 
+    if (!products || products.length === 0) {
+      return { total: 0, inserted: 0, updated: 0 };
+    }
+
     const now = new Date().toISOString();
-    let insertedCount = 0;
-    let updatedCount = 0;
 
-    for (const prod of products) {
-      if (!prod.item_id) continue;
+    // Khử trùng lặp item_id trong cùng 1 lô (bản ghi cuối cùng ghi đè)
+    const validProdsMap = new Map<string, ShopeeProduct>();
+    for (const p of products) {
+      if (p && p.item_id) {
+        validProdsMap.set(String(p.item_id).trim(), p);
+      }
+    }
 
+    const bulkOps = Array.from(validProdsMap.values()).map((prod) => {
+      const itemIdStr = String(prod.item_id).trim();
       const targetShop = prod.shop_username || shopUsername || "baobiyensen";
-      const existing = await MongoShopeeProductModel.findOne({ item_id: String(prod.item_id) });
-
       const cleanName = sanitizeProductName(prod.name, prod.item_id);
 
       const variationsData = (prod.variations || []).map((v) => ({
@@ -245,57 +252,55 @@ export class ProductModel {
         });
       }
 
-      if (existing) {
-        // Cập nhật sản phẩm cũ
-        existing.shop_username = targetShop;
-        existing.name = cleanName || existing.name;
-        existing.parent_sku = prod.parent_sku !== undefined ? prod.parent_sku : existing.parent_sku;
-        if (pImage) existing.image = pImage;
-        if (prod.product_url) existing.product_url = prod.product_url;
-        if (pMin > 0) existing.price_min = pMin;
-        if (pMax > 0) existing.price_max = pMax;
-        if (pDisplay && pDisplay !== "--") existing.price_display = pDisplay;
-        existing.stock = totalStock;
-        existing.sales_30d = prod.sales_30d !== undefined ? Number(prod.sales_30d) : existing.sales_30d;
-        existing.views_30d = prod.views_30d !== undefined ? String(prod.views_30d) : existing.views_30d;
-        existing.status = totalStock > 0 ? (prod.status || existing.status || "Đang hoạt động") : "Hết hàng";
-        if (variationsData.length > 0) {
-          existing.variations = variationsData;
-        }
-        existing.synced_at = now;
-        existing.updatedAt = now;
-        await existing.save();
-        updatedCount++;
-      } else {
-        // Tạo sản phẩm mới
-        await MongoShopeeProductModel.create({
-          id: `prod_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
-          item_id: String(prod.item_id),
-          name: cleanName || "Sản phẩm Shopee",
-          parent_sku: prod.parent_sku || "",
-          image: pImage,
-          product_url: prod.product_url || `https://banhang.shopee.vn/portal/product/${prod.item_id}`,
-          price_min: pMin,
-          price_max: pMax,
-          price_display: pDisplay || (pMin > 0 ? `₫${pMin.toLocaleString("vi-VN")}` : "--"),
-          stock: totalStock,
-          sales_30d: Number(prod.sales_30d) || 0,
-          views_30d: String(prod.views_30d || "0"),
-          status: totalStock > 0 ? (prod.status || "Đang hoạt động") : "Hết hàng",
-          variations: variationsData,
-          shop_username: targetShop,
-          synced_at: now,
-          createdAt: now,
-          updatedAt: now,
-        });
-        insertedCount++;
-      }
+      const calculatedStatus = totalStock > 0 ? (prod.status || "Đang hoạt động") : "Hết hàng";
+
+      const setDoc: any = {
+        shop_username: targetShop,
+        stock: totalStock,
+        status: calculatedStatus,
+        synced_at: now,
+        updatedAt: now,
+      };
+
+      if (cleanName) setDoc.name = cleanName;
+      if (prod.parent_sku !== undefined) setDoc.parent_sku = prod.parent_sku;
+      if (pImage) setDoc.image = pImage;
+      if (prod.product_url) setDoc.product_url = prod.product_url;
+      if (pMin > 0) setDoc.price_min = pMin;
+      if (pMax > 0) setDoc.price_max = pMax;
+      if (pDisplay && pDisplay !== "--") setDoc.price_display = pDisplay;
+      if (prod.sales_30d !== undefined) setDoc.sales_30d = Number(prod.sales_30d);
+      if (prod.views_30d !== undefined) setDoc.views_30d = String(prod.views_30d);
+      if (variationsData.length > 0) setDoc.variations = variationsData;
+
+      const setOnInsertDoc: any = {
+        id: prod.id || `prod_${itemIdStr}_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+        item_id: itemIdStr,
+        createdAt: prod.createdAt || now,
+      };
+
+      return {
+        updateOne: {
+          filter: { item_id: itemIdStr },
+          update: {
+            $set: setDoc,
+            $setOnInsert: setOnInsertDoc,
+          },
+          upsert: true,
+        },
+      };
+    });
+
+    if (bulkOps.length === 0) {
+      return { total: 0, inserted: 0, updated: 0 };
     }
+
+    const res = await MongoShopeeProductModel.bulkWrite(bulkOps, { ordered: false });
 
     return {
       total: products.length,
-      inserted: insertedCount,
-      updated: updatedCount,
+      inserted: res.upsertedCount || 0,
+      updated: res.modifiedCount || 0,
     };
   }
 

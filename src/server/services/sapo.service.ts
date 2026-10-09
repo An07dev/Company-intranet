@@ -13,6 +13,13 @@ function getAuthHeader(): string {
   return `Basic ${token}`;
 }
 
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+const MAX_RETRIES = 3;
+const RETRYABLE_STATUS_CODES = new Set([429, 500, 502, 503, 504]);
+
 async function sapoFetch<T = any>(endpoint: string, options: RequestInit = {}): Promise<T> {
   const url = `https://${SAPO_DOMAIN}${endpoint.startsWith("/") ? endpoint : `/${endpoint}`}`;
   
@@ -23,33 +30,74 @@ async function sapoFetch<T = any>(endpoint: string, options: RequestInit = {}): 
     ...(options.headers || {}),
   };
 
-  const res = await fetch(url, {
-    ...options,
-    headers,
-    cache: "no-store",
-  });
+  let lastError: any = null;
 
-  if (!res.ok) {
-    let errorDetail = "";
+  for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
     try {
-      const errJson = await res.json();
-      errorDetail = JSON.stringify(errJson);
-    } catch {
-      errorDetail = await res.text();
+      const res = await fetch(url, {
+        ...options,
+        headers,
+        cache: "no-store",
+      });
+
+      if (!res.ok) {
+        let errorDetail = "";
+        try {
+          const errJson = await res.json();
+          errorDetail = JSON.stringify(errJson);
+        } catch {
+          errorDetail = await res.text();
+        }
+
+        const shouldRetry = RETRYABLE_STATUS_CODES.has(res.status) && attempt < MAX_RETRIES;
+        if (shouldRetry) {
+          const retryAfterHeader = res.headers.get("Retry-After");
+          let delayMs = retryAfterHeader ? Number(retryAfterHeader) * 1000 : 0;
+          if (!delayMs || isNaN(delayMs) || delayMs <= 0) {
+            delayMs = Math.pow(2, attempt) * 500 + Math.floor(Math.random() * 200);
+          }
+          console.warn(
+            `[Sapo API] Gặp mã lỗi ${res.status} (${res.statusText}) khi gọi ${endpoint}. Đang thử lại lần ${attempt + 1}/${MAX_RETRIES} sau ${delayMs}ms...`
+          );
+          await sleep(delayMs);
+          continue;
+        }
+
+        throw new Error(`Sapo API error [${res.status}] ${res.statusText}: ${errorDetail}`);
+      }
+
+      const text = await res.text();
+      if (!text || text.trim() === "") {
+        return {} as T;
+      }
+
+      try {
+        return JSON.parse(text) as T;
+      } catch {
+        return text as unknown as T;
+      }
+    } catch (err: any) {
+      lastError = err;
+      const isNetworkError =
+        err?.name === "TypeError" ||
+        err?.message?.includes("fetch failed") ||
+        err?.code === "ECONNRESET" ||
+        err?.code === "ETIMEDOUT";
+
+      if (isNetworkError && attempt < MAX_RETRIES) {
+        const delayMs = Math.pow(2, attempt) * 500 + Math.floor(Math.random() * 200);
+        console.warn(
+          `[Sapo API] Gián đoạn mạng (${err.message}) khi gọi ${endpoint}. Đang thử lại lần ${attempt + 1}/${MAX_RETRIES} sau ${delayMs}ms...`
+        );
+        await sleep(delayMs);
+        continue;
+      }
+
+      throw err;
     }
-    throw new Error(`Sapo API error [${res.status}] ${res.statusText}: ${errorDetail}`);
   }
 
-  const text = await res.text();
-  if (!text || text.trim() === "") {
-    return {} as T;
-  }
-
-  try {
-    return JSON.parse(text) as T;
-  } catch {
-    return text as unknown as T;
-  }
+  throw lastError || new Error(`Sapo API call failed after ${MAX_RETRIES} retries`);
 }
 
 export interface SapoCustomer {

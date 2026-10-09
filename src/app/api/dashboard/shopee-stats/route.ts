@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { connectToDatabase } from "@/server/db";
 import { MongoShopeeOrderModel, MongoShopeeProductModel } from "@/server/db/schema";
 import { ApiResponse } from "@/types";
@@ -155,10 +155,17 @@ let cachedShopeeStats: {
 } | null = null;
 const CACHE_TTL_MS = 45 * 1000;
 
-export async function GET() {
+export function invalidateShopeeStatsCache() {
+  cachedShopeeStats = null;
+}
+
+export async function GET(request?: NextRequest) {
   try {
+    const url = request?.url ? new URL(request.url) : null;
+    const forceRefresh = url?.searchParams.get("refresh") === "true";
+
     const now = Date.now();
-    if (cachedShopeeStats && now - cachedShopeeStats.timestamp < CACHE_TTL_MS) {
+    if (!forceRefresh && cachedShopeeStats && now - cachedShopeeStats.timestamp < CACHE_TTL_MS) {
       return NextResponse.json<ApiResponse<ShopeeDashboardStats>>(
         {
           success: true,

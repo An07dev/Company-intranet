@@ -694,6 +694,7 @@ export interface IShopeeLogDocument {
   message: string;
   details?: Record<string, any>;
   duration_ms?: number;
+  timestamp?: Date;
   createdAt: string;
 }
 
@@ -707,6 +708,7 @@ const ShopeeLogSchema = new Schema<IShopeeLogDocument>(
     message: { type: String, required: true },
     details: { type: Schema.Types.Mixed, default: {} },
     duration_ms: { type: Number },
+    timestamp: { type: Date, default: Date.now },
     createdAt: { type: String, required: true },
   },
   {
@@ -719,6 +721,8 @@ ShopeeLogSchema.index({ createdAt: -1 });
 ShopeeLogSchema.index({ level: 1, createdAt: -1 });
 ShopeeLogSchema.index({ type: 1, createdAt: -1 });
 ShopeeLogSchema.index({ shop_username: 1, createdAt: -1 });
+// TTL Index tự động dọn dẹp các bản ghi log cũ hơn 30 ngày (chống tràn bộ nhớ MongoDB Atlas)
+ShopeeLogSchema.index({ timestamp: 1 }, { expireAfterSeconds: 30 * 24 * 3600 });
 
 export const MongoShopeeLogModel: Model<IShopeeLogDocument> =
   mongoose.models.ShopeeLog ||
