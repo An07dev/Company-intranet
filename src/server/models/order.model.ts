@@ -60,7 +60,7 @@ export function resolveSapoOrderSn(orderData: any): string {
       orderData.name ||
       orderData.order_number ||
       orderData.id;
-    return String(candidate || "").trim();
+    return String(candidate || "").replace(/^#/, "").trim();
   }
 
   // 2. Với đơn POS / Web nội bộ / Bán lẻ Sapo:
@@ -72,7 +72,7 @@ export function resolveSapoOrderSn(orderData: any): string {
     orderData.reference_order_number ||
     orderData.id;
 
-  return String(candidate || "").trim();
+  return String(candidate || "").replace(/^#/, "").trim();
 }
 
 export class OrderModel {

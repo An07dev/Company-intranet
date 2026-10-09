@@ -105,6 +105,7 @@ export async function DELETE(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const order_sn = searchParams.get("order_sn");
     const all = searchParams.get("all");
+    let internalOnly = searchParams.get("internal_only") === "true";
 
     let orderSns: string[] | undefined = undefined;
     if (order_sn) {
@@ -114,6 +115,7 @@ export async function DELETE(request: NextRequest) {
     } else {
       try {
         const body = await request.json();
+        if (body?.internal_only) internalOnly = true;
         if (body && Array.isArray(body.order_sns)) {
           orderSns = body.order_sns;
         } else if (body && body.all) {
@@ -124,8 +126,8 @@ export async function DELETE(request: NextRequest) {
       }
     }
 
-    // Nếu xóa đơn cụ thể, đồng bộ xóa trên Sapo nếu có Sapo ID
-    if (orderSns && orderSns.length === 1) {
+    // Nếu xóa đơn cụ thể và KHÔNG PHẢI internal_only, đồng bộ xóa trên Sapo nếu có Sapo ID
+    if (!internalOnly && orderSns && orderSns.length === 1) {
       try {
         await connectToDatabase();
         const singleSn = orderSns[0];

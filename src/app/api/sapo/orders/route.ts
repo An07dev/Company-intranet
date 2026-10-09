@@ -3,11 +3,12 @@ import { connectToDatabase } from "@/server/db";
 import { MongoShopeeOrderModel } from "@/server/db/schema";
 import { SapoService } from "@/server/services/sapo.service";
 import { LogModel } from "@/server/models/log.model";
+import { resolveSapoOrderSn } from "@/server/models/order.model";
 
 export const maxDuration = 30;
 
 function mapSapoOrder(o: any, now: string) {
-  const orderSn = String(o.order_number || o.name || o.reference_order_number || o.id);
+  const orderSn = resolveSapoOrderSn(o) || String(o.order_number || o.name || o.id).replace(/^#/, "").trim();
   const rawSource = String(o.source_name || o.channel || "sapo").toLowerCase();
 
   let shopSource = "sapo_web";

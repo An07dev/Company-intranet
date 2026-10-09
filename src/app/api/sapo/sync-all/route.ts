@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { connectToDatabase } from "@/server/db";
 import { MongoShopeeOrderModel, MongoShopeeProductModel } from "@/server/db/schema";
 import { LogModel } from "@/server/models/log.model";
+import { resolveSapoOrderSn } from "@/server/models/order.model";
 
 export const maxDuration = 60;
 
@@ -30,7 +31,7 @@ async function sapoGet(endpoint: string) {
 }
 
 function mapSapoOrder(o: any, now: string) {
-  const orderSn = String(o.order_number || o.name || o.reference_order_number || o.id);
+  const orderSn = resolveSapoOrderSn(o) || String(o.order_number || o.name || o.id).replace(/^#/, "").trim();
   const rawSource = String(o.source_name || o.channel || "sapo").toLowerCase();
 
   let shopSource = "sapo_web";
