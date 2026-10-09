@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useState, useCallback, useRef } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
@@ -79,6 +79,27 @@ export default function DashboardPage() {
     "all" | "ecommerce" | "inventory" | "crm" | "debts" | "attendance" | "tasks" | "leaderboard" | "employees"
   >("all");
 
+  // Giữ ref cho các giá trị hiện tại & tránh gọi trùng lặp (tránh re-render loop)
+  const dataRef = useRef({
+    statsData,
+    shopeeStats,
+    inventoryStats,
+    crmStats,
+    debtStats,
+  });
+
+  useEffect(() => {
+    dataRef.current = {
+      statsData,
+      shopeeStats,
+      inventoryStats,
+      crmStats,
+      debtStats,
+    };
+  }, [statsData, shopeeStats, inventoryStats, crmStats, debtStats]);
+
+  const isFetchingRef = useRef(false);
+
   // Điều hướng nếu chưa đăng nhập
   useEffect(() => {
     if (!isLoading && !user) {
@@ -108,17 +129,20 @@ export default function DashboardPage() {
   // Tải dữ liệu thống kê Dashboard với cơ chế Progressive Decoupled Streams
   const fetchDashboardStats = useCallback(
     async (isManualRefresh = false) => {
+      if (isFetchingRef.current && !isManualRefresh) return;
+      isFetchingRef.current = true;
+
       try {
         if (isManualRefresh) {
           setRefreshing(true);
         }
 
         // Nếu là lần đầu hoặc không có dữ liệu, hiển thị skeleton cho phân khu tương ứng
-        if (!statsData) setLoadingStats(true);
-        if (!shopeeStats) setLoadingShopee(true);
-        if (!inventoryStats) setLoadingInventory(true);
-        if (!crmStats) setLoadingCrm(true);
-        if (!debtStats) setLoadingDebt(true);
+        if (!dataRef.current.statsData) setLoadingStats(true);
+        if (!dataRef.current.shopeeStats) setLoadingShopee(true);
+        if (!dataRef.current.inventoryStats) setLoadingInventory(true);
+        if (!dataRef.current.crmStats) setLoadingCrm(true);
+        if (!dataRef.current.debtStats) setLoadingDebt(true);
 
         // 1. Phân khu Nhân sự & Chuyên cần
         const pStats = fetch("/api/dashboard/stats")
@@ -185,29 +209,26 @@ export default function DashboardPage() {
       } catch (err) {
         console.error("Lỗi khi tải thống kê dashboard:", err);
       } finally {
+        isFetchingRef.current = false;
         setRefreshing(false);
       }
     },
-    [statsData, shopeeStats, inventoryStats, crmStats, debtStats, updateCacheEntry]
+    [updateCacheEntry]
   );
 
   // Kích hoạt fetch khi mount (kiểm tra độ tươi của cache)
   useEffect(() => {
     if (user) {
       const isFresh =
-        clientDashboardCache &&
-        Date.now() - clientDashboardCache.lastUpdated < CLIENT_CACHE_TTL_MS &&
-        clientDashboardCache.statsData &&
-        clientDashboardCache.shopeeStats &&
-        clientDashboardCache.inventoryStats &&
-        clientDashboardCache.crmStats &&
-        clientDashboardCache.debtStats;
+        Boolean(clientDashboardCache) &&
+        Date.now() - (clientDashboardCache?.lastUpdated ?? 0) < CLIENT_CACHE_TTL_MS &&
+        Boolean(clientDashboardCache?.statsData);
 
       if (!isFresh) {
         fetchDashboardStats(false);
       }
     }
-  }, [user, fetchDashboardStats]);
+  }, [user?.id, fetchDashboardStats]);
 
   if (isLoading || !user) {
     return (
