@@ -215,13 +215,13 @@ export function ShopeeOrderDetailModal({
           <div className="min-w-0 pr-2">
             <div className="flex items-center gap-1.5 flex-wrap">
               <span className="font-mono font-bold text-sm sm:text-base text-zinc-900 dark:text-white">
-                #{order.order_sn}
+                {order.marketplace_order_sn || order.order_sn}
               </span>
               <button
                 type="button"
-                onClick={() => onCopySn?.(order.order_sn)}
+                onClick={() => onCopySn?.(order.marketplace_order_sn || order.order_sn)}
                 className="p-1 rounded-md text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 hover:bg-zinc-200/60 dark:hover:bg-zinc-700/60 transition cursor-pointer"
-                title="Sao chép mã đơn"
+                title="Sao chép mã đơn sàn"
               >
                 <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path
@@ -232,6 +232,11 @@ export function ShopeeOrderDetailModal({
                   />
                 </svg>
               </button>
+              {order.sapo_order_number && order.sapo_order_number !== (order.marketplace_order_sn || order.order_sn) && (
+                <span className="text-[10px] sm:text-[11px] font-mono font-medium px-2 py-0.5 rounded-full bg-orange-50 dark:bg-orange-950/60 text-orange-700 dark:text-orange-300 border border-orange-200/80 dark:border-orange-800">
+                  Sapo: #{order.sapo_order_number}
+                </span>
+              )}
               <span className="text-[10px] sm:text-[11px] font-semibold px-2 py-0.5 rounded-full bg-zinc-200/70 dark:bg-zinc-700/60 text-zinc-700 dark:text-zinc-300">
                 {order.shop_username}
               </span>

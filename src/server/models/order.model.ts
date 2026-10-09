@@ -3,9 +3,43 @@ import { MongoShopeeOrderModel, IShopeeOrderDocument } from "@/server/db/schema"
 import { ShopeeOrder } from "@/types";
 
 export function toSafeOrder(doc: IShopeeOrderDocument): ShopeeOrder {
+  let marketplace_order_sn: string | undefined = undefined;
+  let sapo_order_number: string | undefined = undefined;
+
+  if (doc.raw_text) {
+    try {
+      const raw = JSON.parse(doc.raw_text);
+      if (raw.order_number) {
+        sapo_order_number = String(raw.order_number).replace(/^#/, "").trim();
+      }
+
+      const candidateMarket =
+        raw.source_identifier ||
+        raw.reference_order_number ||
+        (raw.name && /^[0-9]{6}[A-Z0-9]+$/i.test(String(raw.name).replace(/^#/, "").trim())
+          ? String(raw.name).replace(/^#/, "").trim()
+          : undefined);
+
+      if (candidateMarket) {
+        marketplace_order_sn = String(candidateMarket).trim();
+      }
+    } catch {}
+  }
+
+  // Nếu bản thân doc.order_sn là mã sàn TMĐT (Shopee...)
+  if (!marketplace_order_sn && doc.order_sn && /^[0-9]{6}[A-Z0-9]+$/i.test(doc.order_sn)) {
+    marketplace_order_sn = doc.order_sn;
+  }
+  // Nếu doc.order_sn là số hiệu Sapo
+  if (!sapo_order_number && doc.order_sn && /^\d{1,8}$/.test(doc.order_sn)) {
+    sapo_order_number = doc.order_sn;
+  }
+
   return {
     id: doc.id,
     order_sn: doc.order_sn,
+    marketplace_order_sn,
+    sapo_order_number,
     shop_username: doc.shop_username,
     buyer_username: doc.buyer_username,
     total_amount: doc.total_amount,
@@ -174,10 +208,13 @@ export class OrderModel {
     }
 
     if (params.search) {
+      const cleanSearch = params.search.replace(/^#/, "").trim();
       query.$or = [
         { order_sn: { $regex: params.search, $options: "i" } },
+        { order_sn: { $regex: cleanSearch, $options: "i" } },
         { buyer_username: { $regex: params.search, $options: "i" } },
         { tracking_number: { $regex: params.search, $options: "i" } },
+        { raw_text: { $regex: cleanSearch, $options: "i" } },
       ];
     }
 

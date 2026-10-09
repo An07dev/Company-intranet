@@ -1125,18 +1125,26 @@ export default function MultiChannelOrdersPage() {
                 >
                   {/* Hàng 1: Mã đơn & Kênh bán & Trạng thái */}
                   <div className="flex items-center justify-between gap-2">
-                    <div className="flex items-center gap-1.5 min-w-0">
-                      <span className="font-mono font-bold text-xs text-zinc-900 dark:text-white truncate">
-                        {order.order_sn}
-                      </span>
-                      <button
-                        type="button"
-                        onClick={(e) => handleCopySn(order.order_sn, e)}
-                        className="p-1 rounded-md text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 text-xs shrink-0 cursor-pointer"
-                        title="Sao chép mã đơn"
-                      >
-                        {isCopied ? "✓" : "📋"}
-                      </button>
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-1.5 min-w-0">
+                        <span className="font-mono font-bold text-xs text-zinc-900 dark:text-white truncate">
+                          {order.marketplace_order_sn || order.order_sn}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={(e) => handleCopySn(order.marketplace_order_sn || order.order_sn, e)}
+                          className="p-1 rounded-md text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 text-xs shrink-0 cursor-pointer"
+                          title="Sao chép mã đơn"
+                        >
+                          {copiedSn === (order.marketplace_order_sn || order.order_sn) ? "✓" : "📋"}
+                        </button>
+                      </div>
+                      {order.sapo_order_number && order.sapo_order_number !== (order.marketplace_order_sn || order.order_sn) && (
+                        <div className="flex items-center gap-1 text-[10px] text-zinc-400 dark:text-zinc-500 font-sans mt-0.5">
+                          <span>Sapo:</span>
+                          <span className="font-mono font-medium text-zinc-600 dark:text-zinc-400">#{order.sapo_order_number}</span>
+                        </div>
+                      )}
                     </div>
 
                     <div className="flex items-center gap-1.5 shrink-0">
@@ -1281,19 +1289,38 @@ export default function MultiChannelOrdersPage() {
                         className="hover:bg-zinc-50/80 dark:hover:bg-zinc-800/40 cursor-pointer transition-colors"
                       >
                         {/* 1. Mã đơn */}
-                        <td className="py-3.5 px-4 font-mono">
-                          <div className="flex items-center gap-1.5">
-                            <span className="font-bold text-zinc-900 dark:text-white tracking-tight">
-                              {order.order_sn}
-                            </span>
-                            <button
-                              type="button"
-                              onClick={(e) => handleCopySn(order.order_sn, e)}
-                              className="p-1 rounded-md text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 transition-colors"
-                              title="Sao chép mã đơn"
-                            >
-                              {isCopied ? "✓" : "📋"}
-                            </button>
+                        <td className="py-3 px-4 font-mono">
+                          <div className="space-y-0.5">
+                            {/* Dòng 1: Mã đơn sàn TMĐT hoặc mã chính */}
+                            <div className="flex items-center gap-1.5">
+                              <span className="font-bold text-zinc-900 dark:text-white tracking-tight">
+                                {order.marketplace_order_sn || order.order_sn}
+                              </span>
+                              <button
+                                type="button"
+                                onClick={(e) => handleCopySn(order.marketplace_order_sn || order.order_sn, e)}
+                                className="p-1 rounded-md text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 transition-colors cursor-pointer"
+                                title="Sao chép mã đơn"
+                              >
+                                {copiedSn === (order.marketplace_order_sn || order.order_sn) ? "✓" : "📋"}
+                              </button>
+                            </div>
+
+                            {/* Dòng 2: Số hiệu đơn Sapo (nếu khác mã chính) */}
+                            {order.sapo_order_number && order.sapo_order_number !== (order.marketplace_order_sn || order.order_sn) && (
+                              <div className="flex items-center gap-1 text-[11px] text-zinc-400 dark:text-zinc-500 font-sans">
+                                <span>Sapo:</span>
+                                <span className="font-mono font-medium text-zinc-600 dark:text-zinc-400">#{order.sapo_order_number}</span>
+                                <button
+                                  type="button"
+                                  onClick={(e) => handleCopySn(order.sapo_order_number!, e)}
+                                  className="p-0.5 hover:text-zinc-700 dark:hover:text-zinc-300 transition-colors text-[10px] cursor-pointer"
+                                  title="Sao chép số hiệu Sapo"
+                                >
+                                  {copiedSn === order.sapo_order_number ? "✓" : "📋"}
+                                </button>
+                              </div>
+                            )}
                           </div>
                         </td>
 

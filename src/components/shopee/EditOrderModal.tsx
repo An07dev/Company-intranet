@@ -243,8 +243,13 @@ export function EditOrderModal({
               <h3 className="font-bold text-sm sm:text-base text-zinc-900 dark:text-zinc-100 flex items-center gap-1.5">
                 <span>Chỉnh sửa đơn hàng</span>
                 <span className="font-mono text-orange-600 dark:text-orange-400">
-                  #{order.order_sn}
+                  #{order.marketplace_order_sn || order.order_sn}
                 </span>
+                {order.sapo_order_number && order.sapo_order_number !== (order.marketplace_order_sn || order.order_sn) && (
+                  <span className="text-[11px] font-mono text-zinc-500 font-normal">
+                    (Sapo: #{order.sapo_order_number})
+                  </span>
+                )}
               </h3>
               <p className="text-[11px] text-zinc-500 dark:text-zinc-400">
                 Cập nhật thông tin và đồng bộ trực tiếp 2 chiều với Sapo Omnichannel

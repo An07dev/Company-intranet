@@ -7,6 +7,8 @@ export interface ShopeeOrderItem {
 export interface ShopeeOrder {
   id?: string;
   order_sn: string;
+  marketplace_order_sn?: string;
+  sapo_order_number?: string;
   shop_username?: string;
   buyer_username: string;
   total_amount: number;
