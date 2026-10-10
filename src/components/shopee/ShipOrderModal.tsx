@@ -236,16 +236,16 @@ export function ShipOrderModal({
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="flex items-center justify-between px-4 py-3 sm:px-6 sm:py-4 border-b border-zinc-100 dark:border-zinc-800 bg-zinc-50/70 dark:bg-zinc-800/40 shrink-0">
+        <div className="flex items-center justify-between px-3.5 py-3 sm:px-6 sm:py-4 border-b border-zinc-100 dark:border-zinc-800 bg-zinc-50/70 dark:bg-zinc-800/40 shrink-0">
           <div>
             <div className="flex items-center gap-2">
               <span className="text-xl">🚚</span>
-              <h3 className="font-bold text-base text-zinc-900 dark:text-white">
+              <h3 className="font-bold text-sm sm:text-base text-zinc-900 dark:text-white">
                 Đẩy qua đối tác vận chuyển
               </h3>
             </div>
-            <div className="flex items-center gap-2 mt-0.5 text-xs text-zinc-500 dark:text-zinc-400">
-              <span>Đơn hàng:</span>
+            <div className="flex items-center gap-2 mt-0.5 text-xs text-zinc-500 dark:text-zinc-400 flex-wrap">
+              <span>Đơn:</span>
               <span className="font-mono font-semibold text-zinc-800 dark:text-zinc-200">
                 #{order.marketplace_order_sn || order.order_sn}
               </span>
@@ -269,21 +269,22 @@ export function ShipOrderModal({
         </div>
 
         {/* 2 Tabs theo chuẩn thiết kế Sapo: "Vận chuyển tích hợp" & "Vận chuyển tự liên hệ" */}
-        <div className="flex border-b border-zinc-200 dark:border-zinc-800 bg-zinc-100/60 dark:bg-zinc-900/60 px-4 sm:px-6 pt-2 shrink-0 gap-2">
+        <div className="flex border-b border-zinc-200 dark:border-zinc-800 bg-zinc-100/60 dark:bg-zinc-900/60 px-3 sm:px-6 pt-2 shrink-0 gap-1 sm:gap-2 overflow-x-auto">
           <button
             type="button"
             onClick={() => {
               setActiveTab("integrated");
               setCarrier("SPX Express");
             }}
-            className={`pb-2.5 px-3 text-xs font-bold transition-all border-b-2 flex items-center gap-1.5 cursor-pointer ${
+            className={`pb-2.5 px-2.5 sm:px-3 text-xs font-bold transition-all border-b-2 flex items-center gap-1.5 cursor-pointer shrink-0 ${
               activeTab === "integrated"
                 ? "border-orange-600 text-orange-600 dark:text-orange-400"
                 : "border-transparent text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200"
             }`}
           >
             <span>🚚</span>
-            <span>Vận chuyển tích hợp (Sapo Express)</span>
+            <span className="hidden sm:inline">Vận chuyển tích hợp (Sapo Express)</span>
+            <span className="sm:hidden">Tích hợp (Sapo Express)</span>
           </button>
 
           <button
@@ -292,20 +293,21 @@ export function ShipOrderModal({
               setActiveTab("self");
               setCarrier("Đối tác khác");
             }}
-            className={`pb-2.5 px-3 text-xs font-bold transition-all border-b-2 flex items-center gap-1.5 cursor-pointer ${
+            className={`pb-2.5 px-2.5 sm:px-3 text-xs font-bold transition-all border-b-2 flex items-center gap-1.5 cursor-pointer shrink-0 ${
               activeTab === "self"
                 ? "border-orange-600 text-orange-600 dark:text-orange-400"
                 : "border-transparent text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200"
             }`}
           >
             <span>🛵</span>
-            <span>Vận chuyển tự liên hệ (Đối tác khác / Tự giao)</span>
+            <span className="hidden sm:inline">Vận chuyển tự liên hệ (Đối tác khác / Tự giao)</span>
+            <span className="sm:hidden">Tự liên hệ / Tự giao</span>
           </button>
         </div>
 
         {/* Form Body */}
         <form onSubmit={handleSubmit} className="flex flex-col flex-1 overflow-hidden">
-          <div className="p-4 sm:p-6 overflow-y-auto space-y-4">
+          <div className="p-3 sm:p-6 overflow-y-auto space-y-3.5 sm:space-y-4">
             {apiError && (
               <div className="p-3.5 rounded-2xl bg-rose-50 dark:bg-rose-950/50 border border-rose-200 dark:border-rose-900/60 text-rose-700 dark:text-rose-300 text-xs space-y-1 animate-in fade-in duration-150">
                 <div className="flex items-center gap-1.5 font-bold text-rose-800 dark:text-rose-200">
@@ -319,9 +321,9 @@ export function ShipOrderModal({
             )}
 
             {/* Thông tin Địa chỉ lấy hàng & Địa chỉ giao hàng (2 Cột) */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 sm:gap-3">
               {/* Địa chỉ lấy hàng */}
-              <div className="p-3 rounded-xl bg-zinc-50 dark:bg-zinc-800/40 border border-zinc-200/70 dark:border-zinc-800 text-xs space-y-1">
+              <div className="p-2.5 sm:p-3 rounded-xl bg-zinc-50 dark:bg-zinc-800/40 border border-zinc-200/70 dark:border-zinc-800 text-xs space-y-1">
                 <div className="flex items-center justify-between font-semibold text-zinc-700 dark:text-zinc-300">
                   <span className="flex items-center gap-1">
                     <span>🏢</span>
@@ -329,23 +331,23 @@ export function ShipOrderModal({
                   </span>
                   <span className="text-[10px] text-emerald-600 font-medium">Mặc định</span>
                 </div>
-                <div className="text-zinc-800 dark:text-zinc-200 text-[11px] leading-relaxed">
+                <div className="text-zinc-800 dark:text-zinc-200 text-[11px] sm:text-xs leading-relaxed break-words">
                   {DEFAULT_WAREHOUSE}
                 </div>
               </div>
 
               {/* Địa chỉ nhận hàng */}
-              <div className="p-3 rounded-xl bg-zinc-50 dark:bg-zinc-800/40 border border-zinc-200/70 dark:border-zinc-800 text-xs space-y-1">
-                <div className="flex items-center justify-between font-semibold text-zinc-700 dark:text-zinc-300">
-                  <span className="flex items-center gap-1">
+              <div className="p-2.5 sm:p-3 rounded-xl bg-zinc-50 dark:bg-zinc-800/40 border border-zinc-200/70 dark:border-zinc-800 text-xs space-y-1">
+                <div className="flex items-center justify-between font-semibold text-zinc-700 dark:text-zinc-300 gap-1 flex-wrap">
+                  <span className="flex items-center gap-1 min-w-0">
                     <span>👤</span>
-                    <span>Người nhận: {recipientName || "Khách mua"}</span>
+                    <span className="truncate">Người nhận: {recipientName || "Khách mua"}</span>
                   </span>
-                  <span className="font-mono text-[11px] text-zinc-500">
+                  <span className="font-mono text-[11px] text-zinc-500 shrink-0">
                     {recipientPhone || "Chưa có SĐT"}
                   </span>
                 </div>
-                <div className="text-zinc-800 dark:text-zinc-200 text-[11px] leading-relaxed truncate" title={recipientAddress}>
+                <div className="text-zinc-800 dark:text-zinc-200 text-[11px] sm:text-xs leading-relaxed break-words" title={recipientAddress}>
                   📍 {recipientAddress || "Chưa có địa chỉ chi tiết"}
                 </div>
               </div>
@@ -363,7 +365,7 @@ export function ShipOrderModal({
               </div>
 
               {activeTab === "integrated" ? (
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-2.5">
                   {INTEGRATED_CARRIERS.map((c) => {
                     const isSelected = carrier === c.name;
                     return (
@@ -371,18 +373,18 @@ export function ShipOrderModal({
                         key={c.id}
                         type="button"
                         onClick={() => setCarrier(c.name)}
-                        className={`p-2.5 rounded-xl border text-left text-xs transition-all cursor-pointer flex items-center gap-2.5 h-[68px] ${
+                        className={`p-2 sm:p-2.5 rounded-xl border text-left text-xs transition-all cursor-pointer flex items-center gap-2 sm:gap-2.5 min-h-[58px] sm:h-[68px] ${
                           isSelected
                             ? "bg-orange-50/90 dark:bg-orange-950/40 border-orange-500 text-orange-900 dark:text-orange-200 font-bold ring-2 ring-orange-500/20 shadow-xs"
                             : "bg-white dark:bg-zinc-800/60 border-zinc-200 dark:border-zinc-700 hover:border-zinc-300 dark:hover:border-zinc-600 text-zinc-700 dark:text-zinc-300 font-medium hover:bg-zinc-50 dark:hover:bg-zinc-800"
                         }`}
                       >
-                        <CarrierLogo carrierId={c.id} size={34} />
+                        <CarrierLogo carrierId={c.id} size={30} />
                         <div className="min-w-0 flex-1">
-                          <div className="font-bold truncate text-[11px] leading-tight text-zinc-900 dark:text-zinc-100">
+                          <div className="font-bold truncate text-[11px] sm:text-xs leading-tight text-zinc-900 dark:text-zinc-100">
                             {c.badge}
                           </div>
-                          <div className="text-[10px] text-zinc-400 dark:text-zinc-400 truncate mt-0.5 font-normal">
+                          <div className="text-[9.5px] sm:text-[10px] text-zinc-400 dark:text-zinc-400 truncate mt-0.5 font-normal">
                             {c.sub}
                           </div>
                         </div>
@@ -392,7 +394,7 @@ export function ShipOrderModal({
                 </div>
               ) : (
                 <div className="space-y-2">
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-2.5">
                     {SELF_CARRIERS.map((c) => {
                       const isSelected = carrier === c.name;
                       return (
@@ -400,15 +402,15 @@ export function ShipOrderModal({
                           key={c.id}
                           type="button"
                           onClick={() => setCarrier(c.name)}
-                          className={`p-3 rounded-xl border text-left text-xs transition-all cursor-pointer flex items-center gap-3 ${
+                          className={`p-2.5 sm:p-3 rounded-xl border text-left text-xs transition-all cursor-pointer flex items-center gap-2.5 sm:gap-3 ${
                             isSelected
                               ? "bg-orange-50/90 dark:bg-orange-950/40 border-orange-500 text-orange-900 dark:text-orange-200 font-bold ring-2 ring-orange-500/20 shadow-xs"
                               : "bg-white dark:bg-zinc-800/60 border-zinc-200 dark:border-zinc-700 hover:border-zinc-300 dark:hover:border-zinc-600 text-zinc-700 dark:text-zinc-300 font-medium hover:bg-zinc-50 dark:hover:bg-zinc-800"
                           }`}
                         >
-                          <CarrierLogo carrierId={c.id} size={34} />
+                          <CarrierLogo carrierId={c.id} size={32} />
                           <div className="min-w-0 flex-1">
-                            <div className="font-bold text-[11px] leading-tight text-zinc-900 dark:text-zinc-100">
+                            <div className="font-bold text-[11px] sm:text-xs leading-tight text-zinc-900 dark:text-zinc-100">
                               {c.badge}
                             </div>
                             <div className="text-[10px] text-zinc-400 dark:text-zinc-400 mt-0.5 font-normal">
@@ -436,60 +438,60 @@ export function ShipOrderModal({
             </div>
 
             {/* Thông số kiện hàng & Tiền thu hộ COD */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-3.5 rounded-xl bg-zinc-50/70 dark:bg-zinc-800/30 border border-zinc-200/70 dark:border-zinc-800">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-3 sm:p-3.5 rounded-xl bg-zinc-50/70 dark:bg-zinc-800/30 border border-zinc-200/70 dark:border-zinc-800">
               {/* Khối lượng & Kích thước */}
               <div className="space-y-2">
                 <div className="flex items-center justify-between text-xs font-bold text-zinc-700 dark:text-zinc-300">
                   <span>⚖️ Khối lượng & Kích thước kiện</span>
                 </div>
-                <div className="grid grid-cols-4 gap-1.5">
+                <div className="grid grid-cols-4 gap-1 sm:gap-1.5">
                   <div>
-                    <label className="text-[10px] text-zinc-400 block mb-0.5">Khối lượng</label>
+                    <label className="text-[9.5px] sm:text-[10px] text-zinc-400 block mb-0.5 truncate">Khối lượng</label>
                     <div className="relative">
                       <input
                         type="number"
                         value={weight}
                         onChange={(e) => setWeight(Number(e.target.value) || 0)}
-                        className="w-full text-xs font-semibold px-2 py-1.5 rounded-lg border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white pr-4"
+                        className="w-full text-[11px] sm:text-xs font-semibold px-1.5 sm:px-2 py-1.5 rounded-lg border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white pr-3.5 sm:pr-4"
                       />
                       <span className="absolute right-1 top-1/2 -translate-y-1/2 text-[9px] text-zinc-400">g</span>
                     </div>
                   </div>
 
                   <div>
-                    <label className="text-[10px] text-zinc-400 block mb-0.5">Dài</label>
+                    <label className="text-[9.5px] sm:text-[10px] text-zinc-400 block mb-0.5 truncate">Dài</label>
                     <div className="relative">
                       <input
                         type="number"
                         value={length}
                         onChange={(e) => setLength(Number(e.target.value) || 0)}
-                        className="w-full text-xs font-semibold px-2 py-1.5 rounded-lg border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white pr-5"
+                        className="w-full text-[11px] sm:text-xs font-semibold px-1.5 sm:px-2 py-1.5 rounded-lg border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white pr-4 sm:pr-5"
                       />
                       <span className="absolute right-1 top-1/2 -translate-y-1/2 text-[9px] text-zinc-400">cm</span>
                     </div>
                   </div>
 
                   <div>
-                    <label className="text-[10px] text-zinc-400 block mb-0.5">Rộng</label>
+                    <label className="text-[9.5px] sm:text-[10px] text-zinc-400 block mb-0.5 truncate">Rộng</label>
                     <div className="relative">
                       <input
                         type="number"
                         value={width}
                         onChange={(e) => setWidth(Number(e.target.value) || 0)}
-                        className="w-full text-xs font-semibold px-2 py-1.5 rounded-lg border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white pr-5"
+                        className="w-full text-[11px] sm:text-xs font-semibold px-1.5 sm:px-2 py-1.5 rounded-lg border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white pr-4 sm:pr-5"
                       />
                       <span className="absolute right-1 top-1/2 -translate-y-1/2 text-[9px] text-zinc-400">cm</span>
                     </div>
                   </div>
 
                   <div>
-                    <label className="text-[10px] text-zinc-400 block mb-0.5">Cao</label>
+                    <label className="text-[9.5px] sm:text-[10px] text-zinc-400 block mb-0.5 truncate">Cao</label>
                     <div className="relative">
                       <input
                         type="number"
                         value={height}
                         onChange={(e) => setHeight(Number(e.target.value) || 0)}
-                        className="w-full text-xs font-semibold px-2 py-1.5 rounded-lg border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white pr-5"
+                        className="w-full text-[11px] sm:text-xs font-semibold px-1.5 sm:px-2 py-1.5 rounded-lg border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white pr-4 sm:pr-5"
                       />
                       <span className="absolute right-1 top-1/2 -translate-y-1/2 text-[9px] text-zinc-400">cm</span>
                     </div>
@@ -626,17 +628,17 @@ export function ShipOrderModal({
           </div>
 
           {/* Footer Actions */}
-          <div className="flex items-center justify-between px-4 py-3 sm:px-6 sm:py-4 border-t border-zinc-100 dark:border-zinc-800 bg-zinc-50/70 dark:bg-zinc-800/40 shrink-0">
+          <div className="flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-between px-3.5 py-3 sm:px-6 sm:py-4 border-t border-zinc-100 dark:border-zinc-800 bg-zinc-50/70 dark:bg-zinc-800/40 shrink-0 gap-2">
             <div className="text-[11px] text-zinc-400 hidden sm:block">
               Hệ thống sẽ đồng bộ tạo phiếu giao hàng trực tiếp trên Sapo Omnichannel.
             </div>
 
-            <div className="flex items-center gap-2 ml-auto">
+            <div className="flex items-center gap-2 w-full sm:w-auto">
               <button
                 type="button"
                 onClick={onClose}
                 disabled={loading}
-                className="px-4 py-2 text-xs font-semibold rounded-xl border border-zinc-200 dark:border-zinc-700 hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-600 dark:text-zinc-300 transition cursor-pointer"
+                className="flex-1 sm:flex-initial px-4 py-2 sm:py-2.5 text-xs font-semibold rounded-xl border border-zinc-200 dark:border-zinc-700 hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-600 dark:text-zinc-300 transition cursor-pointer text-center"
               >
                 Hủy bỏ
               </button>
@@ -644,7 +646,7 @@ export function ShipOrderModal({
               <button
                 type="submit"
                 disabled={loading}
-                className="px-5 py-2 text-xs font-bold rounded-xl bg-orange-600 hover:bg-orange-700 text-white transition shadow-sm flex items-center gap-1.5 cursor-pointer disabled:opacity-50 active:scale-95"
+                className="flex-1 sm:flex-initial px-5 py-2 sm:py-2.5 text-xs font-bold rounded-xl bg-orange-600 hover:bg-orange-700 text-white transition shadow-sm flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50 active:scale-95 text-center"
               >
                 {loading ? (
                   <>
