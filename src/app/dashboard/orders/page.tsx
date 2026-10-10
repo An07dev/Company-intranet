@@ -1410,19 +1410,24 @@ export default function MultiChannelOrdersPage() {
                         {/* 9. Thao tác */}
                         <td className="py-3.5 px-3 text-right">
                           <div className="flex items-center justify-end gap-1">
-                            {order.order_status !== "Đã hủy" && (
-                              <button
-                                type="button"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  setShippingOrder(order);
-                                }}
-                                className="p-1.5 rounded-lg text-blue-600 hover:text-blue-700 hover:bg-blue-50 dark:hover:bg-blue-950/40 transition-colors cursor-pointer"
-                                title="Đẩy đơn qua đơn vị vận chuyển & Đồng bộ Sapo"
-                              >
-                                🚚
-                              </button>
-                            )}
+                            {order.order_status !== "Đã hủy" &&
+                              !(
+                                order.shipping_carrier &&
+                                order.shipping_carrier.trim() !== "" &&
+                                order.shipping_carrier.trim() !== "Chưa gán"
+                              ) && (
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setShippingOrder(order);
+                                  }}
+                                  className="p-1.5 rounded-lg text-blue-600 hover:text-blue-700 hover:bg-blue-50 dark:hover:bg-blue-950/40 transition-colors cursor-pointer"
+                                  title="Đẩy đơn qua đơn vị vận chuyển & Đồng bộ Sapo"
+                                >
+                                  🚚
+                                </button>
+                              )}
                             <button
                               type="button"
                               onClick={(e) => {

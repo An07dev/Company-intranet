@@ -426,20 +426,25 @@ export function ShopeeOrderDetailModal({
                 </button>
               )}
 
-              {/* Nút Đẩy vận chuyển (khi đơn chưa hủy) */}
-              {order.order_status !== "Đã hủy" && (
-                <button
-                  type="button"
-                  onClick={() => setShowShipModal(true)}
-                  disabled={actionLoading}
-                  className="py-1.5 px-2 sm:px-2.5 rounded-xl border border-blue-200 dark:border-blue-800/80 bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 hover:bg-blue-100 font-semibold text-xs transition-colors flex items-center gap-1 cursor-pointer active:scale-95 shrink-0"
-                  title="Đẩy đơn qua đơn vị vận chuyển và đồng bộ trực tiếp lên Sapo"
-                >
-                  <span>🚚</span>
-                  <span className="hidden sm:inline">Đẩy vận chuyển</span>
-                  <span className="sm:hidden">Giao hàng</span>
-                </button>
-              )}
+              {/* Nút Đẩy vận chuyển (chỉ hiển thị khi đơn chưa hủy và CHƯA có đơn vị vận chuyển) */}
+              {order.order_status !== "Đã hủy" &&
+                !(
+                  order.shipping_carrier &&
+                  order.shipping_carrier.trim() !== "" &&
+                  order.shipping_carrier.trim() !== "Chưa gán"
+                ) && (
+                  <button
+                    type="button"
+                    onClick={() => setShowShipModal(true)}
+                    disabled={actionLoading}
+                    className="py-1.5 px-2 sm:px-2.5 rounded-xl border border-blue-200 dark:border-blue-800/80 bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 hover:bg-blue-100 font-semibold text-xs transition-colors flex items-center gap-1 cursor-pointer active:scale-95 shrink-0"
+                    title="Đẩy đơn qua đơn vị vận chuyển và đồng bộ trực tiếp lên Sapo"
+                  >
+                    <span>🚚</span>
+                    <span className="hidden sm:inline">Đẩy vận chuyển</span>
+                    <span className="sm:hidden">Giao hàng</span>
+                  </button>
+                )}
 
               {/* Nút Sửa đơn */}
               {onEdit && (
