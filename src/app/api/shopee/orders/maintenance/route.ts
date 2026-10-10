@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { connectToDatabase } from "@/server/db";
-import { MongoShopeeOrderModel } from "@/server/db/schema";
+import { MongoShopeeOrderModel, MongoSapoCustomerModel } from "@/server/db/schema";
 import { LogModel } from "@/server/models/log.model";
 
 export const maxDuration = 60;
@@ -14,6 +14,9 @@ export async function POST(request: NextRequest) {
   try {
     await connectToDatabase();
     const startTime = Date.now();
+
+    // Dọn dẹp mock test customer nếu có
+    await MongoSapoCustomerModel.deleteMany({ id: { $gte: 900000000 } });
 
     // 1. Tạo Index trên trường createdAt và order_sn nếu chưa có
     try {
