@@ -3,15 +3,18 @@ import { connectToDatabase } from "@/server/db";
 import { MongoSapoCustomerModel } from "@/server/db/schema";
 import { SapoService } from "@/server/services/sapo.service";
 import { LogModel } from "@/server/models/log.model";
+import { CustomerModel } from "@/server/models/customer.model";
+import { invalidateCRMStatsCache } from "@/app/api/dashboard/crm-stats/route";
 
 export const maxDuration = 60;
+
+let lastAutoCheckTimestamp = 0;
 
 /**
  * Hàm đồng bộ toàn bộ danh bạ khách hàng từ Sapo Omnichannel về MongoDB
  */
 async function syncCustomersFromSapo(): Promise<{ total: number; inserted: number; updated: number }> {
   await connectToDatabase();
-  const now = new Date().toISOString();
 
   let page = 1;
   let allCustomers: any[] = [];
@@ -30,58 +33,29 @@ async function syncCustomersFromSapo(): Promise<{ total: number; inserted: numbe
     return { total: 0, inserted: 0, updated: 0 };
   }
 
-  const bulkOps = allCustomers.map((c) => {
-    const fullName = [c.last_name, c.first_name].filter(Boolean).join(" ").trim() || c.name || "Khách lẻ";
-    return {
-      updateOne: {
-        filter: { id: c.id },
-        update: {
-          $set: {
-            id: c.id,
-            first_name: c.first_name || "",
-            last_name: c.last_name || "",
-            name: fullName,
-            phone: c.phone || "",
-            email: c.email || "",
-            orders_count: c.orders_count || 0,
-            total_spent: c.total_spent || 0,
-            last_order_id: c.last_order_id || null,
-            last_order_name: c.last_order_name || null,
-            tags: c.tags || "",
-            note: c.note || null,
-            created_on: c.created_on || now,
-            modified_on: c.modified_on || now,
-            default_address: c.default_address || null,
-            addresses: c.addresses || [],
-            synced_at: now,
-          },
-        },
-        upsert: true,
-      },
-    };
-  });
-
-  const res = await MongoSapoCustomerModel.bulkWrite(bulkOps, { ordered: false });
+  const res = await CustomerModel.upsertCustomers(allCustomers);
+  invalidateCRMStatsCache();
 
   await LogModel.createLog({
     level: "info",
     type: "customer_sync",
     source: "sapo_customers_sync",
     shop_username: "sapo_omnichannel",
-    message: `Đã đồng bộ ${allCustomers.length} khách hàng từ Sapo Omnichannel (Mới: ${res.upsertedCount}, Cập nhật: ${res.modifiedCount})`,
-    details: { total: allCustomers.length, upserted: res.upsertedCount, modified: res.modifiedCount },
+    message: `Đã đồng bộ ${allCustomers.length} khách hàng từ Sapo Omnichannel (Mới: ${res.inserted}, Cập nhật: ${res.updated})`,
+    details: { total: allCustomers.length, upserted: res.inserted, modified: res.updated },
   });
 
   return {
     total: allCustomers.length,
-    inserted: res.upsertedCount,
-    updated: res.modifiedCount,
+    inserted: res.inserted,
+    updated: res.updated,
   };
 }
 
 /**
  * GET /api/sapo/customers
  * Lấy danh sách khách hàng có phân trang, tìm kiếm và sắp xếp KHÁCH MỚI NHẤT LÊN ĐẦU
+ * Tự động đồng bộ khách hàng mới từ Sapo mà không cần bấm nút
  */
 export async function GET(request: NextRequest) {
   try {
@@ -91,11 +65,28 @@ export async function GET(request: NextRequest) {
     const page = parseInt(searchParams.get("page") || "1", 10);
     const limit = parseInt(searchParams.get("limit") || "20", 10);
     const query = (searchParams.get("query") || "").trim();
+    const shouldRefresh = searchParams.get("refresh") === "true";
+    const nowMs = Date.now();
 
-    // Nếu cơ sở dữ liệu chưa có khách hàng nào, tự động đồng bộ lần đầu
+    // 1. Nếu cơ sở dữ liệu chưa có khách hàng nào, tự động đồng bộ lần đầu
     const existingCount = await MongoSapoCustomerModel.countDocuments();
     if (existingCount === 0) {
       await syncCustomersFromSapo();
+    } else if (page === 1 && !query) {
+      // 2. Tự động kiểm tra và đồng bộ khách hàng mới nhất nếu có cờ refresh hoặc sau mỗi 2 phút
+      if (shouldRefresh || nowMs - lastAutoCheckTimestamp > 120_000) {
+        lastAutoCheckTimestamp = nowMs;
+        try {
+          const sapoCount = await SapoService.getCustomersCount();
+          if (sapoCount > existingCount || shouldRefresh) {
+            const pullLimit = Math.min(100, Math.max(30, sapoCount - existingCount + 10));
+            await CustomerModel.syncRecentCustomers(pullLimit);
+            invalidateCRMStatsCache();
+          }
+        } catch (e: any) {
+          console.warn("[Auto-Sync Customers Background Warning]:", e.message);
+        }
+      }
     }
 
     // Xây dựng bộ lọc tìm kiếm

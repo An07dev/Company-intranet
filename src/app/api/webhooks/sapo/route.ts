@@ -5,8 +5,10 @@ import { LogModel } from "@/server/models/log.model";
 import { ShopeeOrder } from "@/types";
 import { connectToDatabase } from "@/server/db";
 import { MongoShopeeProductModel } from "@/server/db/schema";
+import { CustomerModel } from "@/server/models/customer.model";
 import { invalidateShopeeStatsCache } from "@/app/api/dashboard/shopee-stats/route";
 import { invalidateInventoryStatsCache } from "@/app/api/dashboard/inventory-stats/route";
+import { invalidateCRMStatsCache } from "@/app/api/dashboard/crm-stats/route";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -204,6 +206,45 @@ export async function POST(request: NextRequest) {
     }
 
     // =========================================================================
+    // 1.5 XỬ LÝ SỰ KIỆN KHÁCH HÀNG TỪ SAPO (customers/create, customers/update)
+    // =========================================================================
+    if (topic.includes("customer")) {
+      await connectToDatabase();
+      const customerData = rawData;
+      if (!customerData || !customerData.id) {
+        return NextResponse.json(
+          { success: false, message: "Thiếu thông tin khách hàng" },
+          { status: 400, headers: corsHeaders }
+        );
+      }
+
+      await CustomerModel.upsertSingleCustomer(customerData);
+      invalidateCRMStatsCache();
+
+      const custName =
+        [customerData.last_name, customerData.first_name].filter(Boolean).join(" ").trim() ||
+        customerData.name ||
+        "Khách hàng";
+
+      await LogModel.createLog({
+        level: "success",
+        type: topic.includes("create") ? "customer_create" : "customer_update",
+        source: "sapo_webhook",
+        shop_username: "sapo_omnichannel",
+        message: `[Sapo Webhook] ${topic.includes("create") ? "Tạo mới" : "Cập nhật"} khách hàng #${customerData.id}: ${custName}`,
+        details: { customerId: customerData.id, topic, phone: customerData.phone, name: custName },
+      });
+
+      return NextResponse.json(
+        {
+          success: true,
+          message: `Đã đồng bộ thời gian thực khách hàng #${customerData.id} (${custName}) từ Sapo thành công!`,
+        },
+        { status: 200, headers: corsHeaders }
+      );
+    }
+
+    // =========================================================================
     // 2. XỬ LÝ SỰ KIỆN ĐƠN HÀNG TỪ SAPO (orders/create, orders/updated, orders/cancelled)
     // =========================================================================
     const orderData = rawData;
@@ -291,6 +332,17 @@ export async function POST(request: NextRequest) {
     try {
       const syncResult = await OrderModel.upsertOrders([mappedOrder], mappedOrder.shop_username);
       invalidateShopeeStatsCache();
+
+      // Tự động đồng bộ / cập nhật thông tin khách hàng từ đơn hàng vào CRM
+      if (orderData.customer && orderData.customer.id) {
+        try {
+          await CustomerModel.syncFromOrder(orderData.customer, orderData);
+          invalidateCRMStatsCache();
+        } catch (custErr: any) {
+          console.warn("[Sapo Webhook] Lỗi khi đồng bộ khách hàng từ đơn hàng:", custErr.message);
+        }
+      }
+
       console.log(`[Sapo Webhook] Đã lưu thành công đơn #${orderSn} vào Database (Thêm mới: ${syncResult.inserted}, Cập nhật: ${syncResult.updated}, Trạng thái: ${orderStatus})`);
 
       const logMsg = isCancelled
