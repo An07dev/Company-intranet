@@ -584,6 +584,7 @@ const ShopeeOrderSchema = new Schema<IShopeeOrderDocument>(
   }
 );
 
+ShopeeOrderSchema.index({ createdAt: -1 });
 ShopeeOrderSchema.index({ order_status: 1, createdAt: -1 });
 ShopeeOrderSchema.index({ shop_username: 1, createdAt: -1 });
 

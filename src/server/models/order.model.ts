@@ -130,6 +130,26 @@ export class OrderModel {
       }
     }
 
+    // Tự động dọn dẹp bản ghi cũ theo số hiệu Sapo (ví dụ: '15807') nếu đơn mới được lưu dưới mã sàn chính thức ('2610096VR3K893')
+    const legacySapoSnsToDelete: string[] = [];
+    for (const order of validOrdersMap.values()) {
+      const orderSn = String(order.order_sn).trim();
+      let sapoOrderNum: string | null = null;
+      if (order.raw_text) {
+        try {
+          const raw = JSON.parse(order.raw_text);
+          if (raw.order_number) sapoOrderNum = String(raw.order_number).replace(/^#/, "").trim();
+        } catch {}
+      }
+      if (sapoOrderNum && sapoOrderNum !== orderSn && /^\d{1,8}$/.test(sapoOrderNum)) {
+        legacySapoSnsToDelete.push(sapoOrderNum);
+      }
+    }
+
+    if (legacySapoSnsToDelete.length > 0) {
+      await MongoShopeeOrderModel.deleteMany({ order_sn: { $in: legacySapoSnsToDelete } });
+    }
+
     const bulkOps = Array.from(validOrdersMap.values()).map((order) => {
       const orderSn = String(order.order_sn).trim();
       const targetShop = order.shop_username || shopUsername || "baobiyensen";
@@ -219,7 +239,7 @@ export class OrderModel {
     }
 
     const [docs, total] = await Promise.all([
-      MongoShopeeOrderModel.find(query).sort({ createdAt: -1 }).skip(skip).limit(limit).lean(),
+      MongoShopeeOrderModel.find(query).sort({ createdAt: -1 }).skip(skip).limit(limit).allowDiskUse(true).lean(),
       MongoShopeeOrderModel.countDocuments(query),
     ]);
 
