@@ -247,6 +247,25 @@ export async function POST(request: NextRequest) {
     // =========================================================================
     // 2. XỬ LÝ SỰ KIỆN ĐƠN HÀNG TỪ SAPO (orders/create, orders/updated, orders/cancelled)
     // =========================================================================
+    const isOrderEvent = topic.includes("order") || topic.includes("orders/");
+    const hasOrderSignature =
+      rawData &&
+      (rawData.order_number !== undefined ||
+        rawData.line_items !== undefined ||
+        rawData.financial_status !== undefined ||
+        rawData.fulfillment_status !== undefined);
+
+    if (!isOrderEvent && !hasOrderSignature) {
+      console.log(`[Sapo Webhook] Bỏ qua gói tin không thuộc đơn hàng. Topic: ${topic}`);
+      return NextResponse.json(
+        {
+          success: true,
+          message: `Webhook topic '${topic}' không thuộc đối tượng xử lý đơn hàng. Đã bỏ qua an toàn.`,
+        },
+        { status: 200, headers: corsHeaders }
+      );
+    }
+
     const orderData = rawData;
 
     console.log(`=== [Sapo Webhook] Nhận sự kiện (${topic || "unknown"}) ===`);
