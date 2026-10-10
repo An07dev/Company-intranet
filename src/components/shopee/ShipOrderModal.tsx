@@ -87,7 +87,7 @@ export function ShipOrderModal({
     if (order.raw_text) {
       try {
         rawObj = JSON.parse(order.raw_text);
-      } catch {}
+      } catch { }
     }
 
     const shipAddr = rawObj.shipping_address || rawObj.billing_address || {};
@@ -109,7 +109,7 @@ export function ShipOrderModal({
     if (order.shipping_carrier) {
       const matchIntegrated = INTEGRATED_CARRIERS.find(
         (c) => c.name.toLowerCase() === order.shipping_carrier.toLowerCase() ||
-               order.shipping_carrier.toLowerCase().includes(c.id)
+          order.shipping_carrier.toLowerCase().includes(c.id)
       );
       if (matchIntegrated) {
         setActiveTab("integrated");
@@ -166,16 +166,16 @@ export function ShipOrderModal({
     const prefix = carrier.includes("SPX")
       ? "SPXVN"
       : carrier.includes("GHN")
-      ? "GHN"
-      : carrier.includes("GHTK")
-      ? "GHTK"
-      : carrier.includes("Viettel")
-      ? "VTP"
-      : carrier.includes("J&T")
-      ? "JT"
-      : carrier.includes("VNPost")
-      ? "VNP"
-      : "SHIP";
+        ? "GHN"
+        : carrier.includes("GHTK")
+          ? "GHTK"
+          : carrier.includes("Viettel")
+            ? "VTP"
+            : carrier.includes("J&T")
+              ? "JT"
+              : carrier.includes("VNPost")
+                ? "VNP"
+                : "SHIP";
     const randomSuffix = Math.floor(1000 + Math.random() * 9000);
     setTrackingNumber(`${prefix}${cleanSn.slice(-6)}${randomSuffix}`);
   };
@@ -228,7 +228,7 @@ export function ShipOrderModal({
 
   return (
     <div
-      className="fixed inset-0 z-[60] flex items-center justify-center p-2.5 sm:p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-200"
+      className="fixed inset-0 z-[60] flex items-center justify-center p-2.5 sm:p-4 bg-black/50 backdrop-blur-xs animate-in fade-in duration-200"
       onClick={(e) => e.stopPropagation()}
     >
       <div
@@ -276,11 +276,10 @@ export function ShipOrderModal({
               setActiveTab("integrated");
               setCarrier("SPX Express");
             }}
-            className={`pb-2.5 px-2.5 sm:px-3 text-xs font-bold transition-all border-b-2 flex items-center gap-1.5 cursor-pointer shrink-0 ${
-              activeTab === "integrated"
-                ? "border-orange-600 text-orange-600 dark:text-orange-400"
-                : "border-transparent text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200"
-            }`}
+            className={`pb-2.5 px-2.5 sm:px-3 text-xs font-bold transition-all border-b-2 flex items-center gap-1.5 cursor-pointer shrink-0 ${activeTab === "integrated"
+              ? "border-orange-600 text-orange-600 dark:text-orange-400"
+              : "border-transparent text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200"
+              }`}
           >
             <span>🚚</span>
             <span className="hidden sm:inline">Vận chuyển tích hợp (Sapo Express)</span>
@@ -293,11 +292,10 @@ export function ShipOrderModal({
               setActiveTab("self");
               setCarrier("Đối tác khác");
             }}
-            className={`pb-2.5 px-2.5 sm:px-3 text-xs font-bold transition-all border-b-2 flex items-center gap-1.5 cursor-pointer shrink-0 ${
-              activeTab === "self"
-                ? "border-orange-600 text-orange-600 dark:text-orange-400"
-                : "border-transparent text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200"
-            }`}
+            className={`pb-2.5 px-2.5 sm:px-3 text-xs font-bold transition-all border-b-2 flex items-center gap-1.5 cursor-pointer shrink-0 ${activeTab === "self"
+              ? "border-orange-600 text-orange-600 dark:text-orange-400"
+              : "border-transparent text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200"
+              }`}
           >
             <span>🛵</span>
             <span className="hidden sm:inline">Vận chuyển tự liên hệ (Đối tác khác / Tự giao)</span>
@@ -373,11 +371,10 @@ export function ShipOrderModal({
                         key={c.id}
                         type="button"
                         onClick={() => setCarrier(c.name)}
-                        className={`p-2 sm:p-2.5 rounded-xl border text-left text-xs transition-all cursor-pointer flex items-center gap-2 sm:gap-2.5 min-h-[58px] sm:h-[68px] ${
-                          isSelected
-                            ? "bg-orange-50/90 dark:bg-orange-950/40 border-orange-500 text-orange-900 dark:text-orange-200 font-bold ring-2 ring-orange-500/20 shadow-xs"
-                            : "bg-white dark:bg-zinc-800/60 border-zinc-200 dark:border-zinc-700 hover:border-zinc-300 dark:hover:border-zinc-600 text-zinc-700 dark:text-zinc-300 font-medium hover:bg-zinc-50 dark:hover:bg-zinc-800"
-                        }`}
+                        className={`p-2 sm:p-2.5 rounded-xl border text-left text-xs transition-all cursor-pointer flex items-center gap-2 sm:gap-2.5 min-h-[58px] sm:h-[68px] ${isSelected
+                          ? "bg-orange-50/90 dark:bg-orange-950/40 border-orange-500 text-orange-900 dark:text-orange-200 font-bold ring-2 ring-orange-500/20 shadow-xs"
+                          : "bg-white dark:bg-zinc-800/60 border-zinc-200 dark:border-zinc-700 hover:border-zinc-300 dark:hover:border-zinc-600 text-zinc-700 dark:text-zinc-300 font-medium hover:bg-zinc-50 dark:hover:bg-zinc-800"
+                          }`}
                       >
                         <CarrierLogo carrierId={c.id} size={30} />
                         <div className="min-w-0 flex-1">
@@ -402,11 +399,10 @@ export function ShipOrderModal({
                           key={c.id}
                           type="button"
                           onClick={() => setCarrier(c.name)}
-                          className={`p-2.5 sm:p-3 rounded-xl border text-left text-xs transition-all cursor-pointer flex items-center gap-2.5 sm:gap-3 ${
-                            isSelected
-                              ? "bg-orange-50/90 dark:bg-orange-950/40 border-orange-500 text-orange-900 dark:text-orange-200 font-bold ring-2 ring-orange-500/20 shadow-xs"
-                              : "bg-white dark:bg-zinc-800/60 border-zinc-200 dark:border-zinc-700 hover:border-zinc-300 dark:hover:border-zinc-600 text-zinc-700 dark:text-zinc-300 font-medium hover:bg-zinc-50 dark:hover:bg-zinc-800"
-                          }`}
+                          className={`p-2.5 sm:p-3 rounded-xl border text-left text-xs transition-all cursor-pointer flex items-center gap-2.5 sm:gap-3 ${isSelected
+                            ? "bg-orange-50/90 dark:bg-orange-950/40 border-orange-500 text-orange-900 dark:text-orange-200 font-bold ring-2 ring-orange-500/20 shadow-xs"
+                            : "bg-white dark:bg-zinc-800/60 border-zinc-200 dark:border-zinc-700 hover:border-zinc-300 dark:hover:border-zinc-600 text-zinc-700 dark:text-zinc-300 font-medium hover:bg-zinc-50 dark:hover:bg-zinc-800"
+                            }`}
                         >
                           <CarrierLogo carrierId={c.id} size={32} />
                           <div className="min-w-0 flex-1">
@@ -578,11 +574,10 @@ export function ShipOrderModal({
                     key={n}
                     type="button"
                     onClick={() => setShippingNote(n)}
-                    className={`text-[10px] px-2.5 py-1 rounded-lg border transition cursor-pointer ${
-                      shippingNote === n
-                        ? "bg-orange-100 dark:bg-orange-950/60 border-orange-300 dark:border-orange-800 text-orange-700 dark:text-orange-300 font-semibold"
-                        : "bg-zinc-100 dark:bg-zinc-800 border-zinc-200 dark:border-zinc-700 text-zinc-600 dark:text-zinc-400 hover:bg-zinc-200/60"
-                    }`}
+                    className={`text-[10px] px-2.5 py-1 rounded-lg border transition cursor-pointer ${shippingNote === n
+                      ? "bg-orange-100 dark:bg-orange-950/60 border-orange-300 dark:border-orange-800 text-orange-700 dark:text-orange-300 font-semibold"
+                      : "bg-zinc-100 dark:bg-zinc-800 border-zinc-200 dark:border-zinc-700 text-zinc-600 dark:text-zinc-400 hover:bg-zinc-200/60"
+                      }`}
                   >
                     {n}
                   </button>
@@ -656,7 +651,7 @@ export function ShipOrderModal({
                 ) : (
                   <>
                     <span>🚚</span>
-                    <span>Đẩy đơn & Đồng bộ Sapo</span>
+                    <span>Đẩy đơn</span>
                   </>
                 )}
               </button>

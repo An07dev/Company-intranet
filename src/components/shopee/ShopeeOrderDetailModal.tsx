@@ -13,6 +13,7 @@ interface ShopeeOrderDetailModalProps {
   onCopySn?: (sn: string) => void;
   onDelete?: (order_sn: string) => void;
   onEdit?: (order: ShopeeOrder) => void;
+  onShip?: (order: ShopeeOrder) => void;
   onOrderUpdated?: () => void;
 }
 
@@ -35,6 +36,7 @@ export function ShopeeOrderDetailModal({
   onCopySn,
   onDelete,
   onEdit,
+  onShip,
   onOrderUpdated,
 }: ShopeeOrderDetailModalProps) {
   const { toast } = useToast();
@@ -82,6 +84,21 @@ export function ShopeeOrderDetailModal({
   };
 
   if (!isOpen || !order) return null;
+
+  // Nếu mở modal vận chuyển cục bộ (fallback khi component dùng độc lập không qua parent onShip)
+  if (showShipModal) {
+    return (
+      <ShipOrderModal
+        order={order}
+        isOpen={showShipModal}
+        onClose={() => setShowShipModal(false)}
+        onOrderShipped={() => {
+          setShowShipModal(false);
+          onOrderUpdated?.();
+        }}
+      />
+    );
+  }
 
   const formatVND = (amount: number) => {
     return new Intl.NumberFormat("vi-VN", {
@@ -207,7 +224,7 @@ export function ShopeeOrderDetailModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-2.5 sm:p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-200">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-2.5 sm:p-4 bg-black/50 backdrop-blur-xs animate-in fade-in duration-200">
       <div
         className="w-full max-w-xl bg-white dark:bg-zinc-900 rounded-2xl sm:rounded-3xl border border-zinc-200 dark:border-zinc-800 shadow-2xl overflow-hidden flex flex-col max-h-[92dvh] sm:max-h-[88vh]"
         onClick={(e) => e.stopPropagation()}
@@ -435,13 +452,13 @@ export function ShopeeOrderDetailModal({
                 ) && (
                   <button
                     type="button"
-                    onClick={() => setShowShipModal(true)}
+                    onClick={() => (onShip ? onShip(order) : setShowShipModal(true))}
                     disabled={actionLoading}
                     className="py-1.5 px-2 sm:px-2.5 rounded-xl border border-blue-200 dark:border-blue-800/80 bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 hover:bg-blue-100 font-semibold text-xs transition-colors flex items-center gap-1 cursor-pointer active:scale-95 shrink-0"
                     title="Đẩy đơn qua đơn vị vận chuyển và đồng bộ trực tiếp lên Sapo"
                   >
                     <span>🚚</span>
-                    <span className="hidden sm:inline">Đẩy vận chuyển</span>
+                    <span className="hidden sm:inline">Vận chuyển</span>
                     <span className="sm:hidden">Giao hàng</span>
                   </button>
                 )}
@@ -535,7 +552,7 @@ export function ShopeeOrderDetailModal({
         {/* Modal Xác nhận Hủy Đơn Hàng trên Sapo */}
         {showCancelModal && (
           <div
-            className="fixed inset-0 z-[60] bg-black/70 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in duration-150"
+            className="fixed inset-0 z-[60] bg-black/40 backdrop-blur-2xs flex items-center justify-center p-4 animate-in fade-in duration-150"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-3xl max-w-md w-full p-5 shadow-2xl space-y-4">
@@ -619,19 +636,6 @@ export function ShopeeOrderDetailModal({
               </div>
             </div>
           </div>
-        )}
-
-        {/* Modal Đẩy Đơn Vận Chuyển & Đồng bộ Sapo */}
-        {showShipModal && (
-          <ShipOrderModal
-            order={order}
-            isOpen={showShipModal}
-            onClose={() => setShowShipModal(false)}
-            onOrderShipped={() => {
-              setShowShipModal(false);
-              onOrderUpdated?.();
-            }}
-          />
         )}
       </div>
     </div>

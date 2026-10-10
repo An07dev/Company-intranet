@@ -1629,13 +1629,14 @@ export default function MultiChannelOrdersPage() {
       )}
 
       {/* Modal Chi tiết Đơn hàng & Chỉnh sửa / Hủy / Đóng */}
-      {selectedOrder && (
+      {selectedOrder && !editingOrder && !shippingOrder && (
         <ShopeeOrderDetailModal
           order={selectedOrder}
           isOpen={!!selectedOrder}
           onClose={() => setSelectedOrder(null)}
           onDelete={handleDeleteOrder}
           onEdit={(orderToEdit) => setEditingOrder(orderToEdit)}
+          onShip={(orderToShip) => setShippingOrder(orderToShip)}
           onOrderUpdated={() => fetchOrders(true)}
         />
       )}
