@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import { ShopeeOrder } from "@/types";
 import { ShopeeStatusBadge } from "./ShopeeStatusBadge";
 import { useToast } from "@/context/ToastContext";
+import { ShipOrderModal } from "./ShipOrderModal";
 
 interface ShopeeOrderDetailModalProps {
   order: ShopeeOrder | null;
@@ -45,6 +46,7 @@ export function ShopeeOrderDetailModal({
   const [actionLoading, setActionLoading] = useState(false);
   const [refreshingStatus, setRefreshingStatus] = useState(false);
   const [showCancelModal, setShowCancelModal] = useState(false);
+  const [showShipModal, setShowShipModal] = useState(false);
   const [cancelReasonKey, setCancelReasonKey] = useState("customer");
   const [actionError, setActionError] = useState<string | null>(null);
   const [cancelError, setCancelError] = useState<string | null>(null);
@@ -424,6 +426,21 @@ export function ShopeeOrderDetailModal({
                 </button>
               )}
 
+              {/* Nút Đẩy vận chuyển (khi đơn chưa hủy) */}
+              {order.order_status !== "Đã hủy" && (
+                <button
+                  type="button"
+                  onClick={() => setShowShipModal(true)}
+                  disabled={actionLoading}
+                  className="py-1.5 px-2 sm:px-2.5 rounded-xl border border-blue-200 dark:border-blue-800/80 bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 hover:bg-blue-100 font-semibold text-xs transition-colors flex items-center gap-1 cursor-pointer active:scale-95 shrink-0"
+                  title="Đẩy đơn qua đơn vị vận chuyển và đồng bộ trực tiếp lên Sapo"
+                >
+                  <span>🚚</span>
+                  <span className="hidden sm:inline">Đẩy vận chuyển</span>
+                  <span className="sm:hidden">Giao hàng</span>
+                </button>
+              )}
+
               {/* Nút Sửa đơn */}
               {onEdit && (
                 <button
@@ -597,6 +614,19 @@ export function ShopeeOrderDetailModal({
               </div>
             </div>
           </div>
+        )}
+
+        {/* Modal Đẩy Đơn Vận Chuyển & Đồng bộ Sapo */}
+        {showShipModal && (
+          <ShipOrderModal
+            order={order}
+            isOpen={showShipModal}
+            onClose={() => setShowShipModal(false)}
+            onOrderShipped={() => {
+              setShowShipModal(false);
+              onOrderUpdated?.();
+            }}
+          />
         )}
       </div>
     </div>

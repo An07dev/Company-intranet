@@ -422,6 +422,23 @@ export const SapoService = {
   },
 
   /**
+   * Tạo phiếu giao hàng (Fulfillment) cho đơn hàng trên Sapo Omnichannel
+   */
+  async createFulfillment(orderId: number | string, fulfillmentData: any): Promise<any> {
+    return sapoFetch(`/admin/orders/${orderId}/fulfillments.json`, {
+      method: "POST",
+      body: JSON.stringify({ fulfillment: fulfillmentData }),
+    });
+  },
+
+  /**
+   * Lấy danh sách phiếu giao hàng (Fulfillments) của đơn hàng trên Sapo
+   */
+  async getFulfillments(orderId: number | string): Promise<{ fulfillments: any[] }> {
+    return sapoFetch<{ fulfillments: any[] }>(`/admin/orders/${orderId}/fulfillments.json`);
+  },
+
+  /**
    * Cập nhật số lượng tồn kho của một biến thể trên Sapo (Kiểm kho / Điều chỉnh tồn)
    */
   async updateVariantInventory(variantId: number | string, quantity: number): Promise<any> {
