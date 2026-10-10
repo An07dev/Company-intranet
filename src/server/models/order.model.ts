@@ -126,7 +126,18 @@ export class OrderModel {
     const validOrdersMap = new Map<string, ShopeeOrder>();
     for (const order of orders) {
       if (order && order.order_sn) {
-        validOrdersMap.set(String(order.order_sn).trim(), order);
+        let resolvedSn = String(order.order_sn).trim();
+        if (order.raw_text) {
+          try {
+            const raw = JSON.parse(order.raw_text);
+            const canonicalSn = resolveSapoOrderSn(raw);
+            if (canonicalSn) {
+              resolvedSn = canonicalSn;
+              order.order_sn = canonicalSn;
+            }
+          } catch {}
+        }
+        validOrdersMap.set(resolvedSn, order);
       }
     }
 
@@ -135,14 +146,19 @@ export class OrderModel {
     for (const order of validOrdersMap.values()) {
       const orderSn = String(order.order_sn).trim();
       let sapoOrderNum: string | null = null;
+      let sapoName: string | null = null;
       if (order.raw_text) {
         try {
           const raw = JSON.parse(order.raw_text);
           if (raw.order_number) sapoOrderNum = String(raw.order_number).replace(/^#/, "").trim();
+          if (raw.name) sapoName = String(raw.name).replace(/^#/, "").trim();
         } catch {}
       }
       if (sapoOrderNum && sapoOrderNum !== orderSn && /^\d{1,8}$/.test(sapoOrderNum)) {
         legacySapoSnsToDelete.push(sapoOrderNum);
+      }
+      if (sapoName && sapoName !== orderSn && /^\d{1,8}$/.test(sapoName)) {
+        legacySapoSnsToDelete.push(sapoName);
       }
     }
 

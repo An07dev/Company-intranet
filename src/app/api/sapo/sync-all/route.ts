@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { connectToDatabase } from "@/server/db";
 import { MongoShopeeOrderModel, MongoShopeeProductModel } from "@/server/db/schema";
 import { LogModel } from "@/server/models/log.model";
-import { resolveSapoOrderSn } from "@/server/models/order.model";
+import { OrderModel, resolveSapoOrderSn } from "@/server/models/order.model";
 
 export const maxDuration = 60;
 
@@ -147,35 +147,25 @@ export async function POST(request: NextRequest) {
 
       const top200 = combined.slice(0, 200);
 
-      const bulkOps = top200.map((o: any) => {
-        const doc = mapSapoOrder(o, now);
-        return {
-          updateOne: {
-            filter: { order_sn: doc.order_sn },
-            update: { $set: doc },
-            upsert: true,
-          },
-        };
-      });
-
-      if (bulkOps.length > 0) {
-        await MongoShopeeOrderModel.bulkWrite(bulkOps, { ordered: false });
-      }
+      const mappedOrders = top200.map((o: any) => mapSapoOrder(o, now));
+      const syncResult = await OrderModel.upsertOrders(mappedOrders as any, "sapo_omnichannel");
 
       await LogModel.createLog({
         level: "success",
         type: "order_sync",
         source: "sapo_recent_200",
         shop_username: "sapo_omnichannel",
-        message: `[Sapo Sync] Đã đồng bộ ${bulkOps.length} đơn hàng mới nhất từ Sapo`,
-        details: { syncedOrders: bulkOps.length },
+        message: `[Sapo Sync] Đã đồng bộ ${syncResult.total} đơn hàng mới nhất từ Sapo (Mới: ${syncResult.inserted}, Cập nhật: ${syncResult.updated})`,
+        details: { syncedOrders: syncResult.total, inserted: syncResult.inserted, updated: syncResult.updated },
       });
 
       return NextResponse.json({
         success: true,
         step: "latest_200",
-        syncedOrders: bulkOps.length,
-        message: `Đã đồng bộ thành công ${bulkOps.length} đơn hàng mới nhất từ Sapo!`,
+        syncedOrders: syncResult.total,
+        inserted: syncResult.inserted,
+        updated: syncResult.updated,
+        message: `Đã đồng bộ thành công ${syncResult.total} đơn hàng mới nhất từ Sapo!`,
       });
     }
 
@@ -290,22 +280,9 @@ export async function POST(request: NextRequest) {
           const orders = data.orders || [];
           if (orders.length === 0) break;
 
-          const bulkOps = orders.map((o: any) => {
-            const doc = mapSapoOrder(o, now);
-            return {
-              updateOne: {
-                filter: { order_sn: doc.order_sn },
-                update: { $set: doc },
-                upsert: true,
-              },
-            };
-          });
-
-          if (bulkOps.length > 0) {
-            await MongoShopeeOrderModel.bulkWrite(bulkOps, { ordered: false });
-          }
-
-          totalSyncedInChunk += orders.length;
+          const mappedOrders = orders.map((o: any) => mapSapoOrder(o, now));
+          const syncRes = await OrderModel.upsertOrders(mappedOrders as any, "sapo_omnichannel");
+          totalSyncedInChunk += syncRes.total;
           if (orders.length < 250) break;
           await new Promise((r) => setTimeout(r, 100));
         } catch (err: any) {
@@ -339,26 +316,16 @@ export async function POST(request: NextRequest) {
       ...(openP4.orders || []),
     ];
 
-    const bulkOps = rawOrders.map((o: any) => {
-      const doc = mapSapoOrder(o, now);
-      return {
-        updateOne: {
-          filter: { order_sn: doc.order_sn },
-          update: { $set: doc },
-          upsert: true,
-        },
-      };
-    });
-
-    if (bulkOps.length > 0) {
-      await MongoShopeeOrderModel.bulkWrite(bulkOps, { ordered: false });
-    }
+    const mappedOrders = rawOrders.map((o: any) => mapSapoOrder(o, now));
+    const syncResult = await OrderModel.upsertOrders(mappedOrders as any, "sapo_omnichannel");
 
     return NextResponse.json({
       success: true,
-      message: `Đồng bộ nhanh Sapo thành công! Đã cập nhật ${bulkOps.length} đơn hàng đang mở. Để đồng bộ trọn vẹn toàn bộ đơn, vui lòng dùng tính năng Đồng bộ toàn diện trên giao diện.`,
+      message: `Đồng bộ nhanh Sapo thành công! Đã cập nhật ${syncResult.total} đơn hàng đang mở. Để đồng bộ trọn vẹn toàn bộ đơn, vui lòng dùng tính năng Đồng bộ toàn diện trên giao diện.`,
       data: {
-        syncedOrders: bulkOps.length,
+        syncedOrders: syncResult.total,
+        inserted: syncResult.inserted,
+        updated: syncResult.updated,
       },
     });
   } catch (error: any) {
