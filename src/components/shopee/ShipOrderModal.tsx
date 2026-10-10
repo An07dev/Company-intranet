@@ -188,11 +188,6 @@ export function ShipOrderModal({
       return;
     }
 
-    if (!trackingNumber.trim()) {
-      setApiError("Vui lòng nhập mã vận đơn!");
-      return;
-    }
-
     setLoading(true);
     setApiError(null);
 
@@ -528,7 +523,16 @@ export function ShipOrderModal({
             <div className="space-y-1.5">
               <div className="flex items-center justify-between">
                 <label className="block text-xs font-bold text-zinc-700 dark:text-zinc-300">
-                  Mã vận đơn (Tracking Code) <span className="text-rose-500">*</span>
+                  Mã vận đơn (Tracking Code){" "}
+                  {activeTab === "integrated" ? (
+                    <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-normal">
+                      (⚡ Đối tác vận chuyển tự cấp)
+                    </span>
+                  ) : (
+                    <span className="text-[10px] text-zinc-400 font-normal">
+                      (Tùy chọn)
+                    </span>
+                  )}
                 </label>
                 <button
                   type="button"
@@ -538,12 +542,25 @@ export function ShipOrderModal({
                   ⚡ Gợi ý mã tự động
                 </button>
               </div>
+
+              {activeTab === "integrated" && !trackingNumber && (
+                <div className="p-2.5 rounded-xl bg-blue-50/80 dark:bg-blue-950/40 border border-blue-200/70 dark:border-blue-900/50 text-[11px] text-blue-700 dark:text-blue-300 flex items-center gap-2">
+                  <span className="text-sm shrink-0">ℹ️</span>
+                  <span>
+                    Với <strong>Vận chuyển tích hợp Sapo Express</strong>, mã vận đơn sẽ do đối tác (<strong>{selectedCarrierName}</strong>) cấp và tự động đồng bộ về hệ thống sau khi tiếp nhận đơn.
+                  </span>
+                </div>
+              )}
+
               <input
                 type="text"
-                required
                 value={trackingNumber}
                 onChange={(e) => setTrackingNumber(e.target.value.toUpperCase())}
-                placeholder="Ví dụ: SPXVN0987654321A hoặc GYRYDP6B..."
+                placeholder={
+                  activeTab === "integrated"
+                    ? "Để trống để đối tác tự cấp mã (hoặc nhập nếu đã có mã sẵn)..."
+                    : "Nhập mã vận đơn bưu tá cung cấp (hoặc nhấn Gợi ý mã)..."
+                }
                 className="w-full font-mono text-xs font-semibold px-3.5 py-2.5 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800 text-zinc-900 dark:text-white focus:outline-hidden focus:ring-2 focus:ring-orange-500 uppercase"
               />
             </div>

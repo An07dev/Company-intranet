@@ -107,14 +107,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (!tracking_number || !String(tracking_number).trim()) {
-      return NextResponse.json(
-        { success: false, message: "Vui lòng nhập mã vận đơn" },
-        { status: 400 }
-      );
-    }
-
-    const cleanTrackingNumber = String(tracking_number).trim();
+    const cleanTrackingNumber = tracking_number ? String(tracking_number).trim() : "";
 
     // 1. Tìm đơn hàng trong cơ sở dữ liệu
     const order = await MongoShopeeOrderModel.findOne({ order_sn });
@@ -186,9 +179,12 @@ export async function POST(request: NextRequest) {
     // 4. Tạo payload Fulfillment gửi Sapo
     const fulfillmentPayload: any = {
       tracking_company: shipping_carrier,
-      tracking_number: cleanTrackingNumber,
       notify_customer: Boolean(notify_customer),
     };
+
+    if (cleanTrackingNumber) {
+      fulfillmentPayload.tracking_number = cleanTrackingNumber;
+    }
 
     if (finalTrackingUrl) {
       fulfillmentPayload.tracking_url = finalTrackingUrl;
@@ -232,6 +228,13 @@ export async function POST(request: NextRequest) {
       console.warn("[Fulfillment Fresh Order Fetch Warning]:", fetchErr);
     }
 
+    // Xác định mã tracking trả về từ Sapo hoặc đối tác
+    const assignedTracking =
+      sapoFulfillmentRes?.fulfillment?.tracking_number ||
+      updatedSapoOrder?.fulfillments?.[0]?.tracking_number ||
+      cleanTrackingNumber ||
+      "";
+
     const finalRawText = updatedSapoOrder
       ? JSON.stringify(updatedSapoOrder)
       : existingRaw
@@ -242,7 +245,7 @@ export async function POST(request: NextRequest) {
             ...(existingRaw.fulfillments || []),
             sapoFulfillmentRes?.fulfillment || {
               tracking_company: shipping_carrier,
-              tracking_number: cleanTrackingNumber,
+              tracking_number: assignedTracking,
               tracking_url: finalTrackingUrl,
             },
           ],
@@ -254,13 +257,13 @@ export async function POST(request: NextRequest) {
     const updateData: any = {
       order_status: newStatus,
       shipping_carrier,
-      tracking_number: cleanTrackingNumber,
+      tracking_number: assignedTracking,
       raw_text: finalRawText,
       updatedAt: now,
     };
 
     if (shipping_note) {
-      updateData.status_description = `ĐVVC: ${shipping_carrier} | Vận đơn: ${cleanTrackingNumber} | Ghi chú VC: ${shipping_note}`;
+      updateData.status_description = `ĐVVC: ${shipping_carrier}${assignedTracking ? ` | Vận đơn: ${assignedTracking}` : ""} | Ghi chú VC: ${shipping_note}`;
     }
 
     await MongoShopeeOrderModel.updateOne({ order_sn }, { $set: updateData });
@@ -273,14 +276,18 @@ export async function POST(request: NextRequest) {
       type: "order_fulfillment",
       source: "sapo_fulfillment_api",
       shop_username: order.shop_username,
-      message: `Đã đẩy đơn #${order_sn} qua ${shipping_carrier} thành công! Mã vận đơn: ${cleanTrackingNumber}${
-        fulfillmentCode ? ` (Phiếu Sapo: ${fulfillmentCode})` : ""
-      }`,
+      message: assignedTracking
+        ? `Đã đẩy đơn #${order_sn} qua ${shipping_carrier} thành công! Mã vận đơn: ${assignedTracking}${
+            fulfillmentCode ? ` (Phiếu Sapo: ${fulfillmentCode})` : ""
+          }`
+        : `Đã tạo yêu cầu vận chuyển đơn #${order_sn} qua ${shipping_carrier} trên Sapo thành công!${
+            fulfillmentCode ? ` (Phiếu Sapo: ${fulfillmentCode})` : ""
+          }`,
       details: {
         order_sn,
         sapo_id: sapoId,
         shipping_carrier,
-        tracking_number: cleanTrackingNumber,
+        tracking_number: assignedTracking,
         tracking_url: finalTrackingUrl,
         shipping_note,
         sapo_fulfillment: sapoFulfillmentRes?.fulfillment,
@@ -289,9 +296,12 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      message: `Đã đẩy đơn hàng #${order_sn} qua ${shipping_carrier} và đồng bộ Sapo thành công! Mã vận đơn: ${cleanTrackingNumber}`,
+      message: assignedTracking
+        ? `Đã đẩy đơn hàng #${order_sn} qua ${shipping_carrier} và đồng bộ Sapo thành công! Mã vận đơn: ${assignedTracking}`
+        : `Đã gửi yêu cầu vận chuyển đơn hàng #${order_sn} qua ${shipping_carrier} lên Sapo thành công! Đối tác sẽ tự động cấp mã vận đơn và đồng bộ về hệ thống.`,
       data: updatedDoc,
       fulfillment: sapoFulfillmentRes?.fulfillment,
+      tracking_number: assignedTracking,
       tracking_url: finalTrackingUrl,
     });
   } catch (error: any) {
