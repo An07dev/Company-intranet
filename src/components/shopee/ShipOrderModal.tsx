@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { ShopeeOrder } from "@/types";
 import { useToast } from "@/context/ToastContext";
+import { CarrierLogo } from "./CarrierLogos";
 
 interface ShipOrderModalProps {
   order: ShopeeOrder | null;
@@ -367,7 +368,7 @@ export function ShipOrderModal({
               </div>
 
               {activeTab === "integrated" ? (
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
                   {INTEGRATED_CARRIERS.map((c) => {
                     const isSelected = carrier === c.name;
                     return (
@@ -375,24 +376,28 @@ export function ShipOrderModal({
                         key={c.id}
                         type="button"
                         onClick={() => setCarrier(c.name)}
-                        className={`p-2.5 rounded-xl border text-left text-xs transition cursor-pointer flex flex-col justify-between h-16 ${
+                        className={`p-2.5 rounded-xl border text-left text-xs transition-all cursor-pointer flex items-center gap-2.5 h-[68px] ${
                           isSelected
-                            ? "bg-orange-50 dark:bg-orange-950/40 border-orange-500 text-orange-900 dark:text-orange-200 font-bold ring-2 ring-orange-500/20"
-                            : "bg-white dark:bg-zinc-800/60 border-zinc-200 dark:border-zinc-700 hover:border-zinc-300 text-zinc-700 dark:text-zinc-300 font-medium"
+                            ? "bg-orange-50/90 dark:bg-orange-950/40 border-orange-500 text-orange-900 dark:text-orange-200 font-bold ring-2 ring-orange-500/20 shadow-xs"
+                            : "bg-white dark:bg-zinc-800/60 border-zinc-200 dark:border-zinc-700 hover:border-zinc-300 dark:hover:border-zinc-600 text-zinc-700 dark:text-zinc-300 font-medium hover:bg-zinc-50 dark:hover:bg-zinc-800"
                         }`}
                       >
-                        <div className="flex items-center gap-1.5">
-                          <span className="text-sm shrink-0">{c.icon}</span>
-                          <span className="font-bold truncate text-[11px]">{c.badge}</span>
+                        <CarrierLogo carrierId={c.id} size={34} />
+                        <div className="min-w-0 flex-1">
+                          <div className="font-bold truncate text-[11px] leading-tight text-zinc-900 dark:text-zinc-100">
+                            {c.badge}
+                          </div>
+                          <div className="text-[10px] text-zinc-400 dark:text-zinc-400 truncate mt-0.5 font-normal">
+                            {c.sub}
+                          </div>
                         </div>
-                        <span className="text-[10px] text-zinc-400 truncate">{c.sub}</span>
                       </button>
                     );
                   })}
                 </div>
               ) : (
                 <div className="space-y-2">
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
                     {SELF_CARRIERS.map((c) => {
                       const isSelected = carrier === c.name;
                       return (
@@ -400,16 +405,20 @@ export function ShipOrderModal({
                           key={c.id}
                           type="button"
                           onClick={() => setCarrier(c.name)}
-                          className={`p-3 rounded-xl border text-left text-xs transition cursor-pointer flex items-center gap-2.5 ${
+                          className={`p-3 rounded-xl border text-left text-xs transition-all cursor-pointer flex items-center gap-3 ${
                             isSelected
-                              ? "bg-orange-50 dark:bg-orange-950/40 border-orange-500 text-orange-900 dark:text-orange-200 font-bold ring-2 ring-orange-500/20"
-                              : "bg-white dark:bg-zinc-800/60 border-zinc-200 dark:border-zinc-700 hover:border-zinc-300 text-zinc-700 dark:text-zinc-300 font-medium"
+                              ? "bg-orange-50/90 dark:bg-orange-950/40 border-orange-500 text-orange-900 dark:text-orange-200 font-bold ring-2 ring-orange-500/20 shadow-xs"
+                              : "bg-white dark:bg-zinc-800/60 border-zinc-200 dark:border-zinc-700 hover:border-zinc-300 dark:hover:border-zinc-600 text-zinc-700 dark:text-zinc-300 font-medium hover:bg-zinc-50 dark:hover:bg-zinc-800"
                           }`}
                         >
-                          <span className="text-lg shrink-0">{c.icon}</span>
-                          <div>
-                            <div className="font-bold text-[11px]">{c.badge}</div>
-                            <div className="text-[10px] text-zinc-400">{c.sub}</div>
+                          <CarrierLogo carrierId={c.id} size={34} />
+                          <div className="min-w-0 flex-1">
+                            <div className="font-bold text-[11px] leading-tight text-zinc-900 dark:text-zinc-100">
+                              {c.badge}
+                            </div>
+                            <div className="text-[10px] text-zinc-400 dark:text-zinc-400 mt-0.5 font-normal">
+                              {c.sub}
+                            </div>
                           </div>
                         </button>
                       );
