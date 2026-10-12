@@ -88,6 +88,7 @@ function parseOrderDebtData(doc: any) {
     order_sn: doc.order_sn,
     sapo_id: sapoId,
     shop_username: doc.shop_username || "sapo_pos",
+    buyer_username: doc.buyer_username || "",
     customer_id: raw.customer?.id || null,
     customer_name: customerName,
     customer_phone: phone,
@@ -106,6 +107,37 @@ function parseOrderDebtData(doc: any) {
     payment_method: doc.payment_method || raw.gateway || raw.payment_gateway_names?.[0] || "Chưa rõ",
     items: doc.items || [],
   };
+}
+
+/**
+ * Helper: Tạo key gom nhóm khách hàng chuẩn Sapo
+ * - Ưu tiên 1: customer_id từ CRM Sapo (chuẩn nhất cho tài khoản khách)
+ * - Ưu tiên 2: SĐT đầy đủ (>= 9 số và không chứa dấu * ẩn danh tính)
+ * - Ưu tiên 3: Tên đăng nhập người mua (buyer_username trên Shopee)
+ * - Ưu tiên 4: Tên khách hàng (nếu không phải "Khách lẻ")
+ * - Fallback: Chuỗi thô
+ */
+function getCustomerGroupKey(order: {
+  customer_id?: number | null;
+  customer_phone?: string;
+  buyer_username?: string;
+  customer_name?: string;
+}): string {
+  if (order.customer_id) {
+    return `sapo_cust_${order.customer_id}`;
+  }
+  const phone = order.customer_phone || "";
+  const rawPhone = phone.replace(/\D/g, "");
+  if (rawPhone.length >= 9 && !phone.includes("*")) {
+    return `phone_${rawPhone.slice(-9)}`;
+  }
+  if (order.buyer_username && order.buyer_username.trim()) {
+    return `buyer_${order.buyer_username.trim().toLowerCase()}`;
+  }
+  if (order.customer_name && order.customer_name.trim() && order.customer_name !== "Khách lẻ") {
+    return `name_${order.customer_name.trim().toLowerCase()}`;
+  }
+  return `raw_${phone || order.customer_name || "unknown"}`;
 }
 
 /**
@@ -189,7 +221,7 @@ export async function GET(request: NextRequest) {
         }
 
         if (hasCustomerDebt) {
-          const key = (order.customer_phone || order.customer_name).toLowerCase();
+          const key = getCustomerGroupKey(order);
           debtorsSet.add(key);
         }
       }
@@ -224,8 +256,7 @@ export async function GET(request: NextRequest) {
         const order = parseOrderDebtData(doc);
         if (order.is_cancelled && !includeCancelled) continue;
 
-        const rawPhone = order.customer_phone.replace(/\D/g, "");
-        const key = rawPhone ? `phone_${rawPhone.slice(-9)}` : `name_${order.customer_name.toLowerCase()}`;
+        const key = getCustomerGroupKey(order);
 
         if (!customerMap.has(key)) {
           customerMap.set(key, {
@@ -250,9 +281,17 @@ export async function GET(request: NextRequest) {
         c.order_count++;
         c.total_spent += order.total_price;
 
-        // Cập nhật tên nếu có tên CRM chuẩn
-        if (order.customer_name && order.customer_name !== "Khách lẻ") {
+        if (!c.customer_id && order.customer_id) {
+          c.customer_id = order.customer_id;
+        }
+
+        // Cập nhật tên nếu có tên CRM chuẩn hoặc c.name đang là Khách lẻ
+        if (order.customer_name && order.customer_name !== "Khách lẻ" && (c.name === "Khách lẻ" || !c.name)) {
           c.name = order.customer_name;
+        }
+        // Cập nhật SĐT nếu đơn có SĐT đầy đủ còn c.phone đang bị che dấu sao (*)
+        if (order.customer_phone && (!c.phone || c.phone.includes("*")) && !order.customer_phone.includes("*")) {
+          c.phone = order.customer_phone;
         }
         if (order.customer_address && !c.address) {
           c.address = order.customer_address;
@@ -310,26 +349,30 @@ export async function GET(request: NextRequest) {
         c.cuoi_ky = c.dau_ky + c.tang_trong_ky - c.giam_trong_ky;
         c.total_debt = c.cuoi_ky;
 
-        // Lọc theo filterType:
-        // - 'cuoi_ky': Chỉ lấy khách hàng còn nợ cuối kỳ > 0 (chuẩn Sapo)
-        // - 'phat_sinh': Khách hàng có phát sinh nợ (Tăng > 0 hoặc Giảm > 0 hoặc Cuối > 0)
-        // - 'all': Tất cả
-        if (filterType === "cuoi_ky" && c.cuoi_ky <= 0) continue;
-        if (filterType === "phat_sinh" && c.cuoi_ky <= 0 && c.tang_trong_ky <= 0 && c.giam_trong_ky <= 0) continue;
+        // Khi người dùng KHÔNG tìm kiếm thì áp dụng lọc tab thông thường
+        if (!search) {
+          // Lọc theo filterType:
+          // - 'cuoi_ky': Chỉ lấy khách hàng còn nợ cuối kỳ > 0 (chuẩn Sapo)
+          // - 'phat_sinh': Khách hàng có phát sinh nợ (Tăng > 0 hoặc Giảm > 0 hoặc Cuối > 0)
+          // - 'all': Tất cả
+          if (filterType === "cuoi_ky" && c.cuoi_ky <= 0) continue;
+          if (filterType === "phat_sinh" && c.cuoi_ky <= 0 && c.tang_trong_ky <= 0 && c.giam_trong_ky <= 0) continue;
 
-        // Ẩn nhóm khách lẻ vô danh không có SĐT
-        if (!c.phone && (c.name === "Khách lẻ" || c.name === "Chưa rõ")) {
-          continue;
+          // Ẩn nhóm khách lẻ vô danh không có SĐT
+          if (!c.phone && (c.name === "Khách lẻ" || c.name === "Chưa rõ")) {
+            continue;
+          }
         }
 
         allCustomers.push(c);
       }
 
-      // Tìm kiếm theo tên / SĐT
+      // Tìm kiếm theo tên / SĐT / customer_id / Địa chỉ
       if (search) {
         allCustomers = allCustomers.filter((c) =>
           c.name.toLowerCase().includes(search) ||
           c.phone.toLowerCase().includes(search) ||
+          (c.customer_id && String(c.customer_id).includes(search)) ||
           (c.address && c.address.toLowerCase().includes(search))
         );
       }
@@ -349,6 +392,7 @@ export async function GET(request: NextRequest) {
             page,
             limit,
             total,
+            totalDebtors: total,
             totalPages,
           },
         },
@@ -431,12 +475,13 @@ export async function GET(request: NextRequest) {
 
     // 4. TYPE = CUSTOMER_DETAIL (Xem chi tiết tất cả đơn nợ của 1 khách hàng)
     if (type === "customer_detail") {
+      const qCustId = searchParams.get("customer_id") || "";
       const qPhone = searchParams.get("phone") || "";
       const qName = searchParams.get("name") || "";
 
-      if (!qPhone && !qName) {
+      if (!qCustId && !qPhone && !qName) {
         return NextResponse.json(
-          { success: false, message: "Thiếu thông tin số điện thoại hoặc tên khách" },
+          { success: false, message: "Thiếu thông tin mã khách hàng, số điện thoại hoặc tên khách" },
           { status: 400 }
         );
       }
@@ -449,20 +494,44 @@ export async function GET(request: NextRequest) {
       let totalDebt = 0;
       let targetName = qName;
       let targetAddress = "";
+      let targetPhone = qPhone;
 
       for await (const doc of cursor) {
         const order = parseOrderDebtData(doc);
         if (order.is_cancelled && !includeCancelled) continue;
 
-        const matchPhone = qPhone && order.customer_phone && order.customer_phone.replace(/\D/g, "").includes(qPhone.replace(/\D/g, "").slice(-9));
-        const matchName = qName && order.customer_name.toLowerCase() === qName.toLowerCase();
+        let isMatch = false;
 
-        if (matchPhone || matchName) {
-          if (order.has_debt || order.total_received > 0) {
-            customerOrders.push(order);
-            totalDebt += order.outstanding;
-            if (order.customer_name && !targetName) targetName = order.customer_name;
-            if (order.customer_address && !targetAddress) targetAddress = order.customer_address;
+        // Ưu tiên 1: Khớp mã khách hàng Sapo (chính xác tuyệt đối)
+        if (qCustId && order.customer_id && String(order.customer_id) === String(qCustId)) {
+          isMatch = true;
+        }
+        // Ưu tiên 2: Khớp SĐT đầy đủ (>= 9 chữ số và không phải SĐT bị che dấu sao dạng ******29)
+        else if (
+          qPhone &&
+          !qPhone.includes("*") &&
+          order.customer_phone &&
+          !order.customer_phone.includes("*") &&
+          order.customer_phone.replace(/\D/g, "").slice(-9) === qPhone.replace(/\D/g, "").slice(-9)
+        ) {
+          isMatch = true;
+        }
+        // Ưu tiên 3: Khớp tên khách hàng (trừ "Khách lẻ")
+        else if (
+          qName &&
+          qName.trim().toLowerCase() !== "khách lẻ" &&
+          order.customer_name.trim().toLowerCase() === qName.trim().toLowerCase()
+        ) {
+          isMatch = true;
+        }
+
+        if (isMatch) {
+          customerOrders.push(order);
+          totalDebt += order.outstanding;
+          if (order.customer_name && (!targetName || targetName === "Khách lẻ")) targetName = order.customer_name;
+          if (order.customer_address && !targetAddress) targetAddress = order.customer_address;
+          if (order.customer_phone && (!targetPhone || targetPhone.includes("*")) && !order.customer_phone.includes("*")) {
+            targetPhone = order.customer_phone;
           }
         }
       }
@@ -473,8 +542,9 @@ export async function GET(request: NextRequest) {
         success: true,
         data: {
           customer: {
+            customer_id: qCustId ? Number(qCustId) : undefined,
             name: targetName || "Khách hàng",
-            phone: qPhone || "",
+            phone: targetPhone || qPhone || "",
             address: targetAddress,
             total_debt: totalDebt,
             order_count: customerOrders.length,

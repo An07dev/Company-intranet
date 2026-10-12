@@ -35,6 +35,9 @@ export function CustomerDebtDetailModal({
       name: customer.name || "",
       phone: customer.phone || "",
     });
+    if (customer.customer_id) {
+      params.set("customer_id", String(customer.customer_id));
+    }
 
     fetch(`/api/sapo/debts?${params.toString()}`)
       .then((res) => res.json())

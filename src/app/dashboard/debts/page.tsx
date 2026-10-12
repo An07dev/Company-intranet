@@ -180,7 +180,7 @@ export default function DebtsManagementPage() {
         setCustomers(json.data.customers || []);
         if (json.data.pagination) {
           setCustomerTotalPages(json.data.pagination.totalPages || 1);
-          setCustomerTotalCount(json.data.pagination.totalDebtors || 0);
+          setCustomerTotalCount(json.data.pagination.total ?? json.data.pagination.totalDebtors ?? 0);
         }
       }
     } catch {
