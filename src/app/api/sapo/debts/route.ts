@@ -182,7 +182,8 @@ export async function GET(request: NextRequest) {
     // 1. TYPE = SUMMARY (Phương trình công nợ Sapo: Nợ đầu kỳ + Nợ tăng trong kỳ - Nợ giảm trong kỳ = Nợ cuối kỳ)
     if (type === "summary") {
       const cursor = MongoShopeeOrderModel.find(
-        includeCancelled ? {} : { order_status: { $ne: "Đã hủy" } }
+        includeCancelled ? {} : { order_status: { $ne: "Đã hủy" } },
+        { order_sn: 1, shop_username: 1, buyer_username: 1, order_status: 1, total_amount: 1, raw_text: 1, createdAt: 1 }
       ).lean();
 
       let totalDauKy = 0;
@@ -251,7 +252,8 @@ export async function GET(request: NextRequest) {
     // 2. TYPE = CUSTOMERS (Sổ nợ gom nhóm theo Khách hàng chuẩn Sapo)
     if (type === "customers") {
       const cursor = MongoShopeeOrderModel.find(
-        includeCancelled ? {} : { order_status: { $ne: "Đã hủy" } }
+        includeCancelled ? {} : { order_status: { $ne: "Đã hủy" } },
+        { order_sn: 1, shop_username: 1, buyer_username: 1, order_status: 1, total_amount: 1, raw_text: 1, createdAt: 1 }
       ).lean();
 
       const customerMap = new Map<string, any>();
