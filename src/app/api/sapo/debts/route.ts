@@ -55,13 +55,16 @@ function parseOrderDebtData(doc: any) {
     raw.billing_address?.phone ||
     "";
 
+  const orderSnClean = String(doc.order_sn || "").replace(/^#/, "").trim();
+  const rawBuyer = doc.buyer_username && doc.buyer_username.trim() !== "Khách lẻ" ? doc.buyer_username.trim() : "";
+
   // Ưu tiên Họ tên trên tài khoản khách hàng CRM Sapo
   const customerName =
     [raw.customer?.last_name, raw.customer?.first_name].filter(Boolean).join(" ").trim() ||
-    raw.customer?.name ||
-    raw.shipping_address?.name ||
-    doc.buyer_username ||
-    "Khách lẻ";
+    (raw.customer?.name && raw.customer.name !== "Khách lẻ" ? raw.customer.name : "") ||
+    (raw.shipping_address?.name && raw.shipping_address.name !== "Khách lẻ" ? raw.shipping_address.name : "") ||
+    rawBuyer ||
+    `Khách lẻ (#${orderSnClean || doc.id || "N/A"})`;
 
   const address =
     raw.shipping_address?.address1 ||
@@ -115,13 +118,14 @@ function parseOrderDebtData(doc: any) {
  * - Ưu tiên 2: SĐT đầy đủ (>= 9 số và không chứa dấu * ẩn danh tính)
  * - Ưu tiên 3: Tên đăng nhập người mua (buyer_username trên Shopee)
  * - Ưu tiên 4: Tên khách hàng (nếu không phải "Khách lẻ")
- * - Fallback: Chuỗi thô
+ * - Đơn Khách lẻ: Nhóm theo mã đơn để hiển thị độc lập như Sapo
  */
 function getCustomerGroupKey(order: {
   customer_id?: number | null;
   customer_phone?: string;
   buyer_username?: string;
   customer_name?: string;
+  order_sn?: string;
 }): string {
   if (order.customer_id) {
     return `sapo_cust_${order.customer_id}`;
@@ -131,13 +135,13 @@ function getCustomerGroupKey(order: {
   if (rawPhone.length >= 9 && !phone.includes("*")) {
     return `phone_${rawPhone.slice(-9)}`;
   }
-  if (order.buyer_username && order.buyer_username.trim()) {
+  if (order.buyer_username && order.buyer_username.trim() && order.buyer_username.trim() !== "Khách lẻ") {
     return `buyer_${order.buyer_username.trim().toLowerCase()}`;
   }
-  if (order.customer_name && order.customer_name.trim() && order.customer_name !== "Khách lẻ") {
+  if (order.customer_name && order.customer_name.trim() && !order.customer_name.startsWith("Khách lẻ")) {
     return `name_${order.customer_name.trim().toLowerCase()}`;
   }
-  return `raw_${phone || order.customer_name || "unknown"}`;
+  return `khach_le_${order.order_sn || phone || "unknown"}`;
 }
 
 /**
@@ -286,7 +290,7 @@ export async function GET(request: NextRequest) {
         }
 
         // Cập nhật tên nếu có tên CRM chuẩn hoặc c.name đang là Khách lẻ
-        if (order.customer_name && order.customer_name !== "Khách lẻ" && (c.name === "Khách lẻ" || !c.name)) {
+        if (order.customer_name && !order.customer_name.startsWith("Khách lẻ") && (c.name.startsWith("Khách lẻ") || !c.name)) {
           c.name = order.customer_name;
         }
         // Cập nhật SĐT nếu đơn có SĐT đầy đủ còn c.phone đang bị che dấu sao (*)
@@ -358,22 +362,20 @@ export async function GET(request: NextRequest) {
           if (filterType === "cuoi_ky" && c.cuoi_ky <= 0) continue;
           if (filterType === "phat_sinh" && c.cuoi_ky <= 0 && c.tang_trong_ky <= 0 && c.giam_trong_ky <= 0) continue;
 
-          // Ẩn nhóm khách lẻ vô danh không có SĐT
-          if (!c.phone && (c.name === "Khách lẻ" || c.name === "Chưa rõ")) {
-            continue;
-          }
+          // Giữ đầy đủ khách hàng có công nợ theo chuẩn Sapo
         }
 
         allCustomers.push(c);
       }
 
-      // Tìm kiếm theo tên / SĐT / customer_id / Địa chỉ
+      // Tìm kiếm theo tên / SĐT / customer_id / Địa chỉ / Mã đơn hàng
       if (search) {
         allCustomers = allCustomers.filter((c) =>
           c.name.toLowerCase().includes(search) ||
-          c.phone.toLowerCase().includes(search) ||
+          (c.phone && c.phone.toLowerCase().includes(search)) ||
           (c.customer_id && String(c.customer_id).includes(search)) ||
-          (c.address && c.address.toLowerCase().includes(search))
+          (c.address && c.address.toLowerCase().includes(search)) ||
+          (c.orders && c.orders.some((o: any) => o.order_sn?.toLowerCase().includes(search)))
         );
       }
 
