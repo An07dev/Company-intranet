@@ -430,7 +430,7 @@ export async function ensureRequestsSeeded() {
   await connectToDatabase();
   const count = await MongoRequestModel.countDocuments();
   if (count === 0) {
-    await MongoRequestModel.insertMany(INITIAL_REQUEST_SEEDS);
+    // Đã tắt seed đơn từ mẫu bàn giao khách hàng: await MongoRequestModel.insertMany(INITIAL_REQUEST_SEEDS);
   }
 
   // Đồng bộ phòng ban của các đơn từ theo phòng ban hiện tại của nhân sự từ bảng users

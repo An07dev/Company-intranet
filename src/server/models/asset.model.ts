@@ -309,7 +309,7 @@ export async function ensureAssetsSeeded() {
       },
     ];
 
-    await MongoAssetModel.insertMany(initialAssets);
+    // Đã tắt seed tài sản mẫu bàn giao khách hàng: await MongoAssetModel.insertMany(initialAssets);
   }
   assetsSeeded = true;
 }

@@ -20,34 +20,10 @@ const DEMO_ACCOUNTS: DemoAccount[] = [
   {
     role: "admin",
     label: "Admin",
-    name: "Nguyễn Văn Admin",
+    name: "Quản Trị Viên (Admin)",
     email: "admin@company.internal",
     pass: "admin123",
-    dept: "IT & Quản Trị Hệ Thống",
-  },
-  {
-    role: "director",
-    label: "Giám Đốc",
-    name: "Trịnh Gia Giám Đốc",
-    email: "director@company.internal",
-    pass: "director123",
-    dept: "Ban Giám Đốc",
-  },
-  {
-    role: "manager",
-    label: "Quản lý",
-    name: "Trần Thị Quản Lý",
-    email: "manager@company.internal",
-    pass: "manager123",
-    dept: "Kỹ Thuật & Vận Hành",
-  },
-  {
-    role: "employee",
-    label: "Nhân viên",
-    name: "Lê Hoàng Nhân Viên",
-    email: "employee@company.internal",
-    pass: "employee123",
-    dept: "Phát Triển Sản Phẩm",
+    dept: "Ban Quản Trị Hệ Thống",
   },
 ];
 

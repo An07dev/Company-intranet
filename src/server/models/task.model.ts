@@ -197,7 +197,7 @@ export async function ensureTasksSeeded() {
         },
       ];
 
-      await MongoTaskModel.insertMany(initialTasks);
+      // Đã tắt seed task mẫu bàn giao khách hàng: await MongoTaskModel.insertMany(initialTasks);
     }
   }
   tasksSeeded = true;

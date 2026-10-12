@@ -181,7 +181,7 @@ export async function ensureAttendanceSeeded() {
     const seedRecords = buildSeedRecords();
     if (seedRecords.length > 0) {
       try {
-        await MongoAttendanceModel.insertMany(seedRecords, { ordered: false });
+        // Đã tắt seed điểm danh mẫu bàn giao khách hàng: await MongoAttendanceModel.insertMany(seedRecords, { ordered: false });
       } catch (err) {
         console.warn("[Seed] Khởi tạo dữ liệu điểm danh mẫu:", err);
       }
