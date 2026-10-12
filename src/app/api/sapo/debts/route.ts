@@ -185,8 +185,22 @@ async function computeDebtData(
   const startTime = new Date(`${startDateStr}T00:00:00+07:00`).getTime();
   const endTime = new Date(`${endDateStr}T23:59:59.999+07:00`).getTime();
 
+  const startMonth = startDateStr.slice(0, 7);
+  const endMonth = endDateStr.slice(0, 7);
+  const startTimeDate = new Date(`${startDateStr}T00:00:00+07:00`);
+
+  const query: any = {
+    order_status: includeCancelled ? { $exists: true } : { $ne: "Đã hủy" },
+    $or: [
+      { status_description: { $regex: /pending|partially_paid/i } },
+      { createdAt: { $gte: `${startDateStr}T00:00:00.000Z` } },
+      { updatedAt: { $gte: startTimeDate } },
+      { raw_text: { $regex: `"paid_on":"(${startMonth}|${endMonth})` } },
+    ],
+  };
+
   const docs = await MongoShopeeOrderModel.find(
-    includeCancelled ? {} : { order_status: { $ne: "Đã hủy" } },
+    query,
     { order_sn: 1, shop_username: 1, buyer_username: 1, order_status: 1, total_amount: 1, raw_text: 1, createdAt: 1 }
   )
     .lean()
