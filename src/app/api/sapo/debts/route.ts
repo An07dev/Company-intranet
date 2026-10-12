@@ -224,9 +224,7 @@ function getCustomerGroupKey(order: {
   if (order.buyer_username && order.buyer_username.trim() && order.buyer_username.trim() !== "Khách lẻ") {
     return `buyer_${order.buyer_username.trim().toLowerCase()}`;
   }
-  if (order.customer_name && order.customer_name.trim() && !order.customer_name.startsWith("Khách lẻ")) {
-    return `name_${order.customer_name.trim().toLowerCase()}`;
-  }
+  // Tuyệt đối không gộp chung theo tên nếu không có cùng customer_id hoặc cùng SĐT
   return `khach_le_${order.order_sn || phone || "unknown"}`;
 }
 

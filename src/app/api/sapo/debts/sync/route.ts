@@ -36,48 +36,39 @@ export async function POST(request: NextRequest) {
     const limit = 250;
     const sapoOrders: any[] = [];
 
-    // 1. Quét toàn bộ đơn nợ pending trên Sapo (hỗ trợ phân trang)
-    for (let p = 1; p <= 4; p++) {
-      try {
-        const res = await fetch(
-          `https://${SAPO_DOMAIN}/admin/orders.json?status=open&financial_status=pending&limit=${limit}&page=${p}`,
-          { headers, cache: "no-store" }
-        );
-        if (!res.ok) break;
-        const data = await res.json();
-        const list = data.orders || [];
-        sapoOrders.push(...list);
-        if (list.length < limit) break;
-      } catch {
-        break;
+    // Helper: Tải toàn bộ các trang đơn hàng theo query
+    async function fetchAllOrders(queryStr: string, maxPages = 10): Promise<any[]> {
+      const results: any[] = [];
+      let page = 1;
+      while (page <= maxPages) {
+        try {
+          const res = await fetch(
+            `https://${SAPO_DOMAIN}/admin/orders.json?${queryStr}&limit=${limit}&page=${page}`,
+            { headers, cache: "no-store" }
+          );
+          if (!res.ok) break;
+          const data = await res.json();
+          const list = data.orders || [];
+          results.push(...list);
+          if (list.length < limit) break;
+          page++;
+        } catch {
+          break;
+        }
       }
+      return results;
     }
 
-    // 2. Lấy song song đơn nợ partially_paid, đơn closed pending và đơn mở mới nhất
-    const [partPaidRes, closedPendingRes, openRes] = await Promise.all([
-      fetch(`https://${SAPO_DOMAIN}/admin/orders.json?status=open&financial_status=partially_paid&limit=${limit}`, {
-        headers,
-        cache: "no-store",
-      }).catch(() => null),
-      fetch(`https://${SAPO_DOMAIN}/admin/orders.json?status=closed&financial_status=pending&limit=${limit}`, {
-        headers,
-        cache: "no-store",
-      }).catch(() => null),
-      fetch(`https://${SAPO_DOMAIN}/admin/orders.json?status=open&limit=${limit}`, {
-        headers,
-        cache: "no-store",
-      }).catch(() => null),
+    // Quét song song toàn bộ các trạng thái công nợ trên Sapo
+    const [openPending, openPartPaid, closedPending, closedPartPaid, openRecent] = await Promise.all([
+      fetchAllOrders("status=open&financial_status=pending"),
+      fetchAllOrders("status=open&financial_status=partially_paid"),
+      fetchAllOrders("status=closed&financial_status=pending"),
+      fetchAllOrders("status=closed&financial_status=partially_paid"),
+      fetchAllOrders("status=open", 2),
     ]);
 
-    if (partPaidRes && partPaidRes.ok) {
-      sapoOrders.push(...((await partPaidRes.json()).orders || []));
-    }
-    if (closedPendingRes && closedPendingRes.ok) {
-      sapoOrders.push(...((await closedPendingRes.json()).orders || []));
-    }
-    if (openRes && openRes.ok) {
-      sapoOrders.push(...((await openRes.json()).orders || []));
-    }
+    sapoOrders.push(...openPending, ...openPartPaid, ...closedPending, ...closedPartPaid, ...openRecent);
 
     // Tập hợp mã đơn nợ hợp lệ đang còn nợ trên Sapo
     const activeDebtSnSet = new Set<string>();
@@ -202,6 +193,7 @@ export async function POST(request: NextRequest) {
     const dbDebtDocs = await MongoShopeeOrderModel.find({
       order_status: { $ne: "Đã hủy" },
       $or: [
+        { unpaid_amount: { $gt: 0 } },
         { status_description: { $regex: /pending|partially_paid/i } },
         { raw_text: { $regex: /"financial_status":"(pending|partially_paid)"/ } }
       ]
