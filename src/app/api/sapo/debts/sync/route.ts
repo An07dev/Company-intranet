@@ -185,6 +185,15 @@ export async function POST(request: NextRequest) {
       const sn = String(doc.order_sn || raw.order_number || doc.id).replace(/^#/, "").trim();
       const sapoId = String(raw.id || doc.id);
 
+      // Không tự động xóa nợ của các đơn sàn TMĐT (Shopee, Lazada, TikTok) hoặc đơn có ghi chú công nợ
+      if (
+        (doc.shop_username && /shopee|lazada|tiktok/i.test(doc.shop_username)) ||
+        (raw.source_name && /shopee|lazada|tiktok/i.test(raw.source_name)) ||
+        doc.status_description?.includes("Công nợ")
+      ) {
+        continue;
+      }
+
       if (!activeDebtSnSet.has(sn) && !activeDebtSnSet.has(sapoId)) {
         raw.financial_status = "paid";
         raw.total_received = Number(raw.total_price || doc.total_amount) || 0;
