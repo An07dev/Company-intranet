@@ -4,6 +4,7 @@ import { LogModel } from "@/server/models/log.model";
 import { ShopeeOrder } from "@/types";
 import { MongoShopeeOrderModel } from "@/server/db/schema";
 import { connectToDatabase } from "@/server/db";
+import { invalidateCustomerDebtCache } from "@/app/api/sapo/debts/route";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
@@ -236,6 +237,9 @@ export async function POST(request: NextRequest) {
         },
       });
     } catch {}
+
+    // Xóa cache công nợ để hiển thị số liệu mới nhất
+    invalidateCustomerDebtCache();
 
     return NextResponse.json({
       success: true,

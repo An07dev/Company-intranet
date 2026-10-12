@@ -9,6 +9,7 @@ import { CustomerModel } from "@/server/models/customer.model";
 import { invalidateShopeeStatsCache } from "@/app/api/dashboard/shopee-stats/route";
 import { invalidateInventoryStatsCache } from "@/app/api/dashboard/inventory-stats/route";
 import { invalidateCRMStatsCache } from "@/app/api/dashboard/crm-stats/route";
+import { invalidateCustomerDebtCache } from "@/app/api/sapo/debts/route";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -351,6 +352,7 @@ export async function POST(request: NextRequest) {
     try {
       const syncResult = await OrderModel.upsertOrders([mappedOrder], mappedOrder.shop_username);
       invalidateShopeeStatsCache();
+      invalidateCustomerDebtCache();
 
       // Tự động đồng bộ / cập nhật thông tin khách hàng từ đơn hàng vào CRM
       if (orderData.customer && orderData.customer.id) {

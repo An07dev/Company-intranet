@@ -105,6 +105,7 @@ export default function DebtsManagementPage() {
   const [customers, setCustomers] = useState<DebtorCustomer[]>([]);
   const [loadingCustomers, setLoadingCustomers] = useState(true);
   const [customerSearch, setCustomerSearch] = useState("");
+  const [debouncedCustomerSearch, setDebouncedCustomerSearch] = useState("");
   const [customerPage, setCustomerPage] = useState(1);
   const [customerTotalPages, setCustomerTotalPages] = useState(1);
   const [customerTotalCount, setCustomerTotalCount] = useState(0);
@@ -112,11 +113,30 @@ export default function DebtsManagementPage() {
   const [orders, setOrders] = useState<DebtOrder[]>([]);
   const [loadingOrders, setLoadingOrders] = useState(true);
   const [orderSearch, setOrderSearch] = useState("");
+  const [debouncedOrderSearch, setDebouncedOrderSearch] = useState("");
   const [selectedStatus, setSelectedStatus] = useState("all");
   const [selectedChannel, setSelectedChannel] = useState("all");
   const [orderPage, setOrderPage] = useState(1);
   const [orderTotalPages, setOrderTotalPages] = useState(1);
   const [orderTotalCount, setOrderTotalCount] = useState(0);
+
+  // Debounce customer search 300ms
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedCustomerSearch(customerSearch);
+      setCustomerPage(1);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [customerSearch]);
+
+  // Debounce order search 300ms
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedOrderSearch(orderSearch);
+      setOrderPage(1);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [orderSearch]);
 
   const [selectedOrderForPay, setSelectedOrderForPay] = useState<DebtOrder | null>(null);
   const [isCollectModalOpen, setIsCollectModalOpen] = useState(false);
@@ -141,7 +161,7 @@ export default function DebtsManagementPage() {
   const [refreshing, setRefreshing] = useState(false);
 
   // 1. Fetch Customer Summary
-  const fetchCustomerSummary = useCallback(async () => {
+  const fetchCustomerSummary = useCallback(async (refresh = false) => {
     setLoadingCustomerSummary(true);
     try {
       const params = new URLSearchParams({
@@ -149,6 +169,7 @@ export default function DebtsManagementPage() {
         start_date: startDateStr,
         end_date: endDateStr,
       });
+      if (refresh) params.set("refresh", "true");
       const res = await fetch(`/api/sapo/debts?${params.toString()}`);
       const json = await res.json();
       if (json.success && json.data) {
@@ -162,7 +183,7 @@ export default function DebtsManagementPage() {
   }, [startDateStr, endDateStr, toast]);
 
   // 2. Fetch Customers List
-  const fetchCustomers = useCallback(async () => {
+  const fetchCustomers = useCallback(async (refresh = false) => {
     setLoadingCustomers(true);
     try {
       const params = new URLSearchParams({
@@ -170,10 +191,11 @@ export default function DebtsManagementPage() {
         start_date: startDateStr,
         end_date: endDateStr,
         filter: filterType,
-        search: customerSearch,
+        search: debouncedCustomerSearch,
         page: String(customerPage),
         limit: "15",
       });
+      if (refresh) params.set("refresh", "true");
       const res = await fetch(`/api/sapo/debts?${params.toString()}`);
       const json = await res.json();
       if (json.success && json.data) {
@@ -188,22 +210,23 @@ export default function DebtsManagementPage() {
     } finally {
       setLoadingCustomers(false);
     }
-  }, [startDateStr, endDateStr, filterType, customerSearch, customerPage, toast]);
+  }, [startDateStr, endDateStr, filterType, debouncedCustomerSearch, customerPage, toast]);
 
   // 3. Fetch Orders List
-  const fetchOrders = useCallback(async () => {
+  const fetchOrders = useCallback(async (refresh = false) => {
     setLoadingOrders(true);
     try {
       const params = new URLSearchParams({
         type: "orders",
         start_date: startDateStr,
         end_date: endDateStr,
-        search: orderSearch,
+        search: debouncedOrderSearch,
         channel: selectedChannel,
         status: selectedStatus,
         page: String(orderPage),
         limit: "15",
       });
+      if (refresh) params.set("refresh", "true");
       const res = await fetch(`/api/sapo/debts?${params.toString()}`);
       const json = await res.json();
       if (json.success && json.data) {
@@ -218,7 +241,7 @@ export default function DebtsManagementPage() {
     } finally {
       setLoadingOrders(false);
     }
-  }, [startDateStr, endDateStr, orderSearch, selectedChannel, selectedStatus, orderPage, toast]);
+  }, [startDateStr, endDateStr, debouncedOrderSearch, selectedChannel, selectedStatus, orderPage, toast]);
 
   // 4. Fetch Supplier Summary
   const fetchSupplierSummary = useCallback(async () => {
@@ -311,7 +334,7 @@ export default function DebtsManagementPage() {
         } else {
           toast.error(syncJson.message || "Lỗi đồng bộ công nợ khách hàng từ Sapo");
         }
-        await Promise.all([fetchCustomerSummary(), fetchCustomers(), fetchOrders()]);
+        await Promise.all([fetchCustomerSummary(true), fetchCustomers(true), fetchOrders(true)]);
       } else {
         const syncRes = await fetch("/api/sapo/debts/suppliers/sync", { method: "POST" });
         const syncJson = await syncRes.json();
@@ -696,9 +719,9 @@ export default function DebtsManagementPage() {
         isOpen={isCollectModalOpen}
         onClose={() => setIsCollectModalOpen(false)}
         onDebtCollected={() => {
-          fetchCustomerSummary();
-          if (customerSubTab === "customers") fetchCustomers();
-          else fetchOrders();
+          fetchCustomerSummary(true);
+          if (customerSubTab === "customers") fetchCustomers(true);
+          else fetchOrders(true);
         }}
       />
 
