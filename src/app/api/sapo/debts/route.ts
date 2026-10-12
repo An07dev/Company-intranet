@@ -5,6 +5,7 @@ import { SapoService } from "@/server/services/sapo.service";
 import { LogModel } from "@/server/models/log.model";
 
 export const dynamic = "force-dynamic";
+export const maxDuration = 60;
 
 /**
  * Cấu trúc Cache dữ liệu công nợ tối ưu hoá hiệu năng
@@ -184,10 +185,12 @@ async function computeDebtData(
   const startTime = new Date(`${startDateStr}T00:00:00+07:00`).getTime();
   const endTime = new Date(`${endDateStr}T23:59:59.999+07:00`).getTime();
 
-  const cursor = MongoShopeeOrderModel.find(
+  const docs = await MongoShopeeOrderModel.find(
     includeCancelled ? {} : { order_status: { $ne: "Đã hủy" } },
     { order_sn: 1, shop_username: 1, buyer_username: 1, order_status: 1, total_amount: 1, raw_text: 1, createdAt: 1 }
-  ).lean();
+  )
+    .lean()
+    .exec();
 
   let totalDauKy = 0;
   let totalTangTrongKy = 0;
@@ -196,7 +199,7 @@ async function computeDebtData(
   const customerMap = new Map<string, any>();
   const allDebtOrders: any[] = [];
 
-  for await (const doc of cursor) {
+  for (const doc of docs) {
     const order = parseOrderDebtData(doc);
     if (order.is_cancelled && !includeCancelled) continue;
 
