@@ -35,7 +35,6 @@ export async function GET(request: NextRequest) {
           $or: [
             { status_description: { $regex: /pending|partially_paid/i } },
             { createdAt: { $gte: startIsoStr } },
-            { updatedAt: { $gte: startIsoStr } },
           ],
         };
         const count = await MongoShopeeOrderModel.countDocuments(query);
@@ -51,14 +50,12 @@ export async function GET(request: NextRequest) {
           $or: [
             { status_description: { $regex: /pending|partially_paid/i } },
             { createdAt: { $gte: startIsoStr } },
-            { updatedAt: { $gte: startIsoStr } },
           ],
         };
-        // Test WITHOUT raw_text first
-        const docsNoRaw = await MongoShopeeOrderModel.find(query, {
-          order_sn: 1, shop_username: 1, buyer_username: 1, order_status: 1, total_amount: 1, createdAt: 1
-        }).limit(100).lean().exec();
-        return apiSuccess({ step: 4, count: docsNoRaw.length, time: Date.now() - t0 }, "find docs limit 100 no raw OK");
+        const docs = await MongoShopeeOrderModel.find(query, {
+          order_sn: 1, shop_username: 1, buyer_username: 1, order_status: 1, total_amount: 1, raw_text: 1, createdAt: 1
+        }).lean().exec();
+        return apiSuccess({ step: 4, count: docs.length, time: Date.now() - t0 }, "find all matched docs with raw_text OK");
       }
       return apiSuccess({ message: "Specify ?step=1, 2, 3, or 4" });
     } catch (err: any) {

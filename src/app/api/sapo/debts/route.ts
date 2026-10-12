@@ -192,7 +192,6 @@ async function computeDebtData(
     $or: [
       { status_description: { $regex: /pending|partially_paid/i } },
       { createdAt: { $gte: startIsoStr } },
-      { updatedAt: { $gte: startIsoStr } },
     ],
   };
 
