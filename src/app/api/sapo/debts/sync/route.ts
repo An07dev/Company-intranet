@@ -148,16 +148,45 @@ export async function POST(request: NextRequest) {
           }))
         : [];
 
+      const totalPrice = Number(o.total_price) || 0;
+      const rawReceived = Number(o.total_received) || 0;
+      const outstanding = Number(
+        o.total_outstanding ?? o.unpaid_amount ?? (totalPrice > rawReceived ? totalPrice - rawReceived : 0)
+      );
+      const totalReceived = rawReceived > 0 ? rawReceived : Math.max(0, totalPrice - outstanding);
+
+      const phone =
+        o.customer?.phone ||
+        o.shipping_address?.phone ||
+        o.billing_address?.phone ||
+        "";
+
+      const address =
+        o.shipping_address?.address1 ||
+        [o.shipping_address?.address1, o.shipping_address?.ward, o.shipping_address?.district, o.shipping_address?.city]
+          .filter(Boolean)
+          .join(", ") ||
+        "";
+
       mappedOrders.push({
         order_sn: orderSn,
         shop_username: shopSource,
         buyer_username: buyerName,
-        total_amount: Number(o.total_price) || 0,
+        total_amount: totalPrice,
         payment_method: o.gateway || o.payment_gateway_names?.[0] || "Chưa rõ",
         order_status: orderStatus,
         status_description: `Kênh: ${rawSource.toUpperCase()} | Thanh toán: ${o.financial_status || "N/A"} | Giao hàng: ${o.fulfillment_status || "Chưa giao"}`,
         shipping_carrier: o.fulfillments?.[0]?.tracking_company || "",
         tracking_number: o.fulfillments?.[0]?.tracking_number || "",
+        customer_phone: phone,
+        customer_name: buyerName,
+        customer_address: address,
+        customer_id: o.customer?.id || null,
+        sapo_id: o.id || null,
+        financial_status: o.financial_status || "",
+        total_received: totalReceived,
+        unpaid_amount: outstanding,
+        paid_on: o.paid_on || null,
         items,
         raw_text: JSON.stringify(o),
         synced_at: now,
@@ -208,6 +237,10 @@ export async function POST(request: NextRequest) {
             $set: {
               order_status: "Đã thanh toán",
               status_description: `Kênh: ${(doc.shop_username || "sapo").toUpperCase()} | Thanh toán: paid | Đã thanh toán`,
+              financial_status: "paid",
+              total_received: Number(raw.total_price || doc.total_amount) || 0,
+              unpaid_amount: 0,
+              paid_on: raw.paid_on || now,
               raw_text: JSON.stringify(raw),
               updatedAt: now,
             }

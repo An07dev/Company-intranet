@@ -18,6 +18,15 @@ export interface ShopeeOrder {
   shipping_carrier: string;
   tracking_number?: string;
   items: ShopeeOrderItem[];
+  customer_phone?: string;
+  customer_name?: string;
+  customer_address?: string;
+  customer_id?: number | null;
+  sapo_id?: number | null;
+  financial_status?: string;
+  total_received?: number;
+  unpaid_amount?: number;
+  paid_on?: string | null;
   raw_text?: string;
   synced_at: string;
   createdAt?: string;

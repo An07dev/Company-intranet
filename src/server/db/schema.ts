@@ -547,6 +547,15 @@ export interface IShopeeOrderDocument {
     variation?: string;
     quantity: number;
   }[];
+  customer_phone?: string;
+  customer_name?: string;
+  customer_address?: string;
+  customer_id?: number | null;
+  sapo_id?: number | null;
+  financial_status?: string;
+  total_received?: number;
+  unpaid_amount?: number;
+  paid_on?: string | null;
   raw_text?: string;
   synced_at: string;
   createdAt: string;
@@ -565,6 +574,15 @@ const ShopeeOrderSchema = new Schema<IShopeeOrderDocument>(
     status_description: { type: String, default: "" },
     shipping_carrier: { type: String, default: "" },
     tracking_number: { type: String, default: "" },
+    customer_phone: { type: String, default: "" },
+    customer_name: { type: String, default: "" },
+    customer_address: { type: String, default: "" },
+    customer_id: { type: Number, default: null },
+    sapo_id: { type: Number, default: null },
+    financial_status: { type: String, default: "" },
+    total_received: { type: Number, default: 0 },
+    unpaid_amount: { type: Number, default: 0, index: true },
+    paid_on: { type: String, default: null, index: true },
     items: [
       {
         product_name: { type: String, required: true },
@@ -587,6 +605,8 @@ const ShopeeOrderSchema = new Schema<IShopeeOrderDocument>(
 ShopeeOrderSchema.index({ createdAt: -1 });
 ShopeeOrderSchema.index({ order_status: 1, createdAt: -1 });
 ShopeeOrderSchema.index({ shop_username: 1, createdAt: -1 });
+ShopeeOrderSchema.index({ unpaid_amount: 1, createdAt: -1 });
+ShopeeOrderSchema.index({ paid_on: 1 });
 
 export const MongoShopeeOrderModel: Model<IShopeeOrderDocument> =
   mongoose.models.ShopeeOrder || mongoose.model<IShopeeOrderDocument>("ShopeeOrder", ShopeeOrderSchema, "shopee_orders");

@@ -66,6 +66,49 @@ function parseSapoErrorDetail(error: any, fallback: string): string {
  * Helper trích xuất thông tin đơn hàng
  */
 function parseOrderDebtData(doc: any) {
+  // Fast path: nếu document đã lưu sẵn các trường công nợ (không cần parse raw_text)
+  if (doc.unpaid_amount !== undefined && doc.unpaid_amount !== null) {
+    const isCancelled = doc.order_status === "Đã hủy" || doc.financial_status === "voided";
+    const phone = doc.customer_phone || "";
+    const orderSnClean = String(doc.order_sn || "").replace(/^#/, "").trim();
+    const rawBuyer = doc.buyer_username && doc.buyer_username.trim() !== "Khách lẻ" ? doc.buyer_username.trim() : "";
+    const customerName =
+      doc.customer_name ||
+      rawBuyer ||
+      `Khách lẻ (#${orderSnClean || doc.id || "N/A"})`;
+    const address = doc.customer_address || "";
+    const createdTime = new Date(doc.createdAt).getTime();
+    const paidTime = doc.paid_on ? new Date(doc.paid_on).getTime() : null;
+    const totalPrice = Number(doc.total_amount) || 0;
+    const totalReceived = Number(doc.total_received) || 0;
+    const outstanding = Number(doc.unpaid_amount) || 0;
+    const financialStatus = doc.financial_status || (outstanding > 0 ? "pending" : "paid");
+
+    return {
+      order_sn: doc.order_sn,
+      sapo_id: doc.sapo_id || null,
+      shop_username: doc.shop_username || "sapo_pos",
+      buyer_username: doc.buyer_username || "",
+      customer_id: doc.customer_id || null,
+      customer_name: customerName,
+      customer_phone: phone,
+      customer_address: address,
+      created_at: doc.createdAt,
+      created_time: createdTime,
+      paid_on: doc.paid_on || null,
+      paid_time: paidTime,
+      total_price: totalPrice,
+      total_received: totalReceived,
+      outstanding,
+      financial_status: financialStatus,
+      order_status: doc.order_status,
+      is_cancelled: isCancelled,
+      has_debt: outstanding > 0,
+      payment_method: doc.payment_method || "Chưa rõ",
+      items: doc.items || [],
+    };
+  }
+
   let raw: any = {};
   if (doc.raw_text) {
     try {
@@ -184,20 +227,40 @@ async function computeDebtData(
 ): Promise<DebtCacheEntry> {
   const startTime = new Date(`${startDateStr}T00:00:00+07:00`).getTime();
   const endTime = new Date(`${endDateStr}T23:59:59.999+07:00`).getTime();
-
   const startIsoStr = `${startDateStr}T00:00:00.000Z`;
+  const endIsoStr = `${endDateStr}T23:59:59.999Z`;
 
   const query: any = {
     order_status: includeCancelled ? { $exists: true } : { $ne: "Đã hủy" },
     $or: [
+      { unpaid_amount: { $gt: 0 } },
       { status_description: { $regex: /pending|partially_paid/i } },
-      { createdAt: { $gte: startIsoStr } },
+      { createdAt: { $gte: startIsoStr, $lte: endIsoStr } },
+      { paid_on: { $gte: startIsoStr, $lte: endIsoStr } },
     ],
   };
 
   const docs = await MongoShopeeOrderModel.find(
     query,
-    { order_sn: 1, shop_username: 1, buyer_username: 1, order_status: 1, total_amount: 1, raw_text: 1, createdAt: 1 }
+    {
+      order_sn: 1,
+      shop_username: 1,
+      buyer_username: 1,
+      order_status: 1,
+      total_amount: 1,
+      createdAt: 1,
+      unpaid_amount: 1,
+      total_received: 1,
+      customer_phone: 1,
+      customer_name: 1,
+      customer_address: 1,
+      customer_id: 1,
+      sapo_id: 1,
+      financial_status: 1,
+      paid_on: 1,
+      payment_method: 1,
+      status_description: 1,
+    }
   )
     .lean()
     .exec();

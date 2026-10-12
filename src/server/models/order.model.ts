@@ -186,6 +186,16 @@ export class OrderModel {
         updatedAt: now,
       };
 
+      if (order.customer_phone !== undefined) setDoc.customer_phone = order.customer_phone;
+      if (order.customer_name !== undefined) setDoc.customer_name = order.customer_name;
+      if (order.customer_address !== undefined) setDoc.customer_address = order.customer_address;
+      if (order.customer_id !== undefined) setDoc.customer_id = order.customer_id;
+      if (order.sapo_id !== undefined) setDoc.sapo_id = order.sapo_id;
+      if (order.financial_status !== undefined) setDoc.financial_status = order.financial_status;
+      if (order.total_received !== undefined) setDoc.total_received = order.total_received;
+      if (order.unpaid_amount !== undefined) setDoc.unpaid_amount = order.unpaid_amount;
+      if (order.paid_on !== undefined) setDoc.paid_on = order.paid_on;
+
       const setOnInsertDoc: any = {
         id: order.id || `ord_${orderSn}_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
         order_sn: orderSn,
