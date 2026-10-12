@@ -63,6 +63,19 @@ function parseSapoErrorDetail(error: any, fallback: string): string {
 }
 
 /**
+ * Loại bỏ dấu tiếng Việt để tìm kiếm không dấu chuẩn xác
+ */
+function removeVietnameseTones(str: string): string {
+  if (!str) return "";
+  return str
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/đ/g, "d")
+    .replace(/Đ/g, "D")
+    .toLowerCase();
+}
+
+/**
  * Helper trích xuất thông tin đơn hàng
  */
 function parseOrderDebtData(doc: any) {
@@ -533,12 +546,13 @@ export async function GET(request: NextRequest) {
           filtered = filtered.filter((c) => c.cuoi_ky > 0 || c.tang_trong_ky > 0 || c.giam_trong_ky > 0);
         }
       } else {
+        const normSearch = removeVietnameseTones(search);
         filtered = filtered.filter(
           (c) =>
-            c.name.toLowerCase().includes(search) ||
+            removeVietnameseTones(c.name).includes(normSearch) ||
             (c.phone && c.phone.toLowerCase().includes(search)) ||
             (c.customer_id && String(c.customer_id).includes(search)) ||
-            (c.address && c.address.toLowerCase().includes(search)) ||
+            (c.address && removeVietnameseTones(c.address).includes(normSearch)) ||
             (c.orders && c.orders.some((o: any) => o.order_sn?.toLowerCase().includes(search)))
         );
       }
@@ -582,10 +596,11 @@ export async function GET(request: NextRequest) {
       }
 
       if (search) {
+        const normSearch = removeVietnameseTones(search);
         filtered = filtered.filter(
           (o) =>
             o.order_sn.toLowerCase().includes(search) ||
-            o.customer_name.toLowerCase().includes(search) ||
+            removeVietnameseTones(o.customer_name).includes(normSearch) ||
             (o.customer_phone && o.customer_phone.toLowerCase().includes(search))
         );
       }

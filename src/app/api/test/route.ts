@@ -13,9 +13,104 @@ export const maxDuration = 60;
 export async function GET(request: NextRequest) {
   const action = request.nextUrl.searchParams.get("action");
   const step = request.nextUrl.searchParams.get("step");
-  if (action === "test_debt" || step) {
+  if (action === "test_debt" || action === "db_info" || action === "migrate" || step) {
     const t0 = Date.now();
     try {
+      if (action === "db_info") {
+        const mongoose = await connectToDatabase();
+        const total = await MongoShopeeOrderModel.countDocuments();
+        const colName = MongoShopeeOrderModel.collection.name;
+        const dbName = mongoose.connection.name;
+        const host = mongoose.connection.host;
+        const rawUri = process.env.MONGODB_URI || "";
+        const maskedUri = rawUri.replace(/:([^:@]+)@/, ":***@");
+        const withUnpaid = await MongoShopeeOrderModel.countDocuments({ unpaid_amount: { $exists: true } });
+        const sampleOrder = await MongoShopeeOrderModel.findOne({ order_sn: "261012DVS7MT6J" }).lean().exec();
+        return apiSuccess({
+          host,
+          dbName,
+          colName,
+          total,
+          withUnpaid,
+          maskedUri,
+          sampleOrder: sampleOrder ? { order_sn: sampleOrder.order_sn, shop_username: sampleOrder.shop_username, unpaid_amount: sampleOrder.unpaid_amount } : null,
+          time: Date.now() - t0,
+        }, "db_info OK");
+      }
+      if (action === "migrate") {
+        await connectToDatabase();
+        const col = MongoShopeeOrderModel.collection;
+        const total = await col.countDocuments({ raw_text: { $exists: true, $ne: "" } });
+        const cursor = col.find(
+          { raw_text: { $exists: true, $ne: "" } },
+          { projection: { _id: 1, raw_text: 1, order_sn: 1, buyer_username: 1, total_amount: 1, id: 1 } }
+        );
+        let batch: any[] = [];
+        let processed = 0;
+        while (await cursor.hasNext()) {
+          const doc = await cursor.next();
+          if (!doc) break;
+          let raw: any = {};
+          if (doc.raw_text) {
+            try { raw = JSON.parse(doc.raw_text); } catch {}
+          }
+          const totalPrice = Number(raw.total_price || doc.total_amount) || 0;
+          const rawReceived = Number(raw.total_received) || 0;
+          const outstanding = Number(
+            raw.total_outstanding ?? raw.unpaid_amount ?? (totalPrice > rawReceived ? totalPrice - rawReceived : 0)
+          );
+          const totalReceived = rawReceived > 0 ? rawReceived : Math.max(0, totalPrice - outstanding);
+          const phone = raw.customer?.phone || raw.shipping_address?.phone || raw.billing_address?.phone || "";
+          const orderSnClean = String(doc.order_sn || "").replace(/^#/, "").trim();
+          const rawBuyer = doc.buyer_username && doc.buyer_username.trim() !== "Khách lẻ" ? doc.buyer_username.trim() : "";
+          const customerName =
+            [raw.customer?.last_name, raw.customer?.first_name].filter(Boolean).join(" ").trim() ||
+            (raw.customer?.name && raw.customer.name !== "Khách lẻ" ? raw.customer.name : "") ||
+            (raw.shipping_address?.name && raw.shipping_address.name !== "Khách lẻ" ? raw.shipping_address.name : "") ||
+            rawBuyer ||
+            `Khách lẻ (#${orderSnClean || doc.id || "N/A"})`;
+          const address =
+            raw.shipping_address?.address1 ||
+            [raw.shipping_address?.address1, raw.shipping_address?.ward, raw.shipping_address?.district, raw.shipping_address?.city]
+              .filter(Boolean)
+              .join(", ") || "";
+          const sapoId = raw.id || (/^\d+$/.test(doc.id) ? Number(doc.id) : null);
+          const customerId = raw.customer?.id || null;
+          const financialStatus = raw.financial_status || (outstanding > 0 ? "pending" : "paid");
+          const paidOn = raw.paid_on || null;
+
+          batch.push({
+            updateOne: {
+              filter: { _id: doc._id },
+              update: {
+                $set: {
+                  customer_phone: phone,
+                  customer_name: customerName,
+                  customer_address: address,
+                  customer_id: customerId,
+                  sapo_id: sapoId,
+                  financial_status: financialStatus,
+                  total_received: totalReceived,
+                  unpaid_amount: outstanding,
+                  paid_on: paidOn,
+                }
+              }
+            }
+          });
+          if (batch.length >= 1000) {
+            await col.bulkWrite(batch, { ordered: false });
+            processed += batch.length;
+            batch = [];
+          }
+        }
+        if (batch.length > 0) {
+          await col.bulkWrite(batch, { ordered: false });
+          processed += batch.length;
+        }
+        await col.createIndex({ unpaid_amount: 1, createdAt: -1 });
+        await col.createIndex({ paid_on: 1 });
+        return apiSuccess({ total, processed, time: Date.now() - t0 }, "Migration OK");
+      }
       if (step === "1") {
         await connectToDatabase();
         return apiSuccess({ step: 1, time: Date.now() - t0 }, "connectToDatabase OK");
