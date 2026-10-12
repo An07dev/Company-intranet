@@ -13,43 +13,48 @@ export const maxDuration = 60;
 export async function GET(request: NextRequest) {
   const action = request.nextUrl.searchParams.get("action");
   const step = request.nextUrl.searchParams.get("step");
-  if (action === "test_debt" || action === "db_info" || action === "migrate" || step) {
+  if (action === "test_debt" || action === "db_info" || action === "migrate" || action === "migrate_batch" || step) {
     const t0 = Date.now();
     try {
       if (action === "db_info") {
         const mongoose = await connectToDatabase();
         const total = await MongoShopeeOrderModel.countDocuments();
+        const totalRaw = await MongoShopeeOrderModel.countDocuments({ raw_text: { $exists: true, $ne: "" } });
         const colName = MongoShopeeOrderModel.collection.name;
         const dbName = mongoose.connection.name;
         const host = mongoose.connection.host;
         const rawUri = process.env.MONGODB_URI || "";
         const maskedUri = rawUri.replace(/:([^:@]+)@/, ":***@");
         const withUnpaid = await MongoShopeeOrderModel.countDocuments({ unpaid_amount: { $exists: true } });
-        const sampleOrder = await MongoShopeeOrderModel.findOne({ order_sn: "261012DVS7MT6J" }).lean().exec();
+        const sampleOrder = await MongoShopeeOrderModel.findOne({}).lean().exec();
         return apiSuccess({
           host,
           dbName,
           colName,
           total,
+          totalRaw,
           withUnpaid,
           maskedUri,
-          sampleOrder: sampleOrder ? { order_sn: sampleOrder.order_sn, shop_username: sampleOrder.shop_username, unpaid_amount: sampleOrder.unpaid_amount } : null,
+          sampleOrder: sampleOrder ? { order_sn: sampleOrder.order_sn, hasRaw: Boolean(sampleOrder.raw_text), unpaid_amount: sampleOrder.unpaid_amount } : null,
           time: Date.now() - t0,
         }, "db_info OK");
       }
-      if (action === "migrate") {
+      if (action === "migrate_batch" || action === "migrate") {
         await connectToDatabase();
         const col = MongoShopeeOrderModel.collection;
-        const total = await col.countDocuments({ raw_text: { $exists: true, $ne: "" } });
-        const cursor = col.find(
-          { raw_text: { $exists: true, $ne: "" } },
+        const limit = Math.min(2000, parseInt(request.nextUrl.searchParams.get("limit") || "1000", 10));
+        const docs = await col.find(
+          { unpaid_amount: { $exists: false } },
           { projection: { _id: 1, raw_text: 1, order_sn: 1, buyer_username: 1, total_amount: 1, id: 1 } }
-        );
-        let batch: any[] = [];
-        let processed = 0;
-        while (await cursor.hasNext()) {
-          const doc = await cursor.next();
-          if (!doc) break;
+        ).limit(limit).toArray();
+
+        if (docs.length === 0) {
+          await col.createIndex({ unpaid_amount: 1, createdAt: -1 });
+          await col.createIndex({ paid_on: 1 });
+          return apiSuccess({ remaining: 0, processed: 0, done: true, time: Date.now() - t0 }, "All migrated!");
+        }
+
+        const batch = docs.map((doc: any) => {
           let raw: any = {};
           if (doc.raw_text) {
             try { raw = JSON.parse(doc.raw_text); } catch {}
@@ -79,7 +84,7 @@ export async function GET(request: NextRequest) {
           const financialStatus = raw.financial_status || (outstanding > 0 ? "pending" : "paid");
           const paidOn = raw.paid_on || null;
 
-          batch.push({
+          return {
             updateOne: {
               filter: { _id: doc._id },
               update: {
@@ -96,20 +101,18 @@ export async function GET(request: NextRequest) {
                 }
               }
             }
-          });
-          if (batch.length >= 1000) {
-            await col.bulkWrite(batch, { ordered: false });
-            processed += batch.length;
-            batch = [];
-          }
-        }
-        if (batch.length > 0) {
-          await col.bulkWrite(batch, { ordered: false });
-          processed += batch.length;
-        }
-        await col.createIndex({ unpaid_amount: 1, createdAt: -1 });
-        await col.createIndex({ paid_on: 1 });
-        return apiSuccess({ total, processed, time: Date.now() - t0 }, "Migration OK");
+          };
+        });
+
+        const res = await col.bulkWrite(batch, { ordered: false });
+        const remaining = await col.countDocuments({ unpaid_amount: { $exists: false } });
+
+        return apiSuccess({
+          processed: batch.length,
+          modified: res.modifiedCount,
+          remaining,
+          time: Date.now() - t0,
+        }, "Batch OK");
       }
       if (step === "1") {
         await connectToDatabase();
