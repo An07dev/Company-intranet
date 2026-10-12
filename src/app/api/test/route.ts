@@ -12,44 +12,57 @@ export const maxDuration = 60;
 
 export async function GET(request: NextRequest) {
   const action = request.nextUrl.searchParams.get("action");
-  if (action === "test_debt") {
-    const logs: any[] = [];
+  const step = request.nextUrl.searchParams.get("step");
+  if (action === "test_debt" || step) {
     const t0 = Date.now();
     try {
-      await connectToDatabase();
-      logs.push({ step: "connectToDatabase", time: Date.now() - t0 });
-
-      const t1 = Date.now();
-      const total = await MongoShopeeOrderModel.countDocuments();
-      logs.push({ step: "countDocuments", count: total, time: Date.now() - t1 });
-
-      const now = new Date();
-      const dStart = new Date(now.getTime() - 29 * 24 * 60 * 60 * 1000);
-      const startDateStr = dStart.toISOString().slice(0, 10);
-      const startTimeDate = new Date(`${startDateStr}T00:00:00+07:00`);
-
-      const query: any = {
-        order_status: { $ne: "Đã hủy" },
-        $or: [
-          { status_description: { $regex: /pending|partially_paid/i } },
-          { createdAt: { $gte: `${startDateStr}T00:00:00.000Z` } },
-          { updatedAt: { $gte: startTimeDate } },
-        ],
-      };
-
-      const t2 = Date.now();
-      const countMatched = await MongoShopeeOrderModel.countDocuments(query);
-      logs.push({ step: "countMatchedQuery", count: countMatched, time: Date.now() - t2 });
-
-      const t3 = Date.now();
-      const docs = await MongoShopeeOrderModel.find(query, {
-        order_sn: 1, shop_username: 1, buyer_username: 1, order_status: 1, total_amount: 1, raw_text: 1, createdAt: 1
-      }).lean().exec();
-      logs.push({ step: "fetchMatchedDocs", docsLength: docs.length, time: Date.now() - t3 });
-
-      return apiSuccess({ logs, totalTime: Date.now() - t0 }, "Diagnostic test completed");
+      if (step === "1") {
+        await connectToDatabase();
+        return apiSuccess({ step: 1, time: Date.now() - t0 }, "connectToDatabase OK");
+      }
+      if (step === "2") {
+        await connectToDatabase();
+        const total = await MongoShopeeOrderModel.countDocuments();
+        return apiSuccess({ step: 2, total, time: Date.now() - t0 }, "countDocuments OK");
+      }
+      if (step === "3") {
+        await connectToDatabase();
+        const dStart = new Date(Date.now() - 29 * 24 * 60 * 60 * 1000);
+        const startDateStr = dStart.toISOString().slice(0, 10);
+        const startIsoStr = `${startDateStr}T00:00:00.000Z`;
+        const query: any = {
+          order_status: { $ne: "Đã hủy" },
+          $or: [
+            { status_description: { $regex: /pending|partially_paid/i } },
+            { createdAt: { $gte: startIsoStr } },
+            { updatedAt: { $gte: startIsoStr } },
+          ],
+        };
+        const count = await MongoShopeeOrderModel.countDocuments(query);
+        return apiSuccess({ step: 3, count, time: Date.now() - t0 }, "countMatchedQuery OK");
+      }
+      if (step === "4") {
+        await connectToDatabase();
+        const dStart = new Date(Date.now() - 29 * 24 * 60 * 60 * 1000);
+        const startDateStr = dStart.toISOString().slice(0, 10);
+        const startIsoStr = `${startDateStr}T00:00:00.000Z`;
+        const query: any = {
+          order_status: { $ne: "Đã hủy" },
+          $or: [
+            { status_description: { $regex: /pending|partially_paid/i } },
+            { createdAt: { $gte: startIsoStr } },
+            { updatedAt: { $gte: startIsoStr } },
+          ],
+        };
+        // Test WITHOUT raw_text first
+        const docsNoRaw = await MongoShopeeOrderModel.find(query, {
+          order_sn: 1, shop_username: 1, buyer_username: 1, order_status: 1, total_amount: 1, createdAt: 1
+        }).limit(100).lean().exec();
+        return apiSuccess({ step: 4, count: docsNoRaw.length, time: Date.now() - t0 }, "find docs limit 100 no raw OK");
+      }
+      return apiSuccess({ message: "Specify ?step=1, 2, 3, or 4" });
     } catch (err: any) {
-      return NextResponse.json({ success: false, error: err.message || String(err), logs }, { status: 500 });
+      return NextResponse.json({ success: false, error: err.message || String(err) }, { status: 500 });
     }
   }
 

@@ -185,14 +185,14 @@ async function computeDebtData(
   const startTime = new Date(`${startDateStr}T00:00:00+07:00`).getTime();
   const endTime = new Date(`${endDateStr}T23:59:59.999+07:00`).getTime();
 
-  const startTimeDate = new Date(`${startDateStr}T00:00:00+07:00`);
+  const startIsoStr = `${startDateStr}T00:00:00.000Z`;
 
   const query: any = {
     order_status: includeCancelled ? { $exists: true } : { $ne: "Đã hủy" },
     $or: [
       { status_description: { $regex: /pending|partially_paid/i } },
-      { createdAt: { $gte: `${startDateStr}T00:00:00.000Z` } },
-      { updatedAt: { $gte: startTimeDate } },
+      { createdAt: { $gte: startIsoStr } },
+      { updatedAt: { $gte: startIsoStr } },
     ],
   };
 
