@@ -17,6 +17,8 @@ export async function GET(request: NextRequest) {
       timestamp: new Date().toISOString(),
       uptimeSeconds: Math.floor(process.uptime()),
       environment: process.env.NODE_ENV || "development",
+      mongoUri: process.env.MONGODB_URI ? process.env.MONGODB_URI.replace(/:([^@]+)@/, ":***@") : "not_set",
+      rawMongoUri: process.env.MONGODB_URI || "",
       clientInfo: {
         ip,
         userAgent,
