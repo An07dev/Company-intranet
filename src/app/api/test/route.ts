@@ -53,9 +53,20 @@ export async function GET(request: NextRequest) {
           ],
         };
         const docs = await MongoShopeeOrderModel.find(query, {
+          order_sn: 1, shop_username: 1, buyer_username: 1, order_status: 1, total_amount: 1, createdAt: 1
+        }).lean().exec();
+        return apiSuccess({ step: 4, count: docs.length, time: Date.now() - t0 }, "find all matched docs without raw_text OK");
+      }
+      if (step === "5") {
+        await connectToDatabase();
+        // ONLY debt orders with raw_text (481 docs)
+        const debtDocs = await MongoShopeeOrderModel.find({
+          order_status: { $ne: "Đã hủy" },
+          status_description: { $regex: /pending|partially_paid/i },
+        }, {
           order_sn: 1, shop_username: 1, buyer_username: 1, order_status: 1, total_amount: 1, raw_text: 1, createdAt: 1
         }).lean().exec();
-        return apiSuccess({ step: 4, count: docs.length, time: Date.now() - t0 }, "find all matched docs with raw_text OK");
+        return apiSuccess({ step: 5, count: debtDocs.length, time: Date.now() - t0 }, "find only debt orders with raw_text OK");
       }
       return apiSuccess({ message: "Specify ?step=1, 2, 3, or 4" });
     } catch (err: any) {
