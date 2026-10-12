@@ -320,28 +320,7 @@ export default function LoginPage() {
               </form>
 
               {/* Tài khoản mẫu test nhanh: thiết kế dạng pill tối giản */}
-              <div className="mt-6 pt-5 border-t border-zinc-100 dark:border-zinc-800">
-                <span className="block text-xs font-medium text-zinc-500 dark:text-zinc-400 mb-2">
-                  Tài khoản dùng thử (bấm để điền):
-                </span>
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                  {DEMO_ACCOUNTS.map((acc) => (
-                    <button
-                      key={acc.role}
-                      type="button"
-                      onClick={() => handleFillDemo(acc)}
-                      className="py-1.5 px-2 rounded-md border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800/60 hover:bg-zinc-100 dark:hover:bg-zinc-700 text-center transition-colors cursor-pointer"
-                    >
-                      <span className="block text-xs font-medium text-zinc-800 dark:text-zinc-200 truncate">
-                        {acc.label}
-                      </span>
-                      <span className="block text-[10px] text-zinc-400 truncate mt-0.5">
-                        {acc.role}
-                      </span>
-                    </button>
-                  ))}
-                </div>
-              </div>
+
             </div>
           )}
         </div>
