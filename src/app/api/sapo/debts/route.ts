@@ -103,7 +103,7 @@ function parseOrderDebtData(doc: any) {
     financial_status: financialStatus,
     order_status: doc.order_status,
     is_cancelled: isCancelled,
-    has_debt: financialStatus === "pending" || financialStatus === "partially_paid" || outstanding > 0,
+    has_debt: outstanding > 0,
     payment_method: doc.payment_method || raw.gateway || raw.payment_gateway_names?.[0] || "Chưa rõ",
     items: doc.items || [],
   };

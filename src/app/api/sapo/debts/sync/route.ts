@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { OrderModel, resolveSapoOrderSn } from "@/server/models/order.model";
 import { LogModel } from "@/server/models/log.model";
 import { ShopeeOrder } from "@/types";
+import { MongoShopeeOrderModel } from "@/server/db/schema";
+import { connectToDatabase } from "@/server/db";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
@@ -18,11 +20,12 @@ function getAuthHeader(): string {
 /**
  * POST /api/sapo/debts/sync
  * Đồng bộ danh sách đơn hàng và công nợ khách hàng từ Sapo Omnichannel
- * Quét toàn diện: Đơn nợ (pending/partially_paid) + Đơn mở (open) + Đơn hoàn tất (closed) + Đơn hủy (cancelled)
+ * Quét toàn diện phân trang: Đơn nợ (pending/partially_paid) + Đơn mở (open) + Đơn hoàn tất (closed)
  */
 export async function POST(request: NextRequest) {
   const startTime = Date.now();
   try {
+    await connectToDatabase();
     const authHeader = getAuthHeader();
     const headers = {
       Authorization: authHeader,
@@ -30,60 +33,73 @@ export async function POST(request: NextRequest) {
     };
 
     const limit = 250;
+    const sapoOrders: any[] = [];
 
-    // Lấy song song toàn bộ đơn hàng công nợ, đơn mở, đơn đóng và đơn hủy từ Sapo
-    const [pendingRes, partPaidRes, openRes, closedRes, cancelledRes] = await Promise.all([
-      fetch(`https://${SAPO_DOMAIN}/admin/orders.json?financial_status=pending&limit=${limit}`, {
+    // 1. Quét toàn bộ đơn nợ pending trên Sapo (hỗ trợ phân trang)
+    for (let p = 1; p <= 4; p++) {
+      try {
+        const res = await fetch(
+          `https://${SAPO_DOMAIN}/admin/orders.json?status=open&financial_status=pending&limit=${limit}&page=${p}`,
+          { headers, cache: "no-store" }
+        );
+        if (!res.ok) break;
+        const data = await res.json();
+        const list = data.orders || [];
+        sapoOrders.push(...list);
+        if (list.length < limit) break;
+      } catch {
+        break;
+      }
+    }
+
+    // 2. Lấy song song đơn nợ partially_paid, đơn closed pending và đơn mở mới nhất
+    const [partPaidRes, closedPendingRes, openRes] = await Promise.all([
+      fetch(`https://${SAPO_DOMAIN}/admin/orders.json?status=open&financial_status=partially_paid&limit=${limit}`, {
         headers,
         cache: "no-store",
-      }),
-      fetch(`https://${SAPO_DOMAIN}/admin/orders.json?financial_status=partially_paid&limit=${limit}`, {
+      }).catch(() => null),
+      fetch(`https://${SAPO_DOMAIN}/admin/orders.json?status=closed&financial_status=pending&limit=${limit}`, {
         headers,
         cache: "no-store",
-      }),
+      }).catch(() => null),
       fetch(`https://${SAPO_DOMAIN}/admin/orders.json?status=open&limit=${limit}`, {
         headers,
         cache: "no-store",
-      }),
-      fetch(`https://${SAPO_DOMAIN}/admin/orders.json?status=closed&limit=${limit}`, {
-        headers,
-        cache: "no-store",
-      }),
-      fetch(`https://${SAPO_DOMAIN}/admin/orders.json?status=cancelled&limit=${limit}`, {
-        headers,
-        cache: "no-store",
-      }),
+      }).catch(() => null),
     ]);
 
-    const pendingOrders = pendingRes.ok ? (await pendingRes.json()).orders || [] : [];
-    const partPaidOrders = partPaidRes.ok ? (await partPaidRes.json()).orders || [] : [];
-    const openOrders = openRes.ok ? (await openRes.json()).orders || [] : [];
-    const closedOrders = closedRes.ok ? (await closedRes.json()).orders || [] : [];
-    const cancelledOrders = cancelledRes.ok ? (await cancelledRes.json()).orders || [] : [];
+    if (partPaidRes && partPaidRes.ok) {
+      sapoOrders.push(...((await partPaidRes.json()).orders || []));
+    }
+    if (closedPendingRes && closedPendingRes.ok) {
+      sapoOrders.push(...((await closedPendingRes.json()).orders || []));
+    }
+    if (openRes && openRes.ok) {
+      sapoOrders.push(...((await openRes.json()).orders || []));
+    }
 
-    const combinedOrders = [
-      ...pendingOrders,
-      ...partPaidOrders,
-      ...openOrders,
-      ...closedOrders,
-      ...cancelledOrders,
-    ];
-
-    // Chống trùng lặp và ưu tiên bản ghi có trạng thái hủy / cập nhật mới nhất
+    // Tập hợp mã đơn nợ hợp lệ đang còn nợ trên Sapo
+    const activeDebtSnSet = new Set<string>();
     const seenMap = new Map<string, any>();
     let debtOrdersCount = 0;
 
-    for (const o of combinedOrders) {
+    for (const o of sapoOrders) {
       const key = String(o.order_number || o.name || o.id);
       if (!seenMap.has(key)) {
         seenMap.set(key, o);
-        const outstanding = Number(o.total_outstanding ?? (Number(o.total_price || 0) - Number(o.total_received || 0)));
-        if (o.financial_status === "pending" || o.financial_status === "partially_paid" || outstanding > 0) {
+      } else if (o.cancelled_on || o.cancel_reason || o.status === "cancelled") {
+        seenMap.set(key, o);
+      }
+
+      if (!o.cancelled_on && o.status !== "cancelled" && o.financial_status !== "voided") {
+        const total = Number(o.total_price) || 0;
+        const received = Number(o.total_received) || 0;
+        const out = Number(o.total_outstanding ?? (total > received ? total - received : 0));
+        if (out > 0) {
+          const sn = String(o.order_number || o.name || o.id).replace(/^#/, "").trim();
+          activeDebtSnSet.add(sn);
+          activeDebtSnSet.add(String(o.id));
           debtOrdersCount++;
-        }
-      } else {
-        if (o.cancelled_on || o.cancel_reason || o.status === "cancelled") {
-          seenMap.set(key, o);
         }
       }
     }
@@ -150,6 +166,47 @@ export async function POST(request: NextRequest) {
     }
 
     const result = await OrderModel.upsertOrders(mappedOrders, "sapo_omnichannel");
+
+    // Quét và cập nhật các đơn cũ trong MongoDB đã được thanh toán trên Sapo
+    let updatedPaidCount = 0;
+    const dbDebtDocs = await MongoShopeeOrderModel.find({
+      order_status: { $ne: "Đã hủy" },
+      $or: [
+        { status_description: { $regex: /pending|partially_paid/i } },
+        { raw_text: { $regex: /"financial_status":"(pending|partially_paid)"/ } }
+      ]
+    }).lean();
+
+    for (const doc of dbDebtDocs) {
+      let raw: any = {};
+      try {
+        if (doc.raw_text) raw = JSON.parse(doc.raw_text);
+      } catch {}
+      const sn = String(doc.order_sn || raw.order_number || doc.id).replace(/^#/, "").trim();
+      const sapoId = String(raw.id || doc.id);
+
+      if (!activeDebtSnSet.has(sn) && !activeDebtSnSet.has(sapoId)) {
+        raw.financial_status = "paid";
+        raw.total_received = Number(raw.total_price || doc.total_amount) || 0;
+        raw.total_outstanding = 0;
+        raw.unpaid_amount = 0;
+        raw.paid_on = raw.paid_on || now;
+
+        await MongoShopeeOrderModel.updateOne(
+          { _id: doc._id },
+          {
+            $set: {
+              order_status: "Đã thanh toán",
+              status_description: `Kênh: ${(doc.shop_username || "sapo").toUpperCase()} | Thanh toán: paid | Đã thanh toán`,
+              raw_text: JSON.stringify(raw),
+              updatedAt: now,
+            }
+          }
+        );
+        updatedPaidCount++;
+      }
+    }
+
     const durationMs = Date.now() - startTime;
 
     // Ghi log đồng bộ
@@ -159,12 +216,13 @@ export async function POST(request: NextRequest) {
         type: "customer_debt_sync",
         source: "sapo_debts_sync",
         shop_username: "sapo_omnichannel",
-        message: `[Sapo Debts Sync] Đã đồng bộ ${result.total} đơn hàng (gồm ${debtOrdersCount} đơn có công nợ, mới: ${result.inserted}, cập nhật: ${result.updated}) trong ${durationMs}ms`,
+        message: `[Sapo Debts Sync] Đã đồng bộ ${result.total} đơn hàng (gồm ${activeDebtSnSet.size} đơn có công nợ, mới: ${result.inserted}, cập nhật: ${result.updated}, giải tỏa nợ đã trả: ${updatedPaidCount}) trong ${durationMs}ms`,
         details: {
           total: result.total,
-          debt_orders: debtOrdersCount,
+          debt_orders: activeDebtSnSet.size,
           inserted: result.inserted,
           updated: result.updated,
+          updated_to_paid: updatedPaidCount,
           duration_ms: durationMs,
         },
       });
@@ -172,12 +230,13 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      message: `Đã đồng bộ thành công ${result.total} đơn hàng Sapo (gồm ${debtOrdersCount} đơn nợ: ${result.inserted} mới, ${result.updated} cập nhật)`,
+      message: `Đã đồng bộ thành công ${result.total} đơn hàng Sapo (gồm ${activeDebtSnSet.size} đơn nợ: ${result.inserted} mới, ${result.updated} cập nhật, ${updatedPaidCount} đơn đã thanh toán)`,
       data: {
         total: result.total,
-        debt_orders: debtOrdersCount,
+        debt_orders: activeDebtSnSet.size,
         inserted: result.inserted,
         updated: result.updated,
+        updated_to_paid: updatedPaidCount,
         duration_ms: durationMs,
       },
     });
