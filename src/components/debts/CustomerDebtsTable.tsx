@@ -5,6 +5,7 @@ import { useToast } from "@/context/ToastContext";
 import { DebtTableLoading } from "./DebtTableLoading";
 
 export interface DebtorCustomer {
+  key?: string;
   customer_id?: number | null;
   name: string;
   phone: string;
@@ -43,6 +44,8 @@ interface CustomerDebtsTableProps {
   onViewCustomerDetail: (customer: DebtorCustomer) => void;
   filterType: string;
   onFilterTypeChange: (f: string) => void;
+  includeRetail?: boolean;
+  onIncludeRetailChange?: (checked: boolean) => void;
 }
 
 export function CustomerDebtsTable({
@@ -57,6 +60,8 @@ export function CustomerDebtsTable({
   onViewCustomerDetail,
   filterType,
   onFilterTypeChange,
+  includeRetail = false,
+  onIncludeRetailChange,
 }: CustomerDebtsTableProps) {
   const { toast } = useToast();
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
@@ -72,7 +77,11 @@ export function CustomerDebtsTable({
     toast.success(`Đã sao chép SĐT: ${phone}`);
   };
 
-  const handleCopyStatement = (c: DebtorCustomer, e: React.MouseEvent) => {
+  const getCustomerUniqueKey = (c: DebtorCustomer, idx: number) => {
+    return c.key || (c.customer_id ? `cid_${c.customer_id}` : (c.phone && !c.phone.includes("*") ? `phone_${c.phone}` : `${c.name || 'khach'}_${idx}`));
+  };
+
+  const handleCopyStatement = (c: DebtorCustomer, uniqueKey: string, e: React.MouseEvent) => {
     e.stopPropagation();
     const text = `Kính gửi Anh/Chị ${c.name},
 Bao Bì Yến Sen trân trọng gửi bảng đối soát số dư công nợ của Quý khách:
@@ -85,7 +94,7 @@ Quý khách vui lòng kiểm tra và sắp xếp kế hoạch thanh toán đối
 Xin chân thành cảm ơn Quý khách!`;
 
     navigator.clipboard.writeText(text);
-    setCopiedKey(c.phone || c.name);
+    setCopiedKey(uniqueKey);
     toast.success(`Đã sao chép bảng đối soát công nợ của ${c.name} (sẵn sàng dán vào Zalo)`);
     setTimeout(() => setCopiedKey(null), 2500);
   };
@@ -107,6 +116,19 @@ Xin chân thành cảm ơn Quý khách!`;
               <option value="all">Tất cả khách nợ</option>
             </select>
           </div>
+
+          {/* Toggle hiện đơn khách lẻ */}
+          {onIncludeRetailChange && (
+            <label className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl border border-dashed border-zinc-300 dark:border-zinc-700 text-xs text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-800/60 cursor-pointer select-none transition-colors">
+              <input
+                type="checkbox"
+                checked={includeRetail}
+                onChange={(e) => onIncludeRetailChange(e.target.checked)}
+                className="w-3.5 h-3.5 text-rose-600 rounded border-zinc-300 dark:border-zinc-700 focus:ring-rose-500"
+              />
+              <span className="text-[11px] font-medium">Hiện đơn khách lẻ</span>
+            </label>
+          )}
 
           <span className="text-[11px] sm:text-xs px-2.5 py-1.5 rounded-xl bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 font-mono font-medium shrink-0">
             {totalCount.toLocaleString("vi-VN")} khách
@@ -145,13 +167,14 @@ Xin chân thành cảm ơn Quý khách!`;
             <p className="font-semibold text-xs">Không tìm thấy khách hàng nào</p>
           </div>
         ) : (
-          customers.map((c) => {
+          customers.map((c, idx) => {
+            const uniqueKey = getCustomerUniqueKey(c, idx);
             const initial = (c.name || "K").trim().slice(0, 1).toUpperCase();
-            const isCopied = copiedKey === (c.phone || c.name);
+            const isCopied = copiedKey === uniqueKey;
 
             return (
               <div
-                key={c.phone || c.name}
+                key={uniqueKey}
                 onClick={() => onViewCustomerDetail(c)}
                 className="p-3 hover:bg-zinc-50 dark:hover:bg-zinc-800/40 transition-colors active:bg-zinc-100 cursor-pointer space-y-2"
               >
@@ -214,7 +237,7 @@ Xin chân thành cảm ơn Quý khách!`;
                   <div className="flex items-center gap-1.5 shrink-0" onClick={(e) => e.stopPropagation()}>
                     <button
                       type="button"
-                      onClick={(e) => handleCopyStatement(c, e)}
+                      onClick={(e) => handleCopyStatement(c, uniqueKey, e)}
                       className={`px-2 py-0.5 rounded-lg font-medium text-[11px] border transition cursor-pointer ${
                         isCopied
                           ? "bg-emerald-50 dark:bg-emerald-950/60 border-emerald-300 text-emerald-700 dark:text-emerald-300"
@@ -266,13 +289,14 @@ Xin chân thành cảm ơn Quý khách!`;
                 </td>
               </tr>
             ) : (
-              customers.map((c) => {
+              customers.map((c, idx) => {
+                const uniqueKey = getCustomerUniqueKey(c, idx);
                 const initial = (c.name || "K").trim().slice(0, 1).toUpperCase();
-                const isCopied = copiedKey === (c.phone || c.name);
+                const isCopied = copiedKey === uniqueKey;
 
                 return (
                   <tr
-                    key={c.phone || c.name}
+                    key={uniqueKey}
                     onClick={() => onViewCustomerDetail(c)}
                     className="hover:bg-zinc-50/80 dark:hover:bg-zinc-800/40 transition-colors cursor-pointer group"
                   >
@@ -350,7 +374,7 @@ Xin chân thành cảm ơn Quý khách!`;
 
                         <button
                           type="button"
-                          onClick={(e) => handleCopyStatement(c, e)}
+                          onClick={(e) => handleCopyStatement(c, uniqueKey, e)}
                           className={`px-2 py-1 rounded-lg font-medium text-[11px] transition-colors border shadow-2xs ${
                             isCopied
                               ? "bg-emerald-50 dark:bg-emerald-950/60 border-emerald-300 dark:border-emerald-800 text-emerald-700 dark:text-emerald-300"

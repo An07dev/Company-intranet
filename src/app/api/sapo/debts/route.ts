@@ -334,6 +334,7 @@ async function computeDebtData(
     const key = getCustomerGroupKey(order);
     if (!customerMap.has(key)) {
       customerMap.set(key, {
+        key,
         customer_id: order.customer_id,
         name: order.customer_name,
         phone: order.customer_phone,
@@ -411,11 +412,44 @@ async function computeDebtData(
     }
   }
 
+  // Trích xuất danh bạ CRM Sapo để làm giàu tên khách hàng chuẩn xác nhất
+  const crmCustomerMap = new Map<number, string>();
+  const crmPhoneMap = new Map<string, string>();
+  try {
+    const db = MongoShopeeOrderModel.db;
+    const crmCustomers = await db
+      .collection("sapo_customers")
+      .find({}, { projection: { id: 1, name: 1, phone: 1, first_name: 1, last_name: 1 } })
+      .toArray();
+    for (const c of crmCustomers) {
+      const name = c.name || [c.last_name, c.first_name].filter(Boolean).join(" ").trim();
+      if (c.id && name) crmCustomerMap.set(Number(c.id), name);
+      if (c.phone && name) {
+        const cleanP = String(c.phone).replace(/\D/g, "").slice(-9);
+        if (cleanP) crmPhoneMap.set(cleanP, name);
+      }
+    }
+  } catch (err) {
+    console.error("Lỗi đọc sapo_customers:", err);
+  }
+
   // Tính Nợ cuối kỳ: Cuối = Đầu + Tăng - Giảm
   const allCustomers: any[] = [];
   for (const c of customerMap.values()) {
     c.cuoi_ky = c.dau_ky + c.tang_trong_ky - c.giam_trong_ky;
     c.total_debt = c.cuoi_ky;
+    c.is_retail = Boolean(c.key?.startsWith("khach_le_"));
+
+    // Ưu tiên tên chuẩn từ CRM Sapo
+    if (c.customer_id && crmCustomerMap.has(Number(c.customer_id))) {
+      c.name = crmCustomerMap.get(Number(c.customer_id))!;
+    } else if (c.phone) {
+      const cleanP = c.phone.replace(/\D/g, "").slice(-9);
+      if (crmPhoneMap.has(cleanP)) {
+        c.name = crmPhoneMap.get(cleanP)!;
+      }
+    }
+
     allCustomers.push(c);
   }
 
@@ -536,8 +570,15 @@ export async function GET(request: NextRequest) {
     // 2. TYPE = CUSTOMERS
     if (type === "customers") {
       let filtered = cacheEntry.allCustomers;
+      const includeRetail = searchParams.get("include_retail") === "true";
 
       if (!search) {
+        // Mặc định chuẩn Sapo: Chỉ hiển thị khách hàng có danh tính CRM/SĐT.
+        // Khi bật include_retail=true thì mới hiển thị thêm các đơn khách lẻ vãng lai.
+        if (!includeRetail) {
+          filtered = filtered.filter((c) => !c.is_retail && !c.key?.startsWith("khach_le_"));
+        }
+
         if (filterType === "cuoi_ky") {
           filtered = filtered.filter((c) => c.cuoi_ky > 0);
         } else if (filterType === "phat_sinh") {

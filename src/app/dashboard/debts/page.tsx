@@ -99,6 +99,7 @@ export default function DebtsManagementPage() {
 
   // ==================== STATE KHÁCH HÀNG ====================
   const [filterType, setFilterType] = useState("cuoi_ky");
+  const [includeRetail, setIncludeRetail] = useState(false);
   const [customerSummary, setCustomerSummary] = useState<any>(null);
   const [loadingCustomerSummary, setLoadingCustomerSummary] = useState(true);
 
@@ -191,6 +192,7 @@ export default function DebtsManagementPage() {
         start_date: startDateStr,
         end_date: endDateStr,
         filter: filterType,
+        include_retail: includeRetail ? "true" : "false",
         search: debouncedCustomerSearch,
         page: String(customerPage),
         limit: "15",
@@ -210,7 +212,7 @@ export default function DebtsManagementPage() {
     } finally {
       setLoadingCustomers(false);
     }
-  }, [startDateStr, endDateStr, filterType, debouncedCustomerSearch, customerPage, toast]);
+  }, [startDateStr, endDateStr, filterType, includeRetail, debouncedCustomerSearch, customerPage, toast]);
 
   // 3. Fetch Orders List
   const fetchOrders = useCallback(async (refresh = false) => {
@@ -663,6 +665,8 @@ export default function DebtsManagementPage() {
               onViewCustomerDetail={handleOpenCustomerDetail}
               filterType={filterType}
               onFilterTypeChange={setFilterType}
+              includeRetail={includeRetail}
+              onIncludeRetailChange={setIncludeRetail}
             />
           ) : (
             <OrderDebtsTable

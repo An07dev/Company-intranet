@@ -222,9 +222,13 @@ export function OrderDebtsTable({
 
                 <div className="text-xs font-semibold text-zinc-800 dark:text-zinc-200">
                   {o.customer_name}
-                  {o.customer_phone && (
+                  {o.customer_phone ? (
                     <span className="ml-1.5 font-mono text-[11px] text-zinc-500 font-normal">
                       {o.customer_phone}
+                    </span>
+                  ) : (
+                    <span className="ml-1.5 text-[10px] font-medium text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/50 px-1 py-0.2 rounded border border-amber-200/50">
+                      Chưa gán khách
                     </span>
                   )}
                 </div>
@@ -324,7 +328,9 @@ export function OrderDebtsTable({
                           {o.customer_phone}
                         </div>
                       ) : (
-                        <div className="text-[10px] text-zinc-400 italic">Khách lẻ</div>
+                        <span className="inline-block mt-0.5 text-[10px] font-medium text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/50 px-1.5 py-0.5 rounded border border-amber-200/50">
+                          Khách lẻ (Chưa gán)
+                        </span>
                       )}
                     </td>
 
