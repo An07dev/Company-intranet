@@ -252,3 +252,11 @@ export async function POST(request: NextRequest) {
     );
   }
 }
+
+/**
+ * GET /api/sapo/debts/sync
+ * Cho phép Vercel Cron Job tự động kích hoạt đồng bộ định kỳ
+ */
+export async function GET(request: NextRequest) {
+  return POST(request);
+}

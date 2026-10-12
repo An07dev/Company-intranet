@@ -63,6 +63,7 @@ export async function middleware(request: NextRequest) {
     pathname.startsWith("/_next") ||
     pathname.startsWith("/api/images") ||
     pathname.startsWith("/api/webhooks") ||
+    Boolean(request.headers.get("x-vercel-cron")) ||
     pathname.match(/\.(ico|png|jpg|jpeg|svg|webp|css|js|json|woff|woff2)$/)
   ) {
     return NextResponse.next();

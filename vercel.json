@@ -1,3 +1,9 @@
 {
-  "regions": ["sin1"]
+  "regions": ["sin1"],
+  "crons": [
+    {
+      "path": "/api/sapo/debts/sync",
+      "schedule": "0 */2 * * *"
+    }
+  ]
 }
