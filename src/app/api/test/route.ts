@@ -25,9 +25,6 @@ export async function GET(request: NextRequest) {
         const host = mongoose.connection.host;
         const rawUri = process.env.MONGODB_URI || "";
         const maskedUri = rawUri.replace(/:([^:@]+)@/, ":***@");
-        if (request.nextUrl.searchParams.get("full") === "true") {
-          return apiSuccess({ rawUri }, "full URI");
-        }
         const withUnpaid = await MongoShopeeOrderModel.countDocuments({ unpaid_amount: { $exists: true } });
         const sampleOrder = await MongoShopeeOrderModel.findOne({}).lean().exec();
         return apiSuccess({
