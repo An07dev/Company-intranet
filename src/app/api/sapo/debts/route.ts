@@ -221,10 +221,7 @@ function getCustomerGroupKey(order: {
   if (rawPhone.length >= 9 && !phone.includes("*")) {
     return `phone_${rawPhone.slice(-9)}`;
   }
-  if (order.buyer_username && order.buyer_username.trim() && order.buyer_username.trim() !== "Khách lẻ") {
-    return `buyer_${order.buyer_username.trim().toLowerCase()}`;
-  }
-  // Tuyệt đối không gộp chung theo tên nếu không có cùng customer_id hoặc cùng SĐT
+  // Nếu không có customer_id và không có SĐT định danh thì phân loại thành đơn lẻ độc lập
   return `khach_le_${order.order_sn || phone || "unknown"}`;
 }
 
@@ -243,6 +240,7 @@ async function computeDebtData(
 
   const query: any = {
     order_status: includeCancelled ? { $exists: true } : { $ne: "Đã hủy" },
+    shop_username: { $nin: ["sapo_shopee", "shopee"] }, // Loại trừ sàn Shopee vì tiền do sàn đối soát ví, người mua không nợ shop
     $or: [
       { unpaid_amount: { $gt: 0 } },
       { status_description: { $regex: /pending|partially_paid/i } },
@@ -276,6 +274,35 @@ async function computeDebtData(
     .lean()
     .exec();
 
+  // Trích xuất danh bạ CRM Sapo để làm giàu tên khách hàng chuẩn xác nhất và tự động liên kết đơn thiếu customer_id
+  const crmCustomerMap = new Map<number, string>();
+  const crmPhoneMap = new Map<string, string>();
+  const crmPhoneToIdMap = new Map<string, number>();
+  const crmNameToIdMap = new Map<string, number>();
+  try {
+    const db = MongoShopeeOrderModel.db;
+    const crmCustomers = await db
+      .collection("sapo_customers")
+      .find({}, { projection: { id: 1, name: 1, phone: 1, first_name: 1, last_name: 1 } })
+      .toArray();
+    for (const c of crmCustomers) {
+      const name = c.name || [c.last_name, c.first_name].filter(Boolean).join(" ").trim();
+      if (c.id && name) {
+        crmCustomerMap.set(Number(c.id), name);
+        crmNameToIdMap.set(name.toLowerCase().trim(), Number(c.id));
+      }
+      if (c.phone) {
+        const cleanP = String(c.phone).replace(/\D/g, "").slice(-9);
+        if (cleanP) {
+          if (name) crmPhoneMap.set(cleanP, name);
+          if (c.id) crmPhoneToIdMap.set(cleanP, Number(c.id));
+        }
+      }
+    }
+  } catch (err) {
+    console.error("Lỗi đọc sapo_customers:", err);
+  }
+
   let totalDauKy = 0;
   let totalTangTrongKy = 0;
   let totalGiamTrongKy = 0;
@@ -286,6 +313,28 @@ async function computeDebtData(
   for (const doc of docs) {
     const order = parseOrderDebtData(doc);
     if (order.is_cancelled && !includeCancelled) continue;
+
+    // Tự động nhận diện và liên kết customer_id từ danh bạ CRM Sapo nếu đơn hàng bị thiếu customer_id
+    if (!order.customer_id) {
+      if (order.customer_phone) {
+        const cleanP = order.customer_phone.replace(/\D/g, "").slice(-9);
+        if (cleanP && crmPhoneToIdMap.has(cleanP)) {
+          order.customer_id = crmPhoneToIdMap.get(cleanP);
+        }
+      }
+      if (!order.customer_id && order.customer_name && !order.customer_name.startsWith("Khách lẻ")) {
+        const normN = order.customer_name.toLowerCase().trim();
+        if (crmNameToIdMap.has(normN)) {
+          order.customer_id = crmNameToIdMap.get(normN);
+        }
+      }
+      if (!order.customer_id && order.buyer_username && order.buyer_username.trim() !== "Khách lẻ" && !order.buyer_username.includes("*")) {
+        const normB = order.buyer_username.toLowerCase().trim();
+        if (crmNameToIdMap.has(normB)) {
+          order.customer_id = crmNameToIdMap.get(normB);
+        }
+      }
+    }
 
     // A: Đơn phát sinh trước kỳ (created_time < startTime)
     if (order.created_time < startTime) {
@@ -412,33 +461,12 @@ async function computeDebtData(
     }
   }
 
-  // Trích xuất danh bạ CRM Sapo để làm giàu tên khách hàng chuẩn xác nhất
-  const crmCustomerMap = new Map<number, string>();
-  const crmPhoneMap = new Map<string, string>();
-  try {
-    const db = MongoShopeeOrderModel.db;
-    const crmCustomers = await db
-      .collection("sapo_customers")
-      .find({}, { projection: { id: 1, name: 1, phone: 1, first_name: 1, last_name: 1 } })
-      .toArray();
-    for (const c of crmCustomers) {
-      const name = c.name || [c.last_name, c.first_name].filter(Boolean).join(" ").trim();
-      if (c.id && name) crmCustomerMap.set(Number(c.id), name);
-      if (c.phone && name) {
-        const cleanP = String(c.phone).replace(/\D/g, "").slice(-9);
-        if (cleanP) crmPhoneMap.set(cleanP, name);
-      }
-    }
-  } catch (err) {
-    console.error("Lỗi đọc sapo_customers:", err);
-  }
-
   // Tính Nợ cuối kỳ: Cuối = Đầu + Tăng - Giảm
   const allCustomers: any[] = [];
   for (const c of customerMap.values()) {
     c.cuoi_ky = c.dau_ky + c.tang_trong_ky - c.giam_trong_ky;
     c.total_debt = c.cuoi_ky;
-    c.is_retail = Boolean(c.key?.startsWith("khach_le_"));
+    c.is_retail = Boolean(c.key?.startsWith("khach_le_") || c.key?.startsWith("buyer_"));
 
     // Ưu tiên tên chuẩn từ CRM Sapo
     if (c.customer_id && crmCustomerMap.has(Number(c.customer_id))) {
@@ -576,7 +604,9 @@ export async function GET(request: NextRequest) {
         // Mặc định chuẩn Sapo: Chỉ hiển thị khách hàng có danh tính CRM/SĐT.
         // Khi bật include_retail=true thì mới hiển thị thêm các đơn khách lẻ vãng lai.
         if (!includeRetail) {
-          filtered = filtered.filter((c) => !c.is_retail && !c.key?.startsWith("khach_le_"));
+          filtered = filtered.filter(
+            (c) => !c.is_retail && !c.key?.startsWith("khach_le_") && !c.key?.startsWith("buyer_")
+          );
         }
 
         if (filterType === "cuoi_ky") {
