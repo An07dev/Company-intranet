@@ -77,9 +77,15 @@ export default function WebhooksPage() {
   const [loadingLogs, setLoadingLogs] = useState(true);
   const [selectedLog, setSelectedLog] = useState<WebhookLog | null>(null);
 
-  const webhookEndpoint = "https://company-intranet-bigman.vercel.app/api/webhooks/sapo";
+  const [webhookEndpoint, setWebhookEndpoint] = useState("https://shop-yen-sen.vercel.app/api/webhooks/sapo");
   const sapoStore = "cua-hang-yen-sen.mysapo.net";
   const webhookId = "2662417";
+
+  useEffect(() => {
+    if (typeof window !== "undefined" && window.location.origin && !window.location.origin.includes("localhost") && !window.location.origin.includes("127.0.0.1")) {
+      setWebhookEndpoint(`${window.location.origin}/api/webhooks/sapo`);
+    }
+  }, []);
 
   const handleCopyUrl = () => {
     navigator.clipboard.writeText(webhookEndpoint);

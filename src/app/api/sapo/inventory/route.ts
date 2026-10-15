@@ -47,7 +47,7 @@ async function uploadToPublicStorage(imageInput: string, req?: NextRequest): Pro
         const appUrl =
           (host && !host.includes("localhost") && !host.includes("127.0.0.1") ? `${proto}://${host}` : "") ||
           process.env.NEXT_PUBLIC_APP_URL ||
-          "https://company-intranet-bigman.vercel.app";
+          "https://shop-yen-sen.vercel.app";
 
         const selfHostedUrl = `${appUrl.replace(/\/$/, "")}/api/images/${imgId}.${ext}`;
         console.log(`[Upload Public Storage] Đã tạo link self-hosted: ${selfHostedUrl}`);

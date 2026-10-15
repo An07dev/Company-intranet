@@ -297,6 +297,19 @@ export async function POST(request: NextRequest) {
       orderData.customer?.name ||
       "Khách Sapo";
 
+    const phone =
+      orderData.customer?.phone ||
+      orderData.shipping_address?.phone ||
+      orderData.billing_address?.phone ||
+      "";
+
+    const address =
+      orderData.shipping_address?.address1 ||
+      [orderData.shipping_address?.address1, orderData.shipping_address?.ward, orderData.shipping_address?.district, orderData.shipping_address?.city]
+        .filter(Boolean)
+        .join(", ") ||
+      "";
+
     // Phân loại trạng thái đơn
     const isCancelled =
       topic.includes("cancelled") ||
@@ -327,20 +340,52 @@ export async function POST(request: NextRequest) {
 
     const now = new Date().toISOString();
 
+    // Tính toán tài chính / công nợ đồng bộ với hệ thống kế toán
+    const totalPrice = Number(orderData.total_price) || 0;
+    const rawReceived = Number(orderData.total_received) || 0;
+    const isPaid = orderData.financial_status === "paid" || topic.includes("paid");
+
+    const outstanding = isCancelled
+      ? 0
+      : Number(
+          orderData.total_outstanding ??
+          orderData.unpaid_amount ??
+          (isPaid ? 0 : (totalPrice > rawReceived ? totalPrice - rawReceived : 0))
+        );
+
+    const totalReceived = isCancelled
+      ? rawReceived
+      : (isPaid ? Math.max(totalPrice, rawReceived) : (rawReceived > 0 ? rawReceived : Math.max(0, totalPrice - outstanding)));
+
+    const paidOn = isPaid
+      ? (orderData.paid_on || orderData.modified_on || orderData.created_on || now)
+      : (orderData.paid_on || null);
+
     const statusDesc = isCancelled
       ? `Đã hủy trên Sapo | Lý do: ${orderData.cancel_reason || "Khác"} | Thời điểm: ${orderData.cancelled_on || now}`
-      : `Financial: ${orderData.financial_status || "N/A"} | Fulfillment: ${orderData.fulfillment_status || "N/A"} | Kênh: ${shopSource}`;
+      : `Financial: ${isPaid ? "paid" : (orderData.financial_status || "N/A")} | Fulfillment: ${orderData.fulfillment_status || "N/A"} | Kênh: ${shopSource}`;
 
     const mappedOrder: ShopeeOrder = {
       order_sn: orderSn,
+      marketplace_order_sn: orderData.reference_number || (orderData.order_number ? String(orderData.order_number) : undefined),
+      sapo_order_number: orderData.order_number ? String(orderData.order_number) : undefined,
       shop_username: shopSource,
       buyer_username: buyerName,
-      total_amount: Number(orderData.total_price) || 0,
-      payment_method: orderData.gateway || "Chưa rõ",
+      total_amount: totalPrice,
+      payment_method: orderData.gateway || orderData.payment_gateway_names?.[0] || "Chưa rõ",
       order_status: orderStatus,
       status_description: statusDesc,
       shipping_carrier: orderData.fulfillments?.[0]?.tracking_company || "",
       tracking_number: orderData.fulfillments?.[0]?.tracking_number || "",
+      customer_phone: phone,
+      customer_name: buyerName,
+      customer_address: address,
+      customer_id: orderData.customer?.id ? Number(orderData.customer.id) : null,
+      sapo_id: orderData.id ? Number(orderData.id) : null,
+      financial_status: isPaid ? "paid" : (orderData.financial_status || ""),
+      total_received: totalReceived,
+      unpaid_amount: outstanding,
+      paid_on: paidOn,
       items,
       raw_text: JSON.stringify(orderData),
       synced_at: now,

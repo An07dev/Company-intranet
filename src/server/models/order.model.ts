@@ -238,6 +238,25 @@ export class OrderModel {
           if (!sapoId && raw.id) {
             sapoId = raw.id;
           }
+          if (order.financial_status === undefined && raw.financial_status) {
+            setDoc.financial_status = raw.financial_status;
+          }
+          if (order.total_received === undefined) {
+            const rawRec = Number(raw.total_received) || (raw.financial_status === "paid" ? (Number(raw.total_price) || 0) : 0);
+            if (raw.total_received !== undefined || raw.financial_status === "paid") {
+              setDoc.total_received = rawRec;
+            }
+          }
+          if (order.unpaid_amount === undefined) {
+            if (raw.total_outstanding !== undefined || raw.unpaid_amount !== undefined) {
+              setDoc.unpaid_amount = Number(raw.total_outstanding ?? raw.unpaid_amount);
+            } else if (raw.financial_status === "paid") {
+              setDoc.unpaid_amount = 0;
+            }
+          }
+          if (order.paid_on === undefined && (raw.paid_on || raw.financial_status === "paid")) {
+            setDoc.paid_on = raw.paid_on || raw.modified_on || raw.created_on || null;
+          }
         } catch {}
       }
 
