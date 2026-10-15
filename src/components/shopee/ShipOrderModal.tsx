@@ -500,6 +500,9 @@ export function ShipOrderModal({
                 <label className="block text-xs font-bold text-zinc-700 dark:text-zinc-300">
                   💰 Tiền thu hộ COD
                 </label>
+                <div className="text-[10px] text-zinc-400">
+                  {codAmount > 0 ? `Thu hộ: ${formatVND(codAmount)}` : "Không thu COD (Đã thanh toán trước)"}
+                </div>
                 <div className="relative">
                   <input
                     type="number"
@@ -511,9 +514,7 @@ export function ShipOrderModal({
                     VNĐ
                   </span>
                 </div>
-                <div className="text-[10px] text-zinc-400">
-                  {codAmount > 0 ? `Thu hộ: ${formatVND(codAmount)}` : "Không thu COD (Đã thanh toán trước)"}
-                </div>
+
               </div>
             </div>
 
