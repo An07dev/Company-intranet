@@ -169,6 +169,7 @@ export default function DebtsManagementPage() {
         type: "summary",
         start_date: startDateStr,
         end_date: endDateStr,
+        include_retail: includeRetail ? "true" : "false",
       });
       if (refresh) params.set("refresh", "true");
       const res = await fetch(`/api/sapo/debts?${params.toString()}`);
@@ -181,7 +182,7 @@ export default function DebtsManagementPage() {
     } finally {
       setLoadingCustomerSummary(false);
     }
-  }, [startDateStr, endDateStr, toast]);
+  }, [startDateStr, endDateStr, includeRetail, toast]);
 
   // 2. Fetch Customers List
   const fetchCustomers = useCallback(async (refresh = false) => {
