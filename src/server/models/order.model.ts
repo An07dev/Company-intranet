@@ -5,6 +5,8 @@ import { ShopeeOrder } from "@/types";
 export function toSafeOrder(doc: IShopeeOrderDocument): ShopeeOrder {
   let marketplace_order_sn: string | undefined = undefined;
   let sapo_order_number: string | undefined = undefined;
+  let customer_name = doc.customer_name;
+  let customer_phone = doc.customer_phone;
 
   if (doc.raw_text) {
     try {
@@ -22,6 +24,19 @@ export function toSafeOrder(doc: IShopeeOrderDocument): ShopeeOrder {
 
       if (candidateMarket) {
         marketplace_order_sn = String(candidateMarket).trim();
+      }
+
+      if (!customer_name) {
+        customer_name =
+          raw.shipping_address?.name ||
+          [raw.customer?.last_name, raw.customer?.first_name].filter(Boolean).join(" ").trim() ||
+          raw.customer?.name;
+      }
+      if (!customer_phone) {
+        customer_phone =
+          raw.customer?.phone ||
+          raw.shipping_address?.phone ||
+          raw.billing_address?.phone;
       }
     } catch {}
   }
@@ -42,6 +57,15 @@ export function toSafeOrder(doc: IShopeeOrderDocument): ShopeeOrder {
     sapo_order_number,
     shop_username: doc.shop_username,
     buyer_username: doc.buyer_username,
+    customer_phone: customer_phone || doc.customer_phone,
+    customer_name: customer_name || doc.customer_name || doc.buyer_username,
+    customer_address: doc.customer_address,
+    customer_id: doc.customer_id,
+    sapo_id: doc.sapo_id,
+    financial_status: doc.financial_status,
+    total_received: doc.total_received,
+    unpaid_amount: doc.unpaid_amount,
+    paid_on: doc.paid_on,
     total_amount: doc.total_amount,
     payment_method: doc.payment_method,
     order_status: doc.order_status,
@@ -186,11 +210,42 @@ export class OrderModel {
         updatedAt: now,
       };
 
-      if (order.customer_phone !== undefined) setDoc.customer_phone = order.customer_phone;
-      if (order.customer_name !== undefined) setDoc.customer_name = order.customer_name;
+      let custName = order.customer_name;
+      let custPhone = order.customer_phone;
+      let custId = order.customer_id;
+      let sapoId = order.sapo_id;
+
+      if ((!custName || !custPhone || !custId) && order.raw_text) {
+        try {
+          const raw = JSON.parse(order.raw_text);
+          if (!custName) {
+            custName =
+              raw.shipping_address?.name ||
+              [raw.customer?.last_name, raw.customer?.first_name].filter(Boolean).join(" ").trim() ||
+              raw.customer?.name ||
+              (order.buyer_username && !order.buyer_username.startsWith("buyer_") ? order.buyer_username : "");
+          }
+          if (!custPhone) {
+            custPhone =
+              raw.customer?.phone ||
+              raw.shipping_address?.phone ||
+              raw.billing_address?.phone ||
+              "";
+          }
+          if (!custId && raw.customer?.id) {
+            custId = raw.customer.id;
+          }
+          if (!sapoId && raw.id) {
+            sapoId = raw.id;
+          }
+        } catch {}
+      }
+
+      if (custPhone !== undefined) setDoc.customer_phone = custPhone;
+      if (custName !== undefined) setDoc.customer_name = custName;
       if (order.customer_address !== undefined) setDoc.customer_address = order.customer_address;
-      if (order.customer_id !== undefined) setDoc.customer_id = order.customer_id;
-      if (order.sapo_id !== undefined) setDoc.sapo_id = order.sapo_id;
+      if (custId !== undefined) setDoc.customer_id = custId;
+      if (sapoId !== undefined) setDoc.sapo_id = sapoId;
       if (order.financial_status !== undefined) setDoc.financial_status = order.financial_status;
       if (order.total_received !== undefined) setDoc.total_received = order.total_received;
       if (order.unpaid_amount !== undefined) setDoc.unpaid_amount = order.unpaid_amount;
@@ -254,14 +309,43 @@ export class OrderModel {
     }
 
     if (params.search) {
-      const cleanSearch = params.search.replace(/^#/, "").trim();
-      query.$or = [
-        { order_sn: { $regex: params.search, $options: "i" } },
-        { order_sn: { $regex: cleanSearch, $options: "i" } },
-        { buyer_username: { $regex: params.search, $options: "i" } },
-        { tracking_number: { $regex: params.search, $options: "i" } },
-        { raw_text: { $regex: cleanSearch, $options: "i" } },
+      const rawSearch = params.search.trim();
+      const cleanSearch = rawSearch.replace(/^#/, "").trim();
+      const escapedClean = cleanSearch.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      const escapedRaw = rawSearch.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+      const orConditions: any[] = [
+        { order_sn: { $regex: escapedClean, $options: "i" } },
+        { customer_name: { $regex: escapedClean, $options: "i" } },
+        { customer_phone: { $regex: escapedClean, $options: "i" } },
+        { buyer_username: { $regex: escapedClean, $options: "i" } },
+        { tracking_number: { $regex: escapedRaw, $options: "i" } },
       ];
+
+      // Tìm theo số điện thoại (hỗ trợ bỏ qua số 0 hoặc 84 đầu số)
+      const digitsOnly = cleanSearch.replace(/\D/g, "");
+      if (digitsOnly.length >= 6) {
+        const phoneWithoutZero = digitsOnly.replace(/^(?:84|0)/, "");
+        if (phoneWithoutZero && phoneWithoutZero !== cleanSearch) {
+          orConditions.push({ customer_phone: { $regex: phoneWithoutZero, $options: "i" } });
+        }
+        orConditions.push({
+          raw_text: {
+            $regex: `"phone":\\s*"[^"]*${phoneWithoutZero || digitsOnly}`,
+          },
+        });
+      }
+
+      // Khớp chính xác mã đơn Sapo (order_number hoặc name) trong raw_text cho các đơn sàn TMĐT
+      if (/^\d{1,8}$/.test(cleanSearch)) {
+        orConditions.push({
+          raw_text: {
+            $regex: `"order_number":\\s*${cleanSearch}\\b|"name":\\s*"#?${cleanSearch}"`,
+          },
+        });
+      }
+
+      query.$or = orConditions;
     }
 
     const [docs, total] = await Promise.all([

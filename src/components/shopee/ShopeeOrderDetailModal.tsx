@@ -298,9 +298,14 @@ export function ShopeeOrderDetailModal({
           <div className="grid grid-cols-2 gap-2.5 p-3 rounded-xl sm:rounded-2xl bg-zinc-50/80 dark:bg-zinc-800/40 border border-zinc-200/70 dark:border-zinc-800 text-xs">
             <div>
               <span className="text-[10px] text-zinc-400 font-medium block">👤 Khách hàng</span>
-              <div className="font-semibold text-zinc-900 dark:text-white truncate mt-0.5" title={order.buyer_username}>
-                {order.buyer_username || "Khách lẻ"}
+              <div className="font-semibold text-zinc-900 dark:text-white truncate mt-0.5" title={order.customer_name || order.buyer_username}>
+                {order.customer_name || order.buyer_username || "Khách lẻ"}
               </div>
+              {order.customer_phone && (
+                <div className="text-[11px] text-zinc-500 dark:text-zinc-400 font-mono mt-0.5">
+                  📞 {order.customer_phone}
+                </div>
+              )}
             </div>
 
             <div>

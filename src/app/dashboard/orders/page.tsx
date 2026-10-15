@@ -1161,11 +1161,11 @@ export default function MultiChannelOrdersPage() {
                   {/* Hàng 2: Khách hàng & Sản phẩm */}
                   <div className="bg-zinc-50 dark:bg-zinc-800/40 p-2.5 rounded-lg space-y-1.5 text-xs">
                     <div className="flex items-center justify-between text-zinc-600 dark:text-zinc-300">
-                      <span className="font-semibold text-zinc-900 dark:text-white truncate max-w-[170px]">
-                        👤 {order.buyer_username || "Khách mua"}
+                      <span className="font-semibold text-zinc-900 dark:text-white truncate max-w-[170px]" title={order.customer_name || order.buyer_username}>
+                        👤 {order.customer_name || order.buyer_username || "Khách mua"}
                       </span>
                       <span className="text-[11px] text-zinc-400 font-mono">
-                        {order.payment_method || "COD"}
+                        {order.customer_phone || order.payment_method || "COD"}
                       </span>
                     </div>
 
@@ -1336,11 +1336,11 @@ export default function MultiChannelOrdersPage() {
 
                         {/* 3. Khách hàng */}
                         <td className="py-3.5 px-4">
-                          <div className="font-medium text-zinc-900 dark:text-white truncate max-w-[150px]">
-                            {order.buyer_username || "Khách mua"}
+                          <div className="font-medium text-zinc-900 dark:text-white truncate max-w-[150px]" title={order.customer_name || order.buyer_username}>
+                            {order.customer_name || order.buyer_username || "Khách mua"}
                           </div>
                           <div className="text-[11px] text-zinc-400 truncate max-w-[150px]">
-                            {order.payment_method || "COD"}
+                            {order.customer_phone ? `📞 ${order.customer_phone}` : (order.payment_method || "COD")}
                           </div>
                         </td>
 
