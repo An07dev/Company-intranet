@@ -18,6 +18,8 @@ export default function UsersManagementPage() {
   const [usersList, setUsersList] = useState<User[]>([]);
   const [departmentsList, setDepartmentsList] = useState<Department[]>([]);
   const [loading, setLoading] = useState(true);
+  const [enableLeaveFeature, setEnableLeaveFeature] = useState<boolean>(false);
+  const [savingLeaveFeature, setSavingLeaveFeature] = useState<boolean>(false);
 
   // Bộ lọc & Sắp xếp & Tìm kiếm
   const [roleFilter, setRoleFilter] = useState<string>("all");
@@ -78,17 +80,56 @@ export default function UsersManagementPage() {
     }
   }, []);
 
+  // Tải cấu hình cài đặt hệ thống (bao gồm tính năng nghỉ phép)
+  const fetchSettings = useCallback(async () => {
+    try {
+      const res = await fetch("/api/settings/attendance");
+      const json = await res.json();
+      if (json.success && json.data?.settings) {
+        setEnableLeaveFeature(Boolean(json.data.settings.enableLeaveFeature));
+      }
+    } catch (err) {
+      console.error("Lỗi khi tải cấu hình hệ thống:", err);
+    }
+  }, []);
+
+  // Bật/tắt tính năng nghỉ phép
+  const handleToggleLeaveFeature = async (checked: boolean) => {
+    try {
+      setSavingLeaveFeature(true);
+      const res = await fetch("/api/settings/attendance", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ enableLeaveFeature: checked }),
+      });
+      const json = await res.json();
+      if (json.success) {
+        setEnableLeaveFeature(checked);
+        fetchUsers();
+      } else {
+        alert(json.error || json.message || "Không thể cập nhật cấu hình");
+      }
+    } catch (err) {
+      console.error("Lỗi cập nhật cấu hình nghỉ phép:", err);
+      alert("Có lỗi xảy ra khi cập nhật tính năng nghỉ phép");
+    } finally {
+      setSavingLeaveFeature(false);
+    }
+  };
+
   const refreshData = useCallback(() => {
     fetchUsers();
     fetchDepartments();
-  }, [fetchUsers, fetchDepartments]);
+    fetchSettings();
+  }, [fetchUsers, fetchDepartments, fetchSettings]);
 
   useEffect(() => {
     if (currentUser && (currentUser.role === "admin" || currentUser.role === "director")) {
       fetchUsers();
       fetchDepartments();
+      fetchSettings();
     }
-  }, [currentUser, fetchUsers, fetchDepartments]);
+  }, [currentUser, fetchUsers, fetchDepartments, fetchSettings]);
 
   // Tổng hợp danh sách các phòng ban thực tế trong hệ thống
   const availableDepartments = useMemo(() => {
@@ -317,6 +358,31 @@ export default function UsersManagementPage() {
         </button>
       </div>
 
+      {/* 1.1b MOBILE LEAVE FEATURE TOGGLE (sm:hidden) */}
+      <div className="sm:hidden flex items-center justify-between p-2.5 rounded-xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-2xs">
+        <div className="flex items-center gap-2">
+          <span className="text-base">🏖️</span>
+          <div>
+            <div className="text-xs font-bold text-zinc-900 dark:text-zinc-100">
+              Sử dụng tính năng nghỉ phép
+            </div>
+            <div className="text-[10px] text-zinc-500 dark:text-zinc-400">
+              {enableLeaveFeature ? "Đang bật: Ẩn số phép, công phép mặc định 0" : "Đang tắt: Hiển thị phép như bình thường"}
+            </div>
+          </div>
+        </div>
+        <label className="relative inline-flex items-center cursor-pointer shrink-0">
+          <input
+            type="checkbox"
+            checked={enableLeaveFeature}
+            disabled={savingLeaveFeature}
+            onChange={(e) => handleToggleLeaveFeature(e.target.checked)}
+            className="sr-only peer"
+          />
+          <div className="w-10 h-5.5 bg-zinc-200 peer-focus:outline-none rounded-full peer dark:bg-zinc-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-zinc-300 after:border after:rounded-full after:h-4.5 after:w-4.5 after:transition-all dark:border-zinc-600 peer-checked:bg-emerald-600"></div>
+        </label>
+      </div>
+
       {/* 1.2 DESKTOP HEADER (hidden sm:flex) - 100% UNTOUCHED */}
       <div className="hidden sm:flex flex-col md:flex-row md:items-center md:justify-between gap-4 pb-4 border-b border-zinc-200 dark:border-zinc-800">
         <div>
@@ -333,15 +399,42 @@ export default function UsersManagementPage() {
           </p>
         </div>
 
-        {/* Nút Thêm Người Dùng */}
-        <button
-          type="button"
-          onClick={() => setIsCreateOpen(true)}
-          className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-white dark:bg-zinc-100 dark:hover:bg-zinc-200 dark:text-zinc-900 text-xs font-semibold shadow-xs cursor-pointer transition-colors shrink-0"
-        >
-          <span className="text-sm">➕</span>
-          <span>Thêm Người Dùng Mới</span>
-        </button>
+        <div className="flex items-center gap-3">
+          {/* Checkbox Bật/Tắt Sử dụng tính năng nghỉ phép */}
+          <div className="flex items-center gap-3 bg-zinc-50 dark:bg-zinc-900 px-3.5 py-2 rounded-xl border border-zinc-200 dark:border-zinc-800 shadow-2xs">
+            <div className="text-right">
+              <div className="text-xs font-bold text-zinc-900 dark:text-zinc-100 flex items-center gap-1.5 justify-end">
+                <span>🏖️</span>
+                <span>Sử dụng tính năng nghỉ phép</span>
+              </div>
+              <div className="text-[10px] text-zinc-500 dark:text-zinc-400">
+                {enableLeaveFeature
+                  ? "Bật: Ẩn số phép, công phép mặc định 0"
+                  : "Tắt: Hiển thị phép như bình thường"}
+              </div>
+            </div>
+            <label className="relative inline-flex items-center cursor-pointer shrink-0">
+              <input
+                type="checkbox"
+                checked={enableLeaveFeature}
+                disabled={savingLeaveFeature}
+                onChange={(e) => handleToggleLeaveFeature(e.target.checked)}
+                className="sr-only peer"
+              />
+              <div className="w-11 h-6 bg-zinc-200 peer-focus:outline-none rounded-full peer dark:bg-zinc-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-zinc-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-zinc-600 peer-checked:bg-emerald-600"></div>
+            </label>
+          </div>
+
+          {/* Nút Thêm Người Dùng */}
+          <button
+            type="button"
+            onClick={() => setIsCreateOpen(true)}
+            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-white dark:bg-zinc-100 dark:hover:bg-zinc-200 dark:text-zinc-900 text-xs font-semibold shadow-xs cursor-pointer transition-colors shrink-0"
+          >
+            <span className="text-sm">➕</span>
+            <span>Thêm Người Dùng Mới</span>
+          </button>
+        </div>
       </div>
 
       {/* =========================================================================
@@ -438,7 +531,9 @@ export default function UsersManagementPage() {
             <span className="text-xs text-zinc-400 font-sans font-normal ml-1">nhân sự</span>
           </div>
           <div className="text-[11px] text-blue-600/80 dark:text-blue-400/80 mt-2 truncate">
-            +1 phép/tháng từ lúc lên chính thức (max 12)
+            {enableLeaveFeature
+              ? "Chế độ công phép thủ công (Đã kích hoạt)"
+              : "+1 phép/tháng từ lúc lên chính thức (max 12)"}
           </div>
         </div>
 
@@ -890,7 +985,9 @@ export default function UsersManagementPage() {
                   <th className="px-4 py-3">Liên hệ</th>
                   <th className="px-4 py-3">Phòng ban</th>
                   <th className="px-4 py-3">Chức vụ</th>
-                  <th className="px-4 py-3">Hình thức &amp; Phép</th>
+                  <th className="px-4 py-3">
+                    {enableLeaveFeature ? "Hình thức" : "Hình thức & Phép"}
+                  </th>
                   <th className="px-4 py-3 text-center">Trạng thái</th>
                   <th className="px-4 py-3 text-right">Thao tác</th>
                 </tr>
@@ -968,39 +1065,43 @@ export default function UsersManagementPage() {
                             <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-amber-100 text-amber-800 dark:bg-amber-950/80 dark:text-amber-300 border border-amber-200 dark:border-amber-800">
                               <span>⏳</span> Thử việc
                             </span>
-                            <div className="text-[10px] text-zinc-400 mt-0.5">
-                              0 phép năm
-                            </div>
+                            {!enableLeaveFeature && (
+                              <div className="text-[10px] text-zinc-400 mt-0.5">
+                                0 phép năm
+                              </div>
+                            )}
                           </div>
                         ) : (
                           <div>
                             <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-blue-100 text-blue-800 dark:bg-blue-950/80 dark:text-blue-300 border border-blue-200 dark:border-blue-800">
                               <span>🏢</span> Chính thức
                             </span>
-                            <div className="text-[10px] text-zinc-500 dark:text-zinc-400 mt-0.5">
-                              {(() => {
-                                const dateStr = u.officialStartDate || u.createdAt;
-                                if (!dateStr) return "12 phép";
-                                const sDate = new Date(dateStr);
-                                if (isNaN(sDate.getTime())) return "12 phép";
-                                const now = new Date();
-                                const diff = (now.getFullYear() - sDate.getFullYear()) * 12 + (now.getMonth() - sDate.getMonth()) + 1;
-                                const totalLeave = Math.min(12, Math.max(0, diff));
-                                return (
-                                  <span>
-                                    <strong className="text-emerald-600 dark:text-emerald-400 font-mono font-bold">
-                                      {totalLeave}
-                                    </strong>
-                                    /12 phép
-                                    {u.officialStartDate && (
-                                      <span className="ml-1 text-[9px] text-zinc-400 font-mono">
-                                        ({u.officialStartDate})
-                                      </span>
-                                    )}
-                                  </span>
-                                );
-                              })()}
-                            </div>
+                            {!enableLeaveFeature && (
+                              <div className="text-[10px] text-zinc-500 dark:text-zinc-400 mt-0.5">
+                                {(() => {
+                                  const dateStr = u.officialStartDate || u.createdAt;
+                                  if (!dateStr) return "12 phép";
+                                  const sDate = new Date(dateStr);
+                                  if (isNaN(sDate.getTime())) return "12 phép";
+                                  const now = new Date();
+                                  const diff = (now.getFullYear() - sDate.getFullYear()) * 12 + (now.getMonth() - sDate.getMonth()) + 1;
+                                  const totalLeave = Math.min(12, Math.max(0, diff));
+                                  return (
+                                    <span>
+                                      <strong className="text-emerald-600 dark:text-emerald-400 font-mono font-bold">
+                                        {totalLeave}
+                                      </strong>
+                                      /12 phép
+                                      {u.officialStartDate && (
+                                        <span className="ml-1 text-[9px] text-zinc-400 font-mono">
+                                          ({u.officialStartDate})
+                                        </span>
+                                      )}
+                                    </span>
+                                  );
+                                })()}
+                              </div>
+                            )}
                           </div>
                         )}
                       </td>
@@ -1171,21 +1272,26 @@ export default function UsersManagementPage() {
                     </span>
                     {isProbation ? (
                       <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md font-medium bg-amber-50 text-amber-800 dark:bg-amber-950/50 dark:text-amber-300 border border-amber-200/60 dark:border-amber-800/60">
-                        ⏳ Thử việc (0 phép)
+                        ⏳ Thử việc{!enableLeaveFeature ? " (0 phép)" : ""}
                       </span>
                     ) : (
                       <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md font-medium bg-blue-50 text-blue-800 dark:bg-blue-950/50 dark:text-blue-300 border border-blue-200/60 dark:border-blue-800/60">
-                        🏢 Chính thức •{" "}
-                        {(() => {
-                          const dateStr = u.officialStartDate || u.createdAt;
-                          if (!dateStr) return "12 phép";
-                          const sDate = new Date(dateStr);
-                          if (isNaN(sDate.getTime())) return "12 phép";
-                          const now = new Date();
-                          const diff = (now.getFullYear() - sDate.getFullYear()) * 12 + (now.getMonth() - sDate.getMonth()) + 1;
-                          const totalLeave = Math.min(12, Math.max(0, diff));
-                          return `${totalLeave}/12 phép`;
-                        })()}
+                        🏢 Chính thức
+                        {!enableLeaveFeature && (
+                          <>
+                            {" • "}
+                            {(() => {
+                              const dateStr = u.officialStartDate || u.createdAt;
+                              if (!dateStr) return "12 phép";
+                              const sDate = new Date(dateStr);
+                              if (isNaN(sDate.getTime())) return "12 phép";
+                              const now = new Date();
+                              const diff = (now.getFullYear() - sDate.getFullYear()) * 12 + (now.getMonth() - sDate.getMonth()) + 1;
+                              const totalLeave = Math.min(12, Math.max(0, diff));
+                              return `${totalLeave}/12 phép`;
+                            })()}
+                          </>
+                        )}
                       </span>
                     )}
                   </div>

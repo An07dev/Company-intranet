@@ -27,6 +27,7 @@ export interface User {
   status: UserStatus;
   contractType?: ContractType;
   officialStartDate?: string; // Ngày bắt đầu chính thức (YYYY-MM-DD)
+  customLeaveDays?: number; // Cấu hình công phép thiết lập riêng (mặc định 0)
   createdAt: string;
   updatedAt: string;
 }
@@ -43,6 +44,7 @@ export interface CreateUserInput {
   status?: UserStatus;
   contractType?: ContractType;
   officialStartDate?: string;
+  customLeaveDays?: number;
 }
 
 export interface UpdateUserInput {
@@ -57,6 +59,7 @@ export interface UpdateUserInput {
   status?: UserStatus;
   contractType?: ContractType;
   officialStartDate?: string;
+  customLeaveDays?: number;
 }
 
 export interface AuthSession {

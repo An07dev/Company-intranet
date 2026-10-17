@@ -8,6 +8,7 @@ const DEFAULT_SETTINGS: AttendanceSettings = {
   workStartTime: "08:00",
   workEndTime: "17:30",
   lateThresholdMinutes: 0,
+  enableLeaveFeature: false,
   updatedBy: "Hệ Thống",
   updatedAt: new Date().toISOString(),
 };
@@ -31,6 +32,7 @@ export const SettingsModel = {
       workStartTime: doc.workStartTime || DEFAULT_SETTINGS.workStartTime,
       workEndTime: doc.workEndTime || DEFAULT_SETTINGS.workEndTime,
       lateThresholdMinutes: doc.lateThresholdMinutes ?? DEFAULT_SETTINGS.lateThresholdMinutes,
+      enableLeaveFeature: doc.enableLeaveFeature ?? DEFAULT_SETTINGS.enableLeaveFeature ?? false,
       updatedBy: doc.updatedBy || DEFAULT_SETTINGS.updatedBy,
       updatedAt: doc.updatedAt || DEFAULT_SETTINGS.updatedAt,
     };
@@ -67,6 +69,9 @@ export const SettingsModel = {
       const val = Number(data.lateThresholdMinutes);
       updatePayload.lateThresholdMinutes = isNaN(val) || val < 0 ? 0 : val;
     }
+    if (data.enableLeaveFeature !== undefined) {
+      updatePayload.enableLeaveFeature = Boolean(data.enableLeaveFeature);
+    }
 
     const doc = await MongoSettingsModel.findOneAndUpdate(
       { key: "attendance_settings" },
@@ -80,6 +85,7 @@ export const SettingsModel = {
       workStartTime: doc.workStartTime,
       workEndTime: doc.workEndTime,
       lateThresholdMinutes: doc.lateThresholdMinutes,
+      enableLeaveFeature: doc.enableLeaveFeature ?? false,
       updatedBy: doc.updatedBy,
       updatedAt: doc.updatedAt,
     };

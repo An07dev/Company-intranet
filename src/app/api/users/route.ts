@@ -75,6 +75,7 @@ export async function POST(request: NextRequest) {
       status,
       contractType,
       officialStartDate,
+      customLeaveDays,
     } = body;
 
     // Validation
@@ -109,6 +110,7 @@ export async function POST(request: NextRequest) {
       status: status || "active",
       contractType: contractType || "official",
       officialStartDate: contractType === "probation" ? undefined : officialStartDate,
+      customLeaveDays: customLeaveDays !== undefined ? Math.max(0, Number(customLeaveDays) || 0) : 0,
     });
 
     return apiSuccess(newUser, "Tạo người dùng mới thành công", 201);

@@ -98,6 +98,7 @@ export function toSafeUser(doc: IUserDocument): User {
     status: doc.status,
     contractType: doc.contractType || "official",
     officialStartDate: doc.officialStartDate,
+    customLeaveDays: doc.customLeaveDays ?? 0,
     createdAt: doc.createdAt,
     updatedAt: doc.updatedAt,
   };
@@ -264,6 +265,7 @@ export const UserModel = {
       status: input.status || "active",
       contractType,
       officialStartDate,
+      customLeaveDays: Math.max(0, Number(input.customLeaveDays) || 0),
       createdAt: now,
       updatedAt: now,
     });
@@ -341,6 +343,9 @@ export const UserModel = {
         current.officialStartDate = input.officialStartDate;
       }
     }
+    if (input.customLeaveDays !== undefined) {
+      current.customLeaveDays = Math.max(0, Number(input.customLeaveDays) || 0);
+    }
 
     if (input.password) {
       const { hash, salt } = hashPassword(input.password);
@@ -378,12 +383,23 @@ export const UserModel = {
    */
   async updateProfile(
     userId: string,
-    input: { name?: string; phone?: string; avatarUrl?: string }
+    input: { name?: string; email?: string; phone?: string; avatarUrl?: string }
   ): Promise<User> {
     await ensureUsersSeeded();
     const current = await MongoUserModel.findOne({ id: userId });
     if (!current) {
       throw new Error(`Không tìm thấy người dùng với ID: ${userId}`);
+    }
+
+    if (input.email !== undefined && input.email.trim()) {
+      const normalizedEmail = input.email.trim().toLowerCase();
+      if (normalizedEmail !== current.email.toLowerCase()) {
+        const duplicate = await MongoUserModel.findOne({ email: normalizedEmail, id: { $ne: userId } });
+        if (duplicate) {
+          throw new Error(`Email "${input.email}" đã được sử dụng bởi người dùng khác.`);
+        }
+        current.email = normalizedEmail;
+      }
     }
 
     if (input.name !== undefined && input.name.trim()) {

@@ -15,6 +15,7 @@ export interface IUserDocument {
   status: UserStatus;
   contractType?: ContractType;
   officialStartDate?: string;
+  customLeaveDays?: number;
   createdAt: string;
   updatedAt: string;
 }
@@ -34,6 +35,7 @@ const UserSchema = new Schema<IUserDocument>(
     status: { type: String, default: "active" },
     contractType: { type: String, enum: ["probation", "official"], default: "official" },
     officialStartDate: { type: String },
+    customLeaveDays: { type: Number, default: 0 },
     createdAt: { type: String, required: true },
     updatedAt: { type: String, required: true },
   },
@@ -92,6 +94,7 @@ export interface ISettingsDocument {
   workStartTime: string;
   workEndTime: string;
   lateThresholdMinutes: number;
+  enableLeaveFeature?: boolean;
   updatedBy: string;
   updatedAt: string;
 }
@@ -104,6 +107,7 @@ const SettingsSchema = new Schema<ISettingsDocument>(
     workStartTime: { type: String, default: "08:00" },
     workEndTime: { type: String, default: "17:30" },
     lateThresholdMinutes: { type: Number, default: 0 },
+    enableLeaveFeature: { type: Boolean, default: false },
     updatedBy: { type: String, default: "Hệ Thống" },
     updatedAt: { type: String, required: true },
   },

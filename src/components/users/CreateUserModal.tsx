@@ -37,6 +37,7 @@ export function CreateUserModal({
   const [role, setRole] = useState<UserRole>("employee");
   const [contractType, setContractType] = useState<ContractType>("official");
   const [officialStartDate, setOfficialStartDate] = useState(todayStr);
+  const [customLeaveDays, setCustomLeaveDays] = useState<number>(0);
   const [status, setStatus] = useState<UserStatus>("active");
   const [submitting, setSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
@@ -98,6 +99,7 @@ export function CreateUserModal({
           status,
           contractType,
           officialStartDate: contractType === "official" ? officialStartDate : undefined,
+          customLeaveDays: Math.max(0, Number(customLeaveDays) || 0),
         }),
       });
 
@@ -358,6 +360,36 @@ export function CreateUserModal({
                 </p>
               </div>
             )}
+
+            {/* Setup công phép ban đầu (Mặc định: 0) */}
+            <div className="pt-2 border-t border-zinc-200/80 dark:border-zinc-800">
+              <div className="flex items-center justify-between mb-1">
+                <label className="block text-xs font-semibold text-zinc-700 dark:text-zinc-300">
+                  🎯 Setup công phép (Số ngày phép được cấp)
+                </label>
+                <span className="text-[10px] font-mono font-medium text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/60 px-2 py-0.5 rounded-md border border-emerald-200 dark:border-emerald-800">
+                  Mặc định: 0
+                </span>
+              </div>
+              <div className="relative">
+                <input
+                  type="number"
+                  min={0}
+                  max={100}
+                  step={0.5}
+                  value={customLeaveDays}
+                  onChange={(e) => setCustomLeaveDays(Math.max(0, Number(e.target.value) || 0))}
+                  placeholder="0"
+                  className="w-full px-3 py-2 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-xs font-mono font-bold text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-1 focus:ring-zinc-900 dark:focus:ring-zinc-100 pr-16"
+                />
+                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[11px] font-medium text-zinc-400">
+                  ngày phép
+                </span>
+              </div>
+              <p className="text-[10px] text-zinc-400 dark:text-zinc-500 mt-1">
+                Khi Admin bật tính năng nghỉ phép, hệ thống sẽ sử dụng công phép này (mặc định 0).
+              </p>
+            </div>
           </div>
 
           {/* 6. Trạng thái tài khoản ban đầu */}

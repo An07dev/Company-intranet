@@ -14,6 +14,7 @@ import {
   ContractType,
 } from "@/types";
 import { getTodayDateString } from "@/server/models/attendance.model";
+import { SettingsModel } from "@/server/models/settings.model";
 
 function toSafeRequest(
   doc: IRequestDocument,
@@ -691,30 +692,39 @@ export const RequestModel = {
     let contractType: ContractType | undefined = undefined;
     let officialStartDate: string | undefined = undefined;
 
+    const settings = await SettingsModel.getAttendanceSettings();
+    const isCustomLeaveEnabled = Boolean(settings.enableLeaveFeature);
+
     if (userId) {
       const userDoc = await MongoUserModel.findOne({ id: userId }).lean();
       if (userDoc) {
         contractType = userDoc.contractType || "official";
         officialStartDate = userDoc.officialStartDate;
 
-        if (contractType === "probation") {
-          // Thử việc: không được nghỉ phép năm (0 phép)
-          annualLeaveTotal = 0;
+        if (isCustomLeaveEnabled) {
+          // Khi admin bật tính năng nghỉ phép:
+          // Tất cả phép của user mặc định là 0 (hoặc lấy theo customLeaveDays setup cho user đó)
+          annualLeaveTotal = userDoc.customLeaveDays ?? 0;
         } else {
-          // Chính thức: Mỗi tháng tính từ lúc lên chính thức được cộng 1 phép (tối đa 12)
-          const dateStr = userDoc.officialStartDate || userDoc.createdAt;
-          if (dateStr) {
-            const startDate = new Date(dateStr);
-            if (!isNaN(startDate.getTime())) {
-              const now = new Date();
-              const startYear = startDate.getFullYear();
-              const startMonth = startDate.getMonth() + 1; // 1-indexed (1-12)
-              const currentYear = now.getFullYear();
-              const currentMonth = now.getMonth() + 1; // 1-indexed (1-12)
+          if (contractType === "probation") {
+            // Thử việc: không được nghỉ phép năm (0 phép)
+            annualLeaveTotal = 0;
+          } else {
+            // Chính thức: Mỗi tháng tính từ lúc lên chính thức được cộng 1 phép (tối đa 12)
+            const dateStr = userDoc.officialStartDate || userDoc.createdAt;
+            if (dateStr) {
+              const startDate = new Date(dateStr);
+              if (!isNaN(startDate.getTime())) {
+                const now = new Date();
+                const startYear = startDate.getFullYear();
+                const startMonth = startDate.getMonth() + 1; // 1-indexed (1-12)
+                const currentYear = now.getFullYear();
+                const currentMonth = now.getMonth() + 1; // 1-indexed (1-12)
 
-              // Số tháng đã trôi qua tính từ tháng lên chính thức đến tháng hiện tại
-              const diffMonths = (currentYear - startYear) * 12 + (currentMonth - startMonth) + 1;
-              annualLeaveTotal = Math.min(12, Math.max(0, diffMonths));
+                // Số tháng đã trôi qua tính từ tháng lên chính thức đến tháng hiện tại
+                const diffMonths = (currentYear - startYear) * 12 + (currentMonth - startMonth) + 1;
+                annualLeaveTotal = Math.min(12, Math.max(0, diffMonths));
+              }
             }
           }
         }

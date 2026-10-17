@@ -25,6 +25,7 @@ export interface AttendanceSettings {
   workStartTime: string; // HH:mm (e.g. "08:00")
   workEndTime: string;   // HH:mm (e.g. "17:30")
   lateThresholdMinutes: number; // e.g. 15
+  enableLeaveFeature?: boolean; // Checkbox để sử dụng tính năng nghỉ phép
   updatedBy?: string;
   updatedAt: string;
 }

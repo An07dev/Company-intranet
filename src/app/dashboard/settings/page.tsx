@@ -114,6 +114,39 @@ export default function SettingsPage() {
     await saveAllowedIps(newIps, `Đã xóa IP ${ipToRemove} khỏi cơ sở dữ liệu thành công!`);
   };
 
+  // Cập nhật ngay tính năng nghỉ phép
+  const handleToggleLeaveFeature = async (checked: boolean) => {
+    if (!settings) return;
+    const updated = { ...settings, enableLeaveFeature: checked };
+    setSettings(updated);
+
+    try {
+      const res = await fetch("/api/settings/attendance", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(updated),
+      });
+
+      const json = await res.json();
+      if (res.ok && json.success) {
+        if (json.data) setSettings(json.data);
+        toast.success(
+          checked
+            ? "Đã kích hoạt tính năng nghỉ phép. Công phép của nhân sự mặc định là 0 và số phép trên bảng sẽ được ẩn."
+            : "Đã tắt tính năng nghỉ phép. Hệ thống quay về tính phép theo thâm niên (+1/tháng).",
+          { title: "Đã Lưu Cài Đặt" }
+        );
+      } else {
+        throw new Error(json.message || json.error || "Không thể cập nhật cấu hình");
+      }
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Lỗi khi cập nhật cấu hình nghỉ phép", {
+        title: "Lỗi Lưu",
+      });
+      fetchSettings();
+    }
+  };
+
   // Lưu toàn bộ form (bao gồm cả giờ làm việc và checkbox kiểm tra IP)
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -250,6 +283,33 @@ export default function SettingsPage() {
                   onChange={(e) =>
                     setSettings({ ...settings, enableIpCheck: e.target.checked })
                   }
+                  className="sr-only peer"
+                />
+                <div className="w-10 h-5 bg-zinc-300 peer-focus:outline-none rounded-full peer dark:bg-zinc-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-zinc-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-emerald-600" />
+              </label>
+            </div>
+          </div>
+
+          {/* Card 1b Mobile: Sử dụng tính năng nghỉ phép */}
+          <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-3.5 shadow-2xs">
+            <div className="flex items-center justify-between gap-3">
+              <div className="min-w-0">
+                <h2 className="text-xs font-bold text-zinc-900 dark:text-zinc-100 flex items-center gap-1.5">
+                  <span>🏖️</span>
+                  <span>Sử dụng tính năng nghỉ phép</span>
+                </h2>
+                <p className="text-[11px] text-zinc-500 dark:text-zinc-400 mt-0.5 line-clamp-2">
+                  {settings.enableLeaveFeature
+                    ? "Đang bật: Tất cả phép của user mặc định là 0, ẩn số phép trên bảng."
+                    : "Đang tắt: Hiển thị phép tính tự động theo thâm niên (+1/tháng)."}
+                </p>
+              </div>
+
+              <label className="relative inline-flex items-center cursor-pointer shrink-0">
+                <input
+                  type="checkbox"
+                  checked={Boolean(settings.enableLeaveFeature)}
+                  onChange={(e) => handleToggleLeaveFeature(e.target.checked)}
                   className="sr-only peer"
                 />
                 <div className="w-10 h-5 bg-zinc-300 peer-focus:outline-none rounded-full peer dark:bg-zinc-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-zinc-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-emerald-600" />
@@ -458,6 +518,31 @@ export default function SettingsPage() {
                   onChange={(e) =>
                     setSettings({ ...settings, enableIpCheck: e.target.checked })
                   }
+                  className="sr-only peer"
+                />
+                <div className="w-11 h-6 bg-zinc-300 peer-focus:outline-none rounded-full peer dark:bg-zinc-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-zinc-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-600" />
+              </label>
+            </div>
+          </div>
+
+          {/* Card 1b: Sử dụng tính năng nghỉ phép */}
+          <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-5 sm:p-6 shadow-sm">
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-base font-semibold text-zinc-900 dark:text-zinc-100 flex items-center gap-2">
+                  <span>🏖️</span>
+                  <span>Sử dụng tính năng nghỉ phép</span>
+                </h2>
+                <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">
+                  Khi bật: tất cả các phép của user sẽ mặc định là 0 và không hiển thị số phép trên bảng người dùng. Admin có thể setup công phép cho từng nhân viên trong modal Chỉnh sửa thông tin. Khi tắt: hiển thị số phép tính tự động theo thâm niên (+1/tháng).
+                </p>
+              </div>
+
+              <label className="relative inline-flex items-center cursor-pointer shrink-0">
+                <input
+                  type="checkbox"
+                  checked={Boolean(settings.enableLeaveFeature)}
+                  onChange={(e) => handleToggleLeaveFeature(e.target.checked)}
                   className="sr-only peer"
                 />
                 <div className="w-11 h-6 bg-zinc-300 peer-focus:outline-none rounded-full peer dark:bg-zinc-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-zinc-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-600" />

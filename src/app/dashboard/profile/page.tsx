@@ -25,6 +25,7 @@ export default function UserProfileSettingsPage() {
 
   // Form Thông tin cá nhân
   const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [avatarUrl, setAvatarUrl] = useState("");
 
@@ -51,6 +52,7 @@ export default function UserProfileSettingsPage() {
   useEffect(() => {
     if (user) {
       setName(user.name || "");
+      setEmail(user.email || "");
       setPhone(user.phone || "");
       setAvatarUrl(user.avatarUrl || "");
     }
@@ -208,6 +210,11 @@ export default function UserProfileSettingsPage() {
       return;
     }
 
+    if (!email.trim() || !email.includes("@")) {
+      setMessage({ type: "error", text: "Vui lòng nhập địa chỉ email hợp lệ" });
+      return;
+    }
+
     try {
       setSavingInfo(true);
       setMessage(null);
@@ -217,6 +224,7 @@ export default function UserProfileSettingsPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           name: name.trim(),
+          email: email.trim().toLowerCase(),
           phone: phone.trim(),
           avatarUrl: avatarUrl.trim(),
         }),
@@ -233,7 +241,7 @@ export default function UserProfileSettingsPage() {
         await refreshSession();
       }
 
-      setMessage({ type: "success", text: "Đã lưu thay đổi thông tin cá nhân thành công!" });
+      setMessage({ type: "success", text: "Đã lưu thay đổi thông tin cá nhân và email thành công!" });
     } catch (err) {
       setMessage({
         type: "error",
@@ -651,7 +659,7 @@ export default function UserProfileSettingsPage() {
                     Cập nhật thông tin cơ bản
                   </h3>
                   <p className="text-xs text-zinc-400 mt-0.5">
-                    Thay đổi họ tên và số điện thoại liên hệ của bạn trong hệ thống.
+                    Thay đổi họ tên, địa chỉ email công vụ và số điện thoại liên hệ của bạn trong hệ thống.
                   </p>
                 </div>
 
@@ -671,6 +679,27 @@ export default function UserProfileSettingsPage() {
                     />
                   </div>
 
+                  {/* Địa chỉ Email công vụ (Editable) */}
+                  <div>
+                    <label className="block text-xs font-semibold text-zinc-700 dark:text-zinc-300 mb-1.5 flex items-center justify-between">
+                      <span>
+                        Địa chỉ Email công vụ <span className="text-red-500">*</span>
+                      </span>
+                      <span className="text-[10px] text-blue-600 dark:text-blue-400 font-medium">Tài khoản đăng nhập</span>
+                    </label>
+                    <input
+                      type="email"
+                      required
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      placeholder="user@company.internal"
+                      className="w-full px-3.5 py-2.5 text-xs sm:text-sm rounded-xl bg-zinc-50 dark:bg-zinc-800/60 border border-zinc-200 dark:border-zinc-700 text-zinc-900 dark:text-zinc-100 font-mono focus:outline-hidden focus:ring-2 focus:ring-zinc-900 dark:focus:ring-zinc-100"
+                    />
+                    <p className="text-[11px] text-zinc-400 mt-1">
+                      Email dùng để đăng nhập và nhận thông báo công việc trong hệ thống.
+                    </p>
+                  </div>
+
                   {/* Số điện thoại */}
                   <div>
                     <label className="block text-xs font-semibold text-zinc-700 dark:text-zinc-300 mb-1.5">
@@ -683,25 +712,8 @@ export default function UserProfileSettingsPage() {
                       placeholder="0912345678"
                       className="w-full px-3.5 py-2.5 text-xs sm:text-sm rounded-xl bg-zinc-50 dark:bg-zinc-800/60 border border-zinc-200 dark:border-zinc-700 text-zinc-900 dark:text-zinc-100 focus:outline-hidden focus:ring-2 focus:ring-zinc-900 dark:focus:ring-zinc-100"
                     />
-                  </div>
-
-                  {/* =================================================================
-                      CÁC TRƯỜNG CỐ ĐỊNH TRÊN DESKTOP (giữ nguyên bố cục PC ban đầu)
-                     ================================================================= */}
-                  {/* Email (Read-only) */}
-                  <div className="hidden sm:block">
-                    <label className="block text-xs font-semibold text-zinc-700 dark:text-zinc-300 mb-1.5 flex items-center justify-between">
-                      <span>Địa chỉ Email công vụ</span>
-                      <span className="text-[10px] text-zinc-400 font-normal">Cố định</span>
-                    </label>
-                    <input
-                      type="email"
-                      disabled
-                      value={user.email}
-                      className="w-full px-3.5 py-2.5 text-xs sm:text-sm rounded-xl bg-zinc-100/80 dark:bg-zinc-800/30 border border-zinc-200/80 dark:border-zinc-800 text-zinc-500 dark:text-zinc-400 cursor-not-allowed"
-                    />
                     <p className="text-[11px] text-zinc-400 mt-1">
-                      Email đăng nhập do Quản trị viên cấp. Liên hệ bộ phận IT để thay đổi.
+                      Số điện thoại liên hệ công việc của bạn.
                     </p>
                   </div>
 
@@ -735,7 +747,7 @@ export default function UserProfileSettingsPage() {
                   {/* Vai trò / Quyền hạn (Read-only) */}
                   <div className="hidden sm:block">
                     <label className="block text-xs font-semibold text-zinc-700 dark:text-zinc-300 mb-1.5">
-                      Chức danh & Vai trò hệ thống
+                      Chức danh &amp; Vai trò hệ thống
                     </label>
                     <input
                       type="text"
@@ -756,12 +768,6 @@ export default function UserProfileSettingsPage() {
                     <span className="text-[10px] lowercase text-zinc-400">chỉ xem</span>
                   </div>
                   <div className="grid grid-cols-2 gap-2.5 pt-0.5">
-                    <div className="min-w-0">
-                      <span className="text-zinc-400 block text-[10px]">Email công vụ</span>
-                      <span className="font-mono text-xs text-zinc-800 dark:text-zinc-200 truncate block" title={user.email}>
-                        {user.email}
-                      </span>
-                    </div>
                     <div>
                       <span className="text-zinc-400 block text-[10px]">Mã nhân viên</span>
                       <span className="font-mono text-xs font-semibold text-zinc-800 dark:text-zinc-200 block">
@@ -778,6 +784,12 @@ export default function UserProfileSettingsPage() {
                       <span className="text-zinc-400 block text-[10px]">Chức vụ</span>
                       <span className="text-xs font-semibold text-zinc-800 dark:text-zinc-200 block">
                         {USER_ROLE_LABELS[user.role] || user.role}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-zinc-400 block text-[10px]">Ngày gia nhập</span>
+                      <span className="text-xs font-mono text-zinc-800 dark:text-zinc-200 block">
+                        {user.createdAt ? new Date(user.createdAt).toLocaleDateString("vi-VN") : "---"}
                       </span>
                     </div>
                   </div>
