@@ -260,17 +260,20 @@ export function PackageScannerModal({
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
+        {/* Header */}
         <div className="flex items-center justify-between p-4 sm:p-5 border-b border-zinc-200 dark:border-zinc-800 bg-zinc-50/70 dark:bg-zinc-800/40">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-2xl bg-emerald-500/10 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 flex items-center justify-center text-xl shrink-0">
-              📷
+              {scannedPackage ? "📦" : "📷"}
             </div>
             <div>
               <h2 className="font-bold text-zinc-900 dark:text-white text-base sm:text-lg">
-                Quét Mã QR Tra Cứu Kiện Hàng
+                {scannedPackage ? "Thông Tin Kiện Hàng" : "Quét Mã QR Kiện Hàng"}
               </h2>
               <p className="text-xs text-zinc-500 dark:text-zinc-400">
-                Sử dụng Camera, súng bắn mã hoặc tải ảnh để tra cứu và xuất nhập kiện hàng tức thì
+                {scannedPackage
+                  ? "Tra cứu thành công • Cập nhật trạng thái hoặc in tem"
+                  : "Sử dụng Camera, súng quét mã hoặc tải ảnh để tra cứu"}
               </p>
             </div>
           </div>
@@ -339,178 +342,186 @@ export function PackageScannerModal({
             </div>
           )}
 
-          {/* HIỂN THỊ KẾT QUẢ KIỆN HÀNG VỪA QUÉT */}
+          {/* HIỂN THỊ KẾT QUẢ KIỆN HÀNG VỪA QUÉT (TỐI ƯU MOBILE GỌN GÀNG & ĐẸP MẮT) */}
           {!isLoadingPackage && scannedPackage && (
-            <div className="space-y-4 animate-in fade-in duration-200">
-              <div className="p-4 rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 flex items-start justify-between gap-3">
-                <div className="space-y-1">
-                  <div className="flex items-center gap-2">
-                    <span className="text-xl">✅</span>
-                    <span className="font-mono text-base font-extrabold text-emerald-900 dark:text-emerald-200">
+            <div className="space-y-3.5 animate-in fade-in duration-200">
+              {/* 1. THẺ THÔNG TIN KIỆN HÀNG (Không bị rớt dòng mã kiện) */}
+              <div className="p-3.5 sm:p-4 rounded-2xl bg-emerald-500/10 dark:bg-emerald-950/40 border border-emerald-300/80 dark:border-emerald-800/80 space-y-2.5">
+                {/* Hàng 1: Mã kiện hàng (nguyên dòng, không bao giờ ngắt chữ) + Badge trạng thái */}
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-1.5 min-w-0">
+                    <span className="text-emerald-600 dark:text-emerald-400 font-bold text-sm">✅</span>
+                    <span className="font-mono text-xs sm:text-sm font-black text-emerald-950 dark:text-emerald-200 tracking-wider whitespace-nowrap">
                       {scannedPackage.code}
                     </span>
-                    <span
-                      className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase ${
-                        scannedPackage.status === "delivered"
-                          ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/60 dark:text-emerald-200"
-                          : scannedPackage.status === "in_transit"
-                          ? "bg-blue-100 text-blue-800 dark:bg-blue-900/60 dark:text-blue-200"
-                          : scannedPackage.status === "packed"
-                          ? "bg-amber-100 text-amber-800 dark:bg-amber-900/60 dark:text-amber-200"
-                          : "bg-zinc-100 text-zinc-800 dark:bg-zinc-800 dark:text-zinc-300"
-                      }`}
-                    >
-                      {scannedPackage.status === "delivered"
-                        ? "Đã giao / Hoàn thành"
-                        : scannedPackage.status === "in_transit"
-                        ? "Đang vận chuyển"
-                        : scannedPackage.status === "packed"
-                        ? "Đã đóng gói"
-                        : "Bản nháp"}
-                    </span>
                   </div>
-                  <h3 className="font-bold text-sm text-zinc-900 dark:text-white">
+
+                  <span
+                    className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase shrink-0 border ${
+                      scannedPackage.status === "delivered"
+                        ? "bg-emerald-100 text-emerald-800 border-emerald-300 dark:bg-emerald-900/60 dark:text-emerald-200"
+                        : scannedPackage.status === "in_transit"
+                        ? "bg-blue-100 text-blue-800 border-blue-300 dark:bg-blue-900/60 dark:text-blue-200"
+                        : scannedPackage.status === "packed"
+                        ? "bg-amber-100 text-amber-900 border-amber-300 dark:bg-amber-950 dark:text-amber-300"
+                        : "bg-zinc-100 text-zinc-800 border-zinc-300 dark:bg-zinc-800 dark:text-zinc-300"
+                    }`}
+                  >
+                    {scannedPackage.status === "delivered"
+                      ? "Hoàn tất"
+                      : scannedPackage.status === "in_transit"
+                      ? "Đang chuyển"
+                      : scannedPackage.status === "packed"
+                      ? "Đã đóng gói"
+                      : "Bản nháp"}
+                  </span>
+                </div>
+
+                {/* Hàng 2: Tên kiện + Tổng số lượng */}
+                <div className="flex items-baseline justify-between gap-2 pt-1.5 border-t border-emerald-200/60 dark:border-emerald-800/60">
+                  <h3 className="font-bold text-xs sm:text-sm text-zinc-900 dark:text-white line-clamp-1">
                     {scannedPackage.title}
                   </h3>
-                  <p className="text-[11px] text-zinc-600 dark:text-zinc-400">
-                    Loại: <strong>{scannedPackage.package_type}</strong>
-                    {scannedPackage.destination && (
-                      <span> • Điểm đến: <strong>{scannedPackage.destination}</strong></span>
-                    )}
-                    {scannedPackage.warehouse_location && (
-                      <span> • Vị trí: <strong>{scannedPackage.warehouse_location}</strong></span>
-                    )}
-                  </p>
+                  <div className="text-right shrink-0">
+                    <span className="text-[10px] text-zinc-500 mr-1">Tổng SL:</span>
+                    <strong className="font-mono font-black text-sm text-emerald-600 dark:text-emerald-400">
+                      {scannedPackage.total_items}
+                    </strong>
+                    <span className="text-[10px] text-zinc-500"> sp</span>
+                  </div>
                 </div>
 
-                <div className="text-right shrink-0">
-                  <span className="text-[11px] text-zinc-500 block">Tổng số lượng</span>
-                  <span className="font-mono font-black text-xl text-emerald-600 dark:text-emerald-400">
-                    {scannedPackage.total_items}{" "}
-                    <span className="text-xs font-normal text-zinc-500">sp</span>
+                {/* Hàng 3: Loại kiện • Điểm đến • Vị trí kệ */}
+                <div className="flex flex-wrap items-center gap-1.5 text-[10.5px] text-zinc-600 dark:text-zinc-400 pt-0.5">
+                  <span className="px-1.5 py-0.5 rounded bg-white dark:bg-zinc-800/80 font-medium border border-zinc-200 dark:border-zinc-700">
+                    {scannedPackage.package_type}
                   </span>
+                  {scannedPackage.destination && (
+                    <span className="truncate">📍 {scannedPackage.destination}</span>
+                  )}
+                  {scannedPackage.warehouse_location && (
+                    <span className="font-mono truncate">🏷️ {scannedPackage.warehouse_location}</span>
+                  )}
                 </div>
               </div>
 
-              {/* Danh sách các sản phẩm và số lượng trong kiện */}
-              <div>
-                <h4 className="font-bold text-xs text-zinc-700 dark:text-zinc-300 mb-2 flex items-center justify-between">
-                  <span>Chi tiết hàng hóa trong kiện ({scannedPackage.items.length} mặt hàng):</span>
-                  <span className="text-[11px] font-mono text-zinc-500">
-                    Tổng: {scannedPackage.total_items} sản phẩm
+              {/* 2. DANH SÁCH MẶT HÀNG TRONG KIỆN (DẠNG CARD GỌN GÀNG, KHÔNG DÙNG TABLE) */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between text-xs">
+                  <span className="font-bold text-zinc-700 dark:text-zinc-300">
+                    Hàng trong kiện ({scannedPackage.items.length} mặt hàng):
                   </span>
-                </h4>
+                  <span className="text-[10.5px] font-mono text-zinc-500">
+                    Tổng: {scannedPackage.total_items} {scannedPackage.items[0]?.unit || "sp"}
+                  </span>
+                </div>
 
-                <div className="border border-zinc-200 dark:border-zinc-800 rounded-2xl overflow-hidden shadow-xs max-h-56 overflow-y-auto">
-                  <table className="w-full text-left border-collapse text-xs">
-                    <thead>
-                      <tr className="border-b border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-800/50 text-[11px] font-semibold text-zinc-500">
-                        <th className="py-2 px-3">Sản phẩm</th>
-                        <th className="py-2 px-3 text-right">Số lượng</th>
-                        <th className="py-2 px-3 text-right">Đơn giá</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-zinc-200 dark:divide-zinc-800">
-                      {scannedPackage.items.map((it, idx) => (
-                        <tr key={idx} className="hover:bg-zinc-50/50 dark:hover:bg-zinc-800/30">
-                          <td className="py-2.5 px-3">
-                            <div className="flex items-center gap-2">
-                              {it.image ? (
-                                <img
-                                  src={it.image}
-                                  alt={it.product_name}
-                                  className="w-8 h-8 rounded-lg object-cover shrink-0 border border-zinc-200 dark:border-zinc-800"
-                                />
-                              ) : (
-                                <div className="w-8 h-8 rounded-lg bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center text-xs shrink-0">
-                                  🏷️
-                                </div>
-                              )}
-                              <div className="min-w-0">
-                                <p className="font-semibold text-zinc-900 dark:text-zinc-100 truncate text-xs">
-                                  {it.product_name}
-                                </p>
-                                {it.variation_name && (
-                                  <span className="text-[10px] text-zinc-500 block">
-                                    Phân loại: {it.variation_name}
-                                  </span>
-                                )}
-                                {it.sku && (
-                                  <span className="text-[10px] text-zinc-400 font-mono">
-                                    SKU: {it.sku}
-                                  </span>
-                                )}
-                              </div>
-                            </div>
-                          </td>
-                          <td className="py-2.5 px-3 text-right font-mono font-bold text-zinc-900 dark:text-zinc-100">
-                            x{it.quantity} {it.unit || "Cái"}
-                          </td>
-                          <td className="py-2.5 px-3 text-right font-medium text-zinc-600 dark:text-zinc-400">
-                            {it.unit_price ? `₫${it.unit_price.toLocaleString("vi-VN")}` : "--"}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                <div className="space-y-1.5 max-h-48 overflow-y-auto pr-0.5">
+                  {scannedPackage.items.map((it, idx) => (
+                    <div
+                      key={idx}
+                      className="p-2.5 rounded-xl bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-200/80 dark:border-zinc-800 flex items-center justify-between gap-2.5"
+                    >
+                      {/* Trái: Ảnh + Tên + Phân loại + SKU */}
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        {it.image ? (
+                          <img
+                            src={it.image}
+                            alt={it.product_name}
+                            className="w-10 h-10 rounded-lg object-cover shrink-0 border border-zinc-200 dark:border-zinc-700 bg-white"
+                          />
+                        ) : (
+                          <div className="w-10 h-10 rounded-lg bg-zinc-200 dark:bg-zinc-800 flex items-center justify-center text-sm shrink-0">
+                            🏷️
+                          </div>
+                        )}
+                        <div className="min-w-0">
+                          <p className="font-semibold text-zinc-900 dark:text-zinc-100 text-xs line-clamp-1">
+                            {it.product_name}
+                          </p>
+                          {it.variation_name && (
+                            <span className="inline-block mt-0.5 px-1.5 py-0.2 rounded bg-zinc-100 dark:bg-zinc-700/80 text-zinc-600 dark:text-zinc-300 text-[9.5px] font-medium truncate max-w-[190px]">
+                              {it.variation_name}
+                            </span>
+                          )}
+                          {it.sku && (
+                            <p className="text-[9px] text-zinc-400 font-mono truncate max-w-[190px]">
+                              {it.sku}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Phải: Số lượng & Đơn giá */}
+                      <div className="text-right shrink-0">
+                        <div className="font-mono font-black text-sm text-indigo-600 dark:text-indigo-400">
+                          x{it.quantity} {it.unit || "Cái"}
+                        </div>
+                        {it.unit_price ? (
+                          <div className="text-[10px] text-zinc-500 font-medium">
+                            ₫{it.unit_price.toLocaleString("vi-VN")}
+                          </div>
+                        ) : null}
+                      </div>
+                    </div>
+                  ))}
                 </div>
               </div>
 
-              {/* Các thao tác nhanh 1-chạm */}
-              <div className="p-3.5 rounded-2xl bg-zinc-50 dark:bg-zinc-800/40 border border-zinc-200/80 dark:border-zinc-800 space-y-2">
-                <span className="text-[11px] font-semibold text-zinc-600 dark:text-zinc-400 block">
-                  Thao tác cập nhật trạng thái nhanh:
-                </span>
-                <div className="grid grid-cols-3 gap-2">
+              {/* 3. THAO TÁC CẬP NHẬT TRẠNG THÁI NHANH (1 DÒNG CHỮ GỌN GÀNG) */}
+              <div className="p-3 rounded-2xl bg-zinc-50 dark:bg-zinc-800/40 border border-zinc-200/80 dark:border-zinc-800 space-y-1.5">
+                <div className="flex items-center justify-between text-[10.5px]">
+                  <span className="font-semibold text-zinc-600 dark:text-zinc-400">
+                    Cập nhật trạng thái nhanh:
+                  </span>
+                  <span className="text-[10px] text-zinc-400">Chạm để đổi</span>
+                </div>
+                <div className="grid grid-cols-3 gap-1.5">
                   <button
                     type="button"
                     onClick={() => handleQuickStatusUpdate("packed")}
-                    className={`py-2 px-3 rounded-xl font-semibold text-xs transition-colors flex items-center justify-center gap-1.5 ${
+                    className={`py-2 px-1 rounded-xl font-bold text-xs transition-all flex items-center justify-center gap-1 cursor-pointer ${
                       scannedPackage.status === "packed"
-                        ? "bg-amber-600 text-white"
+                        ? "bg-amber-600 text-white shadow-xs ring-2 ring-amber-500/40"
                         : "bg-white dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-700 hover:bg-amber-50 dark:hover:bg-amber-950/40"
                     }`}
                   >
-                    <span>📦 Đã đóng gói</span>
+                    <span>📦</span>
+                    <span className="whitespace-nowrap">Đã đóng</span>
                   </button>
 
                   <button
                     type="button"
                     onClick={() => handleQuickStatusUpdate("in_transit")}
-                    className={`py-2 px-3 rounded-xl font-semibold text-xs transition-colors flex items-center justify-center gap-1.5 ${
+                    className={`py-2 px-1 rounded-xl font-bold text-xs transition-all flex items-center justify-center gap-1 cursor-pointer ${
                       scannedPackage.status === "in_transit"
-                        ? "bg-blue-600 text-white"
+                        ? "bg-blue-600 text-white shadow-xs ring-2 ring-blue-500/40"
                         : "bg-white dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-700 hover:bg-blue-50 dark:hover:bg-blue-950/40"
                     }`}
                   >
-                    <span>🚚 Đang vận chuyển</span>
+                    <span>🚚</span>
+                    <span className="whitespace-nowrap">Đang giao</span>
                   </button>
 
                   <button
                     type="button"
                     onClick={() => handleQuickStatusUpdate("delivered")}
-                    className={`py-2 px-3 rounded-xl font-semibold text-xs transition-colors flex items-center justify-center gap-1.5 ${
+                    className={`py-2 px-1 rounded-xl font-bold text-xs transition-all flex items-center justify-center gap-1 cursor-pointer ${
                       scannedPackage.status === "delivered"
-                        ? "bg-emerald-600 text-white"
+                        ? "bg-emerald-600 text-white shadow-xs ring-2 ring-emerald-500/40"
                         : "bg-white dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-700 hover:bg-emerald-50 dark:hover:bg-emerald-950/40"
                     }`}
                   >
-                    <span>✅ Đã giao / Hoàn tất</span>
+                    <span>✅</span>
+                    <span className="whitespace-nowrap">Hoàn tất</span>
                   </button>
                 </div>
               </div>
 
-              {/* Nút hành động bổ sung */}
-              <div className="flex items-center justify-between pt-2">
-                <button
-                  type="button"
-                  onClick={handleResetScan}
-                  className="px-4 py-2 rounded-xl bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 font-semibold text-zinc-700 dark:text-zinc-300 transition-colors flex items-center gap-1.5"
-                >
-                  <span>🔄 Quét tiếp kiện khác</span>
-                </button>
-
-                <div className="flex items-center gap-2">
+              {/* 4. NÚT HÀNH ĐỘNG 2 HÀNG RÕ RÀNG (KHÔNG BỊ RỚT DÒNG CHỮ) */}
+              <div className="space-y-2 pt-1">
+                {/* Hàng 1: Hai nút chính nổi bật */}
+                <div className="grid grid-cols-2 gap-2">
                   {onOpenPrint && (
                     <button
                       type="button"
@@ -518,9 +529,10 @@ export function PackageScannerModal({
                         onOpenPrint(scannedPackage);
                         onClose();
                       }}
-                      className="px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-600 text-white font-semibold transition-colors flex items-center gap-1.5"
+                      className="py-2.5 px-3 rounded-xl bg-amber-500 hover:bg-amber-600 active:bg-amber-700 text-white font-bold text-xs shadow-xs transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
                     >
-                      <span>🖨️ In tem QR</span>
+                      <span className="text-sm">🖨️</span>
+                      <span className="whitespace-nowrap">In tem QR</span>
                     </button>
                   )}
 
@@ -531,11 +543,32 @@ export function PackageScannerModal({
                         onSelectPackage(scannedPackage);
                         onClose();
                       }}
-                      className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-semibold transition-colors flex items-center gap-1.5"
+                      className="py-2.5 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white font-bold text-xs shadow-xs transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
                     >
-                      <span>👁️ Xem chi tiết</span>
+                      <span className="text-sm">👁️</span>
+                      <span className="whitespace-nowrap">Xem chi tiết</span>
                     </button>
                   )}
+                </div>
+
+                {/* Hàng 2: Nút quét tiếp và nút đóng */}
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={handleResetScan}
+                    className="py-2 px-3 rounded-xl bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-700 dark:text-zinc-300 font-semibold text-xs transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
+                  >
+                    <span>🔄</span>
+                    <span className="whitespace-nowrap">Quét kiện khác</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={onClose}
+                    className="py-2 px-3 rounded-xl border border-zinc-200 dark:border-zinc-700 hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-600 dark:text-zinc-400 font-semibold text-xs transition-colors cursor-pointer"
+                  >
+                    ✕ Đóng
+                  </button>
                 </div>
               </div>
             </div>
@@ -691,16 +724,18 @@ export function PackageScannerModal({
           )}
         </div>
 
-        {/* Footer */}
-        <div className="p-4 border-t border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900/90 flex justify-end">
-          <button
-            type="button"
-            onClick={onClose}
-            className="px-5 py-2 rounded-xl border border-zinc-300 dark:border-zinc-700 font-semibold text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors text-xs"
-          >
-            Đóng
-          </button>
-        </div>
+        {/* Footer (Chỉ hiện khi chưa có kết quả để đóng modal) */}
+        {!scannedPackage && (
+          <div className="p-4 border-t border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900/90 flex justify-end">
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-5 py-2 rounded-xl border border-zinc-300 dark:border-zinc-700 font-semibold text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors text-xs cursor-pointer"
+            >
+              Đóng
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );
