@@ -198,6 +198,25 @@ export function Sidebar() {
             </svg>
           ),
         },
+        {
+          label: "Quản lý Kiện hàng",
+          href: "/dashboard/packages",
+          icon: (active) => (
+            <svg
+              className={`w-5 h-5 shrink-0 ${active ? "text-indigo-600 dark:text-indigo-400" : "text-zinc-500"}`}
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={1.8}
+                d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"
+              />
+            </svg>
+          ),
+        },
 
         {
           label: "Cấu hình Webhook",

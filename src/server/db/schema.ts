@@ -1,5 +1,5 @@
 import mongoose, { Schema, Model } from "mongoose";
-import { UserRole, UserStatus, AttendanceStatus, ContractType, TaskStatus, TaskPriority, AssetStatus, AssetCategory, AssetHandoverHistory } from "@/types";
+import { UserRole, UserStatus, AttendanceStatus, ContractType, TaskStatus, TaskPriority, AssetStatus, AssetCategory, AssetHandoverHistory, PackageStatus } from "@/types";
 
 export interface IUserDocument {
   id: string;
@@ -1037,3 +1037,122 @@ SapoCustomerSchema.index({ id: -1 });
 export const MongoSapoCustomerModel: Model<ISapoCustomerDocument> =
   mongoose.models.SapoCustomer ||
   mongoose.model<ISapoCustomerDocument>("SapoCustomer", SapoCustomerSchema, "sapo_customers");
+
+// ==========================================
+// QUẢN LÝ KIỆN HÀNG (PACKAGES / SHIPMENT PARCELS)
+// ==========================================
+export interface IPackageItemSubDocument {
+  id?: string;
+  product_id: string;
+  model_id?: string;
+  product_name: string;
+  sku: string;
+  variation_name?: string;
+  image?: string;
+  quantity: number;
+  unit_price?: number;
+  unit?: string;
+  note?: string;
+}
+
+export interface IPackageDocument {
+  id: string;
+  code: string;
+  title: string;
+  status: PackageStatus;
+  package_type: string;
+  destination?: string;
+  warehouse_location?: string;
+  weight_kg?: number;
+  dimensions?: {
+    length?: number;
+    width?: number;
+    height?: number;
+  };
+  items: IPackageItemSubDocument[];
+  total_items: number;
+  total_sku_count: number;
+  total_value?: number;
+  notes?: string;
+  created_by?: {
+    id?: string;
+    name: string;
+    email?: string;
+  };
+  packed_by?: string;
+  packed_at?: string;
+  shipped_at?: string;
+  delivered_at?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+const PackageItemSchema = new Schema(
+  {
+    id: { type: String },
+    product_id: { type: String, required: true },
+    model_id: { type: String },
+    product_name: { type: String, required: true },
+    sku: { type: String, default: "" },
+    variation_name: { type: String, default: "" },
+    image: { type: String, default: "" },
+    quantity: { type: Number, required: true, default: 1 },
+    unit_price: { type: Number, default: 0 },
+    unit: { type: String, default: "Cái" },
+    note: { type: String, default: "" },
+  },
+  { _id: false }
+);
+
+const PackageSchema = new Schema<IPackageDocument>(
+  {
+    id: { type: String, required: true, unique: true, index: true },
+    code: { type: String, required: true, unique: true, index: true },
+    title: { type: String, required: true, index: true },
+    status: {
+      type: String,
+      enum: ["draft", "packed", "in_transit", "delivered", "cancelled"],
+      default: "draft",
+      index: true,
+    },
+    package_type: { type: String, default: "Đóng hàng xuất", index: true },
+    destination: { type: String, default: "" },
+    warehouse_location: { type: String, default: "" },
+    weight_kg: { type: Number, default: 0 },
+    dimensions: {
+      length: { type: Number, default: 0 },
+      width: { type: Number, default: 0 },
+      height: { type: Number, default: 0 },
+    },
+    items: [PackageItemSchema],
+    total_items: { type: Number, default: 0 },
+    total_sku_count: { type: Number, default: 0 },
+    total_value: { type: Number, default: 0 },
+    notes: { type: String, default: "" },
+    created_by: {
+      id: { type: String },
+      name: { type: String },
+      email: { type: String },
+    },
+    packed_by: { type: String },
+    packed_at: { type: String },
+    shipped_at: { type: String },
+    delivered_at: { type: String },
+    createdAt: { type: String, required: true, index: true },
+    updatedAt: { type: String, required: true },
+  },
+  {
+    timestamps: false,
+    versionKey: false,
+    collection: "packages",
+  }
+);
+
+PackageSchema.index({ code: 1 });
+PackageSchema.index({ status: 1, createdAt: -1 });
+PackageSchema.index({ "items.sku": 1 });
+
+export const MongoPackageModel: Model<IPackageDocument> =
+  mongoose.models.Package ||
+  mongoose.model<IPackageDocument>("Package", PackageSchema, "packages");
+
