@@ -159,11 +159,11 @@ export function PackageQRPrintModal({
               <span className="text-[10px] text-zinc-400">Hỗ trợ máy in nhiệt HPRT, Xprinter, Gprinter, Canon...</span>
             </div>
 
-            <div className="p-6 bg-zinc-100 dark:bg-zinc-950 rounded-2xl border border-zinc-200 dark:border-zinc-800 flex justify-center items-center overflow-x-auto min-h-[360px]">
+            <div className="p-3 sm:p-6 bg-zinc-100 dark:bg-zinc-950 rounded-2xl border border-zinc-200 dark:border-zinc-800 flex justify-center items-center overflow-x-auto min-h-[300px]">
               <div
                 ref={printAreaRef}
                 id="package-print-area"
-                className="bg-white text-zinc-900 border-2 border-zinc-800 rounded-xl shadow-xl p-5 select-none print:shadow-none print:border-none"
+                className="bg-white text-zinc-900 border-2 border-zinc-800 rounded-xl shadow-xl p-3.5 sm:p-5 select-none print:shadow-none print:border-none w-full max-w-full"
                 style={{
                   width:
                     labelSize === "100x150"
@@ -173,6 +173,7 @@ export function PackageQRPrintModal({
                       : labelSize === "50x30"
                       ? "240px"
                       : "500px",
+                  maxWidth: "100%",
                   minHeight: labelSize === "50x30" ? "140px" : "auto",
                 }}
               >

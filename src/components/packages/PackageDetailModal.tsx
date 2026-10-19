@@ -252,7 +252,57 @@ export function PackageDetailModal({
             </div>
 
             <div className="border border-zinc-200 dark:border-zinc-800 rounded-2xl overflow-hidden shadow-xs">
-              <table className="w-full text-left border-collapse text-xs">
+              {/* MOBILE VIEW: DẠNG CARD TIỆN XEM TRÊN ĐIỆN THOẠI */}
+              <div className="block sm:hidden divide-y divide-zinc-200 dark:divide-zinc-800">
+                {packageData.items.map((it, idx) => (
+                  <div key={idx} className="p-3 space-y-2 bg-white dark:bg-zinc-900">
+                    <div className="flex items-center gap-2.5">
+                      {it.image ? (
+                        <img
+                          src={it.image}
+                          alt={it.product_name}
+                          className="w-10 h-10 rounded-lg object-cover shrink-0 border border-zinc-200 dark:border-zinc-800"
+                        />
+                      ) : (
+                        <div className="w-10 h-10 rounded-lg bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center text-sm shrink-0">
+                          📦
+                        </div>
+                      )}
+                      <div className="min-w-0 flex-1">
+                        <p className="font-semibold text-zinc-900 dark:text-zinc-100 text-xs line-clamp-1">
+                          {it.product_name}
+                        </p>
+                        {it.variation_name && (
+                          <span className="text-[10px] text-zinc-500 block">
+                            Phân loại: {it.variation_name}
+                          </span>
+                        )}
+                        {it.sku && (
+                          <span className="text-[9px] text-zinc-400 font-mono">SKU: {it.sku}</span>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="flex items-center justify-between text-xs pt-1 border-t border-zinc-100 dark:border-zinc-800">
+                      <div>
+                        <span className="text-zinc-400 text-[10px]">Số lượng: </span>
+                        <strong className="font-mono font-bold text-zinc-900 dark:text-zinc-100">
+                          x{it.quantity} {it.unit || "Cái"}
+                        </strong>
+                      </div>
+                      <div className="text-right">
+                        <span className="text-zinc-400 text-[10px]">Thành tiền: </span>
+                        <strong className="font-semibold text-indigo-600 dark:text-indigo-400">
+                          {it.unit_price ? `₫${(it.quantity * it.unit_price).toLocaleString("vi-VN")}` : "--"}
+                        </strong>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* DESKTOP VIEW: BẢNG TABLE ĐẦY ĐỦ */}
+              <table className="hidden sm:table w-full text-left border-collapse text-xs">
                 <thead>
                   <tr className="border-b border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-800/50 text-[11px] font-semibold text-zinc-500">
                     <th className="py-2.5 px-3">STT</th>

@@ -668,18 +668,117 @@ export function CreatePackageModal({
                 )}
               </div>
 
-              {/* Bảng danh sách sản phẩm trong kiện */}
+              {/* Danh sách sản phẩm trong kiện: Responsive Mobile Cards + Desktop Table */}
               {items.length === 0 ? (
-                <div className="p-8 rounded-2xl border-2 border-dashed border-zinc-200 dark:border-zinc-800 text-center space-y-2 bg-zinc-50/50 dark:bg-zinc-900/40">
-                  <div className="text-3xl">📦</div>
-                  <p className="font-semibold text-zinc-700 dark:text-zinc-300">Chưa có sản phẩm nào trong kiện hàng</p>
-                  <p className="text-zinc-400 text-[11px] max-w-sm mx-auto">
-                    Hãy dùng thanh tìm kiếm ở trên để tìm và thêm các sản phẩm, phân loại và số lượng cần đóng kiện
+                <div className="p-6 sm:p-8 rounded-2xl border-2 border-dashed border-zinc-200 dark:border-zinc-800 text-center space-y-2 bg-zinc-50/50 dark:bg-zinc-900/40">
+                  <div className="text-2xl sm:text-3xl">📦</div>
+                  <p className="font-semibold text-zinc-700 dark:text-zinc-300 text-xs">Chưa có sản phẩm nào trong kiện hàng</p>
+                  <p className="text-zinc-400 text-[10px] sm:text-[11px] max-w-sm mx-auto">
+                    Hãy dùng thanh tìm kiếm ở trên để thêm sản phẩm và điều chỉnh số lượng
                   </p>
                 </div>
               ) : (
                 <div className="border border-zinc-200 dark:border-zinc-800 rounded-2xl overflow-hidden shadow-xs">
-                  <table className="w-full text-left border-collapse">
+                  {/* MOBILE VIEW: DẠNG CARD TIỆN CHẠM NGÓN TAY */}
+                  <div className="block sm:hidden divide-y divide-zinc-200 dark:divide-zinc-800">
+                    {items.map((item, index) => (
+                      <div key={item.id || index} className="p-3 space-y-2.5 bg-white dark:bg-zinc-900">
+                        {/* Hàng 1: Thumbnail, tên sản phẩm & nút xóa */}
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="flex items-center gap-2 min-w-0">
+                            {item.image ? (
+                              <img
+                                src={item.image}
+                                alt={item.product_name}
+                                className="w-10 h-10 rounded-lg object-cover shrink-0 border border-zinc-200 dark:border-zinc-800 bg-zinc-100"
+                              />
+                            ) : (
+                              <div className="w-10 h-10 rounded-lg bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center text-sm shrink-0">
+                                🏷️
+                              </div>
+                            )}
+                            <div className="min-w-0">
+                              <p className="font-semibold text-zinc-900 dark:text-zinc-100 text-xs line-clamp-1">
+                                {item.product_name}
+                              </p>
+                              {item.variation_name && (
+                                <span className="inline-block px-1.5 py-0.2 rounded bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 text-[10px] font-medium">
+                                  {item.variation_name}
+                                </span>
+                              )}
+                              {item.sku && (
+                                <p className="text-[9px] text-zinc-400 font-mono">SKU: {item.sku}</p>
+                              )}
+                            </div>
+                          </div>
+
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveItem(index)}
+                            className="p-1.5 rounded-lg text-zinc-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 shrink-0"
+                            title="Xóa sản phẩm"
+                          >
+                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                            </svg>
+                          </button>
+                        </div>
+
+                        {/* Hàng 2: Bộ tăng giảm số lượng, đơn vị tính & giá */}
+                        <div className="flex items-center justify-between gap-2 pt-1">
+                          {/* Bộ tăng giảm số lượng */}
+                          <div className="flex items-center gap-1">
+                            <span className="text-[10px] text-zinc-400 mr-1">SL:</span>
+                            <button
+                              type="button"
+                              onClick={() => handleUpdateQuantity(index, item.quantity - 1)}
+                              disabled={item.quantity <= 1}
+                              className="w-7 h-7 rounded-lg bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 flex items-center justify-center text-zinc-700 dark:text-zinc-300 font-bold disabled:opacity-30"
+                            >
+                              -
+                            </button>
+                            <input
+                              type="number"
+                              min="1"
+                              value={item.quantity}
+                              onChange={(e) => {
+                                const val = parseInt(e.target.value, 10);
+                                handleUpdateQuantity(index, isNaN(val) ? 1 : val);
+                              }}
+                              className="w-12 h-7 px-1 text-center font-bold text-xs bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => handleUpdateQuantity(index, item.quantity + 1)}
+                              className="w-7 h-7 rounded-lg bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 flex items-center justify-center text-zinc-700 dark:text-zinc-300 font-bold"
+                            >
+                              +
+                            </button>
+                          </div>
+
+                          {/* Đơn vị tính */}
+                          <div className="flex items-center gap-1">
+                            <span className="text-[10px] text-zinc-400">ĐVT:</span>
+                            <input
+                              type="text"
+                              value={item.unit || "Cái"}
+                              onChange={(e) => handleUpdateUnit(index, e.target.value)}
+                              placeholder="Cái"
+                              className="w-16 h-7 px-1.5 py-0.5 bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg text-center font-medium text-xs"
+                            />
+                          </div>
+
+                          {/* Đơn giá */}
+                          <div className="text-right text-[11px] font-semibold text-indigo-600 dark:text-indigo-400">
+                            {item.unit_price ? `₫${(item.quantity * item.unit_price).toLocaleString("vi-VN")}` : "--"}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* DESKTOP VIEW: BẢNG TABLE TRUYỀN THỐNG */}
+                  <table className="hidden sm:table w-full text-left border-collapse">
                     <thead>
                       <tr className="border-b border-zinc-200 dark:border-zinc-800 bg-zinc-50/80 dark:bg-zinc-800/50 text-[11px] font-semibold text-zinc-500">
                         <th className="py-2.5 px-3">Sản phẩm</th>

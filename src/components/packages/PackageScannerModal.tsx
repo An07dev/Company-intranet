@@ -287,41 +287,44 @@ export function PackageScannerModal({
 
         {/* Tab Selection (Chỉ hiện khi chưa có kết quả) */}
         {!scannedPackage && (
-          <div className="flex items-center border-b border-zinc-200 dark:border-zinc-800 px-4 bg-zinc-50/40 dark:bg-zinc-800/20">
+          <div className="grid grid-cols-3 border-b border-zinc-200 dark:border-zinc-800 bg-zinc-50/40 dark:bg-zinc-800/20 text-center text-xs">
             <button
               type="button"
               onClick={() => setActiveTab("camera")}
-              className={`py-3 px-4 text-xs font-semibold border-b-2 flex items-center gap-2 transition-all ${
+              className={`py-2.5 px-2 font-semibold border-b-2 flex items-center justify-center gap-1.5 transition-all ${
                 activeTab === "camera"
-                  ? "border-emerald-500 text-emerald-600 dark:text-emerald-400"
+                  ? "border-emerald-500 text-emerald-600 dark:text-emerald-400 bg-emerald-50/40 dark:bg-emerald-950/20"
                   : "border-transparent text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300"
               }`}
             >
-              <span>📸 Camera trực tiếp</span>
+              <span>📸</span>
+              <span className="truncate">Camera</span>
             </button>
 
             <button
               type="button"
               onClick={() => setActiveTab("gun")}
-              className={`py-3 px-4 text-xs font-semibold border-b-2 flex items-center gap-2 transition-all ${
+              className={`py-2.5 px-2 font-semibold border-b-2 flex items-center justify-center gap-1.5 transition-all ${
                 activeTab === "gun"
-                  ? "border-emerald-500 text-emerald-600 dark:text-emerald-400"
+                  ? "border-emerald-500 text-emerald-600 dark:text-emerald-400 bg-emerald-50/40 dark:bg-emerald-950/20"
                   : "border-transparent text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300"
               }`}
             >
-              <span>🔫 Máy quét mã / Bàn phím</span>
+              <span>🔫</span>
+              <span className="truncate">Súng quét</span>
             </button>
 
             <button
               type="button"
               onClick={() => setActiveTab("image")}
-              className={`py-3 px-4 text-xs font-semibold border-b-2 flex items-center gap-2 transition-all ${
+              className={`py-2.5 px-2 font-semibold border-b-2 flex items-center justify-center gap-1.5 transition-all ${
                 activeTab === "image"
-                  ? "border-emerald-500 text-emerald-600 dark:text-emerald-400"
+                  ? "border-emerald-500 text-emerald-600 dark:text-emerald-400 bg-emerald-50/40 dark:bg-emerald-950/20"
                   : "border-transparent text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300"
               }`}
             >
-              <span>🖼️ Tải file ảnh QR</span>
+              <span>🖼️</span>
+              <span className="truncate">Tải ảnh</span>
             </button>
           </div>
         )}
