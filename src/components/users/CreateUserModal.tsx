@@ -11,6 +11,16 @@ interface CreateUserModalProps {
   availableDepartments?: string[];
 }
 
+const SHIFT_PRESETS = [
+  { id: "default", name: "Mặc định công ty", startTime: "08:00", endTime: "17:30", desc: "Theo cài đặt hệ thống" },
+  { id: "office_1", name: "Ca Hành Chính 1", startTime: "08:00", endTime: "17:30", desc: "08:00 - 17:30" },
+  { id: "office_2", name: "Ca Hành Chính 2", startTime: "08:30", endTime: "18:00", desc: "08:30 - 18:00" },
+  { id: "office_3", name: "Ca Hành Chính 3", startTime: "09:00", endTime: "18:30", desc: "09:00 - 18:30" },
+  { id: "morning", name: "Ca Sáng", startTime: "06:00", endTime: "14:00", desc: "06:00 - 14:00" },
+  { id: "afternoon", name: "Ca Chiều", startTime: "14:00", endTime: "22:00", desc: "14:00 - 22:00" },
+  { id: "custom", name: "Tùy chỉnh linh hoạt", startTime: "08:00", endTime: "17:30", desc: "Tự nhập khung giờ" },
+];
+
 export function CreateUserModal({
   isOpen,
   onClose,
@@ -39,9 +49,28 @@ export function CreateUserModal({
   const [contractType, setContractType] = useState<ContractType>("official");
   const [officialStartDate, setOfficialStartDate] = useState(todayStr);
   const [customLeaveDays, setCustomLeaveDays] = useState<number>(0);
+  const [shiftSelection, setShiftSelection] = useState<string>("default");
+  const [workShiftName, setWorkShiftName] = useState<string>("Mặc định công ty");
+  const [workStartTime, setWorkStartTime] = useState<string>("08:00");
+  const [workEndTime, setWorkEndTime] = useState<string>("17:30");
   const [status, setStatus] = useState<UserStatus>("active");
   const [submitting, setSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
+
+  const handleSelectPreset = (preset: typeof SHIFT_PRESETS[0]) => {
+    setShiftSelection(preset.id);
+    if (preset.id === "default") {
+      setWorkShiftName("Mặc định công ty");
+      setWorkStartTime("08:00");
+      setWorkEndTime("17:30");
+    } else if (preset.id === "custom") {
+      setWorkShiftName("Ca Tùy Chỉnh");
+    } else {
+      setWorkShiftName(preset.name);
+      setWorkStartTime(preset.startTime);
+      setWorkEndTime(preset.endTime);
+    }
+  };
 
   // Tải danh sách phòng ban & vai trò thực tế từ cơ sở dữ liệu
   useEffect(() => {
@@ -115,6 +144,9 @@ export function CreateUserModal({
           contractType,
           officialStartDate: contractType === "official" ? officialStartDate : undefined,
           customLeaveDays: Math.max(0, Number(customLeaveDays) || 0),
+          workShiftName: shiftSelection === "default" ? undefined : workShiftName.trim(),
+          workStartTime: shiftSelection === "default" ? undefined : workStartTime,
+          workEndTime: shiftSelection === "default" ? undefined : workEndTime,
         }),
       });
 
@@ -414,6 +446,96 @@ export function CreateUserModal({
               <p className="text-[10px] text-zinc-400 dark:text-zinc-500 mt-1">
                 Khi Admin bật tính năng nghỉ phép, hệ thống sẽ sử dụng công phép này (mặc định 0).
               </p>
+            </div>
+
+            {/* Thiết lập Ca làm việc cố định (Dùng cho chấm công & xoay ca) */}
+            <div className="pt-2 border-t border-zinc-200/80 dark:border-zinc-800">
+              <div className="flex items-center justify-between mb-2">
+                <label className="block text-xs font-semibold text-zinc-700 dark:text-zinc-300">
+                  ⏰ Ca làm việc cố định (Dùng khi Chấm Công)
+                </label>
+                <span className="text-[10px] font-mono font-medium text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/60 px-2 py-0.5 rounded-md border border-blue-200 dark:border-blue-800">
+                  {shiftSelection === "default" ? "Kế thừa Cài Đặt Chung" : `${workStartTime} - ${workEndTime}`}
+                </span>
+              </div>
+
+              {/* Nút chọn nhanh ca mẫu */}
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5 mb-2.5">
+                {SHIFT_PRESETS.map((p) => {
+                  const active = shiftSelection === p.id;
+                  return (
+                    <button
+                      key={p.id}
+                      type="button"
+                      onClick={() => handleSelectPreset(p)}
+                      className={`p-2 rounded-xl border text-left flex flex-col transition-all cursor-pointer ${
+                        active
+                          ? "border-blue-500 bg-blue-50/80 text-blue-900 dark:bg-blue-950/60 dark:text-blue-200 dark:border-blue-600 shadow-2xs font-semibold"
+                          : "border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-zinc-600 dark:text-zinc-400 hover:border-zinc-300 dark:hover:border-zinc-700"
+                      }`}
+                    >
+                      <span className="text-[11px] truncate">{p.name}</span>
+                      <span className="text-[10px] font-mono mt-0.5 text-zinc-500 dark:text-zinc-400">
+                        {p.startTime} - {p.endTime}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Chi tiết ca làm việc (Cho phép tùy biến linh hoạt) */}
+              <div className="p-2.5 rounded-xl bg-zinc-50 dark:bg-zinc-800/40 border border-zinc-200/70 dark:border-zinc-700/60 space-y-2">
+                <div>
+                  <label className="block text-[11px] font-medium text-zinc-600 dark:text-zinc-400 mb-1">
+                    Tên ca làm việc
+                  </label>
+                  <input
+                    type="text"
+                    value={workShiftName}
+                    onChange={(e) => {
+                      setWorkShiftName(e.target.value);
+                      setShiftSelection("custom");
+                    }}
+                    placeholder="VD: Ca Hành Chính 1, Ca Sáng..."
+                    className="w-full px-2.5 py-1.5 rounded-lg border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-xs text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <label className="block text-[11px] font-medium text-zinc-600 dark:text-zinc-400 mb-1">
+                      Giờ vào ca (Bắt đầu)
+                    </label>
+                    <input
+                      type="time"
+                      value={workStartTime}
+                      onChange={(e) => {
+                        setWorkStartTime(e.target.value);
+                        setShiftSelection("custom");
+                      }}
+                      className="w-full px-2.5 py-1.5 rounded-lg border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-xs font-mono font-semibold text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[11px] font-medium text-zinc-600 dark:text-zinc-400 mb-1">
+                      Giờ tan ca (Kết thúc)
+                    </label>
+                    <input
+                      type="time"
+                      value={workEndTime}
+                      onChange={(e) => {
+                        setWorkEndTime(e.target.value);
+                        setShiftSelection("custom");
+                      }}
+                      className="w-full px-2.5 py-1.5 rounded-lg border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-xs font-mono font-semibold text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                    />
+                  </div>
+                </div>
+
+                <p className="text-[10px] text-zinc-400 dark:text-zinc-500">
+                  💡 Hệ thống sẽ dựa vào giờ vào ca để tính Đi muộn và giờ tan ca để tính Về sớm khi nhân viên này chấm công.
+                </p>
+              </div>
             </div>
           </div>
 

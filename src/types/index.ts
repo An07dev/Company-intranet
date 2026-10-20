@@ -33,6 +33,9 @@ export interface User {
   contractType?: ContractType;
   officialStartDate?: string; // Ngày bắt đầu chính thức (YYYY-MM-DD)
   customLeaveDays?: number; // Cấu hình công phép thiết lập riêng (mặc định 0)
+  workShiftName?: string; // Tên ca làm việc (VD: "Ca Hành Chính", "Ca Sáng", "Ca Chiều", "Tùy chỉnh")
+  workStartTime?: string; // Giờ bắt đầu ca (HH:mm, VD: "08:30")
+  workEndTime?: string; // Giờ kết thúc ca (HH:mm, VD: "18:00")
   createdAt: string;
   updatedAt: string;
 }
@@ -50,6 +53,9 @@ export interface CreateUserInput {
   contractType?: ContractType;
   officialStartDate?: string;
   customLeaveDays?: number;
+  workShiftName?: string;
+  workStartTime?: string;
+  workEndTime?: string;
 }
 
 export interface UpdateUserInput {
@@ -65,6 +71,9 @@ export interface UpdateUserInput {
   contractType?: ContractType;
   officialStartDate?: string;
   customLeaveDays?: number;
+  workShiftName?: string;
+  workStartTime?: string;
+  workEndTime?: string;
 }
 
 export interface AuthSession {

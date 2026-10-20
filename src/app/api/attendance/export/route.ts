@@ -63,6 +63,7 @@ export async function GET(request: NextRequest) {
         "Họ Và Tên",
         "Email",
         "Ngày Chấm Công",
+        "Ca Làm Việc",
         "Giờ Vào (Check-in)",
         "IP Check-in",
         "Giờ Về (Check-out)",
@@ -94,12 +95,18 @@ export async function GET(request: NextRequest) {
         completed: "Hoàn Thành",
       };
 
+      const shiftDisplay =
+        r.workStartTime && r.workEndTime
+          ? `${r.workShiftName ? `${r.workShiftName} ` : ""}(${r.workStartTime} - ${r.workEndTime})`
+          : "Mặc định (08:00 - 17:30)";
+
       rows.push([
         idx + 1,
         r.employeeCode || "—",
         r.userName,
         r.userEmail,
         r.date,
+        shiftDisplay,
         formatTime(r.checkInTime),
         r.checkInIp || "—",
         formatTime(r.checkOutTime),

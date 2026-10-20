@@ -76,6 +76,9 @@ export async function POST(request: NextRequest) {
       contractType,
       officialStartDate,
       customLeaveDays,
+      workShiftName,
+      workStartTime,
+      workEndTime,
     } = body;
 
     // Validation
@@ -116,6 +119,9 @@ export async function POST(request: NextRequest) {
       contractType: contractType || "official",
       officialStartDate: contractType === "probation" ? undefined : officialStartDate,
       customLeaveDays: customLeaveDays !== undefined ? Math.max(0, Number(customLeaveDays) || 0) : 0,
+      workShiftName: workShiftName?.trim() || undefined,
+      workStartTime: workStartTime?.trim() || undefined,
+      workEndTime: workEndTime?.trim() || undefined,
     });
 
     return apiSuccess(newUser, "Tạo người dùng mới thành công", 201);

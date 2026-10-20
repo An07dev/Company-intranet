@@ -16,6 +16,9 @@ export interface IUserDocument {
   contractType?: ContractType;
   officialStartDate?: string;
   customLeaveDays?: number;
+  workShiftName?: string;
+  workStartTime?: string;
+  workEndTime?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -36,12 +39,16 @@ const UserSchema = new Schema<IUserDocument>(
     contractType: { type: String, enum: ["probation", "official"], default: "official" },
     officialStartDate: { type: String },
     customLeaveDays: { type: Number, default: 0 },
+    workShiftName: { type: String },
+    workStartTime: { type: String },
+    workEndTime: { type: String },
     createdAt: { type: String, required: true },
     updatedAt: { type: String, required: true },
   },
   {
     timestamps: false,
     versionKey: false,
+    strict: false,
   }
 );
 
@@ -58,6 +65,9 @@ export interface IAttendanceDocument {
   checkOutIp?: string;
   status: AttendanceStatus;
   workDurationMinutes?: number;
+  workShiftName?: string;
+  workStartTime?: string;
+  workEndTime?: string;
   note?: string;
   createdAt: string;
   updatedAt: string;
@@ -77,6 +87,9 @@ const AttendanceSchema = new Schema<IAttendanceDocument>(
     checkOutIp: { type: String },
     status: { type: String, required: true },
     workDurationMinutes: { type: Number },
+    workShiftName: { type: String },
+    workStartTime: { type: String },
+    workEndTime: { type: String },
     note: { type: String },
     createdAt: { type: String, required: true },
     updatedAt: { type: String, required: true },
@@ -84,6 +97,7 @@ const AttendanceSchema = new Schema<IAttendanceDocument>(
   {
     timestamps: false,
     versionKey: false,
+    strict: false,
   }
 );
 
@@ -116,6 +130,14 @@ const SettingsSchema = new Schema<ISettingsDocument>(
     versionKey: false,
   }
 );
+
+// Đảm bảo không bị lưu cache schema cũ trong bộ nhớ Node.js dev server
+if (mongoose.models.User && !mongoose.models.User.schema.path("workShiftName")) {
+  delete (mongoose.models as Record<string, unknown>).User;
+}
+if (mongoose.models.Attendance && !mongoose.models.Attendance.schema.path("workShiftName")) {
+  delete (mongoose.models as Record<string, unknown>).Attendance;
+}
 
 export const MongoUserModel: Model<IUserDocument> =
   mongoose.models.User || mongoose.model<IUserDocument>("User", UserSchema);

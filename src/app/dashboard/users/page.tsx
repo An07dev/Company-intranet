@@ -1024,6 +1024,7 @@ export default function UsersManagementPage() {
                   <th className="px-4 py-3">Liên hệ</th>
                   <th className="px-4 py-3">Phòng ban</th>
                   <th className="px-4 py-3">Chức vụ</th>
+                  <th className="px-4 py-3">Ca làm việc</th>
                   <th className="px-4 py-3">
                     {enableLeaveFeature ? "Hình thức" : "Hình thức & Phép"}
                   </th>
@@ -1095,6 +1096,25 @@ export default function UsersManagementPage() {
                         <span className={`inline-block px-2.5 py-0.5 rounded-full text-[11px] font-semibold ${roleBadges[u.role] || "bg-indigo-100 text-indigo-700 dark:bg-indigo-950/80 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800"}`}>
                           {roleLabel}
                         </span>
+                      </td>
+
+                      {/* Ca làm việc cố định */}
+                      <td className="px-4 py-3 whitespace-nowrap">
+                        {u.workStartTime && u.workEndTime ? (
+                          <div className="flex flex-col">
+                            <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-blue-700 dark:text-blue-300">
+                              <span className="w-1.5 h-1.5 rounded-full bg-blue-500" />
+                              {u.workShiftName || "Ca làm việc"}
+                            </span>
+                            <span className="text-[10px] font-mono font-medium text-zinc-500 dark:text-zinc-400">
+                              {u.workStartTime} - {u.workEndTime}
+                            </span>
+                          </div>
+                        ) : (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-medium bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400">
+                            ⚙️ Mặc định (08:00 - 17:30)
+                          </span>
+                        )}
                       </td>
 
                       {/* Hình thức nhân sự & Phép năm */}
@@ -1309,6 +1329,15 @@ export default function UsersManagementPage() {
                     <span className={`px-2 py-0.5 rounded-md font-semibold ${roleBadges[u.role] || "bg-indigo-100 text-indigo-700 dark:bg-indigo-950/80 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800"}`}>
                       {roleLabel}
                     </span>
+                    {u.workStartTime && u.workEndTime ? (
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md font-semibold bg-blue-50 text-blue-800 dark:bg-blue-950/50 dark:text-blue-300 border border-blue-200/60 dark:border-blue-800/60">
+                        ⏰ {u.workShiftName || "Ca"}: {u.workStartTime} - {u.workEndTime}
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md font-medium bg-zinc-100 dark:bg-zinc-800 text-zinc-500 dark:text-zinc-400">
+                        ⚙️ Ca mặc định
+                      </span>
+                    )}
                     {isProbation ? (
                       <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md font-medium bg-amber-50 text-amber-800 dark:bg-amber-950/50 dark:text-amber-300 border border-amber-200/60 dark:border-amber-800/60">
                         ⏳ Thử việc{!enableLeaveFeature ? " (0 phép)" : ""}

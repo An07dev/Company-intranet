@@ -1057,6 +1057,11 @@ export default function AttendanceManagementPage() {
                                 {empDepartment}
                               </span>
                             )}
+                            {record.workStartTime && record.workEndTime && (
+                              <span className="text-[10px] text-blue-600 dark:text-blue-400 font-medium block">
+                                ⏰ {record.workShiftName ? `${record.workShiftName}: ` : ""}{record.workStartTime} - {record.workEndTime}
+                              </span>
+                            )}
                           </div>
                         </div>
 
@@ -1183,9 +1188,14 @@ export default function AttendanceManagementPage() {
                             </div>
                           </td>
 
-                          {/* Cột 3: Ngày chấm công */}
+                          {/* Cột 3: Ngày chấm công & Ca làm việc */}
                           <td className="px-4 py-3 whitespace-nowrap text-zinc-600 dark:text-zinc-300 font-mono">
-                            {record.date}
+                            <div>{record.date}</div>
+                            {record.workStartTime && record.workEndTime && (
+                              <div className="text-[10px] text-blue-600 dark:text-blue-400 font-sans font-medium mt-0.5">
+                                ⏰ {record.workShiftName ? `${record.workShiftName} ` : ""}({record.workStartTime} - {record.workEndTime})
+                              </div>
+                            )}
                           </td>
 
                           {/* Cột 4: Giờ vào & IP */}

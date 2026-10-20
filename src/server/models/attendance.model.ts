@@ -205,6 +205,9 @@ function toSafeAttendance(doc: IAttendanceDocument, avatar?: string): Attendance
     checkOutIp: doc.checkOutIp,
     status: doc.status,
     workDurationMinutes: doc.workDurationMinutes,
+    workShiftName: doc.workShiftName,
+    workStartTime: doc.workStartTime,
+    workEndTime: doc.workEndTime,
     note: doc.note,
     createdAt: doc.createdAt,
     updatedAt: doc.updatedAt,
@@ -260,16 +263,22 @@ export const AttendanceModel = {
       throw new Error(`Bạn đã chấm công vào hôm nay lúc ${timeDisplay}.`);
     }
 
-    // 2. Tính toán trạng thái Đúng giờ hay Đi muộn
+    // 2. Lấy thông tin ca làm việc được thiết lập riêng cho user (nếu có, fallback về cấu hình chung)
+    const userDoc = await MongoUserModel.findOne({ id: params.userId }).lean();
+    const effectiveStartTime = userDoc?.workStartTime || settings.workStartTime;
+    const effectiveEndTime = userDoc?.workEndTime || settings.workEndTime;
+    const effectiveShiftName = userDoc?.workShiftName || (userDoc?.workStartTime ? `Ca ${userDoc.workStartTime} - ${userDoc.workEndTime}` : "Ca Tiêu Chuẩn");
+
+    // Tính toán trạng thái Đúng giờ hay Đi muộn theo ca làm việc riêng của nhân viên
     const currentTimeStr = getCurrentTimeString().slice(0, 5); // "08:35"
     let status: AttendanceStatus = "on_time";
 
-    const [startH, startM] = settings.workStartTime.split(":").map(Number);
+    const [startH, startM] = effectiveStartTime.split(":").map(Number);
     const [currentH, currentM] = currentTimeStr.split(":").map(Number);
     const startTotalMinutes = startH * 60 + startM;
     const currentTotalMinutes = currentH * 60 + currentM;
 
-    // Quá giờ làm + ngưỡng muộn cho phép
+    // Quá giờ bắt đầu ca làm + ngưỡng muộn cho phép
     if (currentTotalMinutes > startTotalMinutes + settings.lateThresholdMinutes) {
       status = "late";
     }
@@ -282,6 +291,9 @@ export const AttendanceModel = {
       existing.checkInIp = params.clientIp;
       existing.status = status;
       existing.employeeCode = employeeCode;
+      existing.workShiftName = effectiveShiftName;
+      existing.workStartTime = effectiveStartTime;
+      existing.workEndTime = effectiveEndTime;
       if (params.note) existing.note = params.note;
       existing.updatedAt = nowIso;
       await existing.save();
@@ -298,6 +310,9 @@ export const AttendanceModel = {
       checkInTime: nowIso,
       checkInIp: params.clientIp,
       status,
+      workShiftName: effectiveShiftName,
+      workStartTime: effectiveStartTime,
+      workEndTime: effectiveEndTime,
       note: params.note || "",
       createdAt: nowIso,
       updatedAt: nowIso,
@@ -346,9 +361,15 @@ export const AttendanceModel = {
       Math.round((checkOutDate.getTime() - checkInDate.getTime()) / (1000 * 60))
     );
 
-    // Tính trạng thái Về sớm nếu về trước giờ quy định
+    // Tính trạng thái Về sớm nếu về trước giờ quy định của ca làm việc
+    let effectiveEndTime = record.workEndTime;
+    if (!effectiveEndTime) {
+      const userDoc = await MongoUserModel.findOne({ id: params.userId }).lean();
+      effectiveEndTime = userDoc?.workEndTime || settings.workEndTime;
+    }
+
     const currentTimeStr = getCurrentTimeString().slice(0, 5);
-    const [endH, endM] = settings.workEndTime.split(":").map(Number);
+    const [endH, endM] = effectiveEndTime.split(":").map(Number);
     const [currentH, currentM] = currentTimeStr.split(":").map(Number);
     const endTotalMinutes = endH * 60 + endM;
     const currentTotalMinutes = currentH * 60 + currentM;
@@ -364,6 +385,7 @@ export const AttendanceModel = {
     record.checkOutIp = params.clientIp;
     record.workDurationMinutes = durationMinutes;
     record.status = finalStatus;
+    if (!record.workEndTime) record.workEndTime = effectiveEndTime;
     if (params.note) {
       record.note = record.note ? `${record.note} | ${params.note}` : params.note;
     }

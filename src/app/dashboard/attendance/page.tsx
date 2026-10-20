@@ -25,6 +25,7 @@ export default function AttendancePage() {
   const [currentDate, setCurrentDate] = useState<string>("");
   const [workStartTime, setWorkStartTime] = useState<string>("08:00");
   const [workEndTime, setWorkEndTime] = useState<string>("17:30");
+  const [workShiftName, setWorkShiftName] = useState<string>("");
 
   // Trạng thái nhận diện mạng & Vị trí độc lập (siêu tốc, không chờ DB)
   const [loadingNetwork, setLoadingNetwork] = useState<boolean>(true);
@@ -121,6 +122,7 @@ export default function AttendancePage() {
         serverTime: string;
         workStartTime: string;
         workEndTime: string;
+        workShiftName?: string;
       }> = await res.json();
 
       if (json.success && json.data) {
@@ -131,6 +133,7 @@ export default function AttendancePage() {
         if (json.data.ipCheckEnabled !== undefined) setIpCheckEnabled(json.data.ipCheckEnabled);
         if (json.data.workStartTime) setWorkStartTime(json.data.workStartTime);
         if (json.data.workEndTime) setWorkEndTime(json.data.workEndTime);
+        if (json.data.workShiftName) setWorkShiftName(json.data.workShiftName);
       }
     } catch {
       // Ignored
@@ -496,8 +499,12 @@ export default function AttendancePage() {
                 {/* Chỉ báo trạng thái mạng nhanh trên Mobile */}
 
 
-                <span className="text-[11px] font-mono font-semibold px-2 py-0.5 rounded-md bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-300 border border-zinc-200/60 dark:border-zinc-700/60">
-                  {workStartTime} - {workEndTime}
+                <span className="text-[11px] font-mono font-semibold px-2 py-0.5 rounded-md bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-300 border border-zinc-200/60 dark:border-zinc-700/60 inline-flex items-center gap-1.5">
+                  <span>⏰</span>
+                  {workShiftName && workShiftName !== "Ca Tiêu Chuẩn" && workShiftName !== "Mặc định công ty" && (
+                    <span className="font-sans font-medium text-blue-600 dark:text-blue-400">{workShiftName}:</span>
+                  )}
+                  <span>{workStartTime} - {workEndTime}</span>
                 </span>
               </div>
             </div>

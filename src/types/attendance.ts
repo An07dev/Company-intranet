@@ -14,6 +14,9 @@ export interface AttendanceRecord {
   checkOutIp?: string;
   status: AttendanceStatus;
   workDurationMinutes?: number;
+  workShiftName?: string; // Tên ca làm việc áp dụng trong ngày
+  workStartTime?: string; // Giờ bắt đầu ca áp dụng (HH:mm)
+  workEndTime?: string; // Giờ kết thúc ca áp dụng (HH:mm)
   note?: string;
   createdAt: string;
   updatedAt: string;
@@ -36,4 +39,7 @@ export interface AttendanceStatusResponse {
   isIpAllowed: boolean;
   ipCheckEnabled: boolean;
   serverTime: string;
+  workShiftName?: string;
+  workStartTime?: string;
+  workEndTime?: string;
 }

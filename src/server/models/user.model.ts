@@ -99,6 +99,9 @@ export function toSafeUser(doc: IUserDocument): User {
     contractType: doc.contractType || "official",
     officialStartDate: doc.officialStartDate,
     customLeaveDays: doc.customLeaveDays ?? 0,
+    workShiftName: doc.workShiftName,
+    workStartTime: doc.workStartTime,
+    workEndTime: doc.workEndTime,
     createdAt: doc.createdAt,
     updatedAt: doc.updatedAt,
   };
@@ -290,6 +293,9 @@ export const UserModel = {
       contractType,
       officialStartDate,
       customLeaveDays: Math.max(0, Number(input.customLeaveDays) || 0),
+      workShiftName: input.workShiftName?.trim() || undefined,
+      workStartTime: input.workStartTime?.trim() || undefined,
+      workEndTime: input.workEndTime?.trim() || undefined,
       createdAt: now,
       updatedAt: now,
     });
@@ -320,10 +326,14 @@ export const UserModel = {
    */
   async update(id: string, input: UpdateUserInput): Promise<User | null> {
     await ensureUsersSeeded();
-    const current = await MongoUserModel.findOne({ id });
+    const current = await MongoUserModel.findOne({ id }).lean();
     if (!current) return null;
 
     const oldDept = current.department;
+    const $set: Record<string, unknown> = {
+      updatedAt: new Date().toISOString(),
+    };
+    const $unset: Record<string, string> = {};
 
     // Nếu đổi email, kiểm tra xem email mới có trùng ai khác không
     if (input.email) {
@@ -333,14 +343,14 @@ export const UserModel = {
         if (duplicate) {
           throw new Error(`Email "${input.email}" đã được sử dụng bởi người dùng khác.`);
         }
-        current.email = normalizedEmail;
+        $set.email = normalizedEmail;
       }
     }
 
-    if (input.employeeCode !== undefined) current.employeeCode = input.employeeCode.trim();
-    if (input.name !== undefined) current.name = input.name.trim();
-    if (input.role !== undefined) current.role = input.role;
-    if (input.phone !== undefined) current.phone = input.phone?.trim();
+    if (input.employeeCode !== undefined) $set.employeeCode = input.employeeCode.trim();
+    if (input.name !== undefined) $set.name = input.name.trim();
+    if (input.role !== undefined) $set.role = input.role;
+    if (input.phone !== undefined) $set.phone = input.phone?.trim();
     if (input.department !== undefined) {
       let updatedDept = input.department?.trim();
       if (updatedDept && updatedDept !== "Khác") {
@@ -351,34 +361,62 @@ export const UserModel = {
           updatedDept = deptDoc.name;
         }
       }
-      current.department = updatedDept;
+      $set.department = updatedDept;
     }
-    if (input.avatarUrl !== undefined) current.avatarUrl = input.avatarUrl;
-    if (input.status !== undefined) current.status = input.status;
+    if (input.avatarUrl !== undefined) $set.avatarUrl = input.avatarUrl;
+    if (input.status !== undefined) $set.status = input.status;
 
     if (input.contractType !== undefined) {
-      current.contractType = input.contractType;
+      $set.contractType = input.contractType;
       if (input.contractType === "probation") {
-        current.officialStartDate = undefined;
+        $unset.officialStartDate = "";
       }
     }
     if (input.officialStartDate !== undefined) {
-      if (current.contractType === "official") {
-        current.officialStartDate = input.officialStartDate;
+      const activeContract = input.contractType || current.contractType;
+      if (activeContract === "official") {
+        $set.officialStartDate = input.officialStartDate;
       }
     }
     if (input.customLeaveDays !== undefined) {
-      current.customLeaveDays = Math.max(0, Number(input.customLeaveDays) || 0);
+      $set.customLeaveDays = Math.max(0, Number(input.customLeaveDays) || 0);
+    }
+
+    // Cập nhật ca làm việc: Nếu có giá trị -> $set, nếu rỗng -> $unset (quay về mặc định công ty)
+    if (input.workShiftName !== undefined) {
+      if (input.workShiftName?.trim()) {
+        $set.workShiftName = input.workShiftName.trim();
+      } else {
+        $unset.workShiftName = "";
+      }
+    }
+    if (input.workStartTime !== undefined) {
+      if (input.workStartTime?.trim()) {
+        $set.workStartTime = input.workStartTime.trim();
+      } else {
+        $unset.workStartTime = "";
+      }
+    }
+    if (input.workEndTime !== undefined) {
+      if (input.workEndTime?.trim()) {
+        $set.workEndTime = input.workEndTime.trim();
+      } else {
+        $unset.workEndTime = "";
+      }
     }
 
     if (input.password) {
       const { hash, salt } = hashPassword(input.password);
-      current.passwordHash = hash;
-      current.salt = salt;
+      $set.passwordHash = hash;
+      $set.salt = salt;
     }
 
-    current.updatedAt = new Date().toISOString();
-    await current.save();
+    const updateQuery: Record<string, unknown> = { $set };
+    if (Object.keys($unset).length > 0) {
+      updateQuery.$unset = $unset;
+    }
+
+    await MongoUserModel.collection.updateOne({ id }, updateQuery);
 
     // Nếu phòng ban thay đổi, cập nhật rút khỏi nhóm chat cũ và tham gia nhóm chat mới
     if (input.department !== undefined && input.department !== oldDept) {
@@ -390,7 +428,8 @@ export const UserModel = {
       }
     }
 
-    return toSafeUser(current.toObject());
+    const freshUser = await MongoUserModel.findOne({ id }).lean();
+    return freshUser ? toSafeUser(freshUser) : null;
   },
 
   /**
