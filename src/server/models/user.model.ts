@@ -158,8 +158,19 @@ export const UserModel = {
       .limit(limit)
       .lean();
 
+    const { MongoRoleModel } = await import("@/server/db/schema");
+    const roles = await MongoRoleModel.find().lean();
+    const roleNameMap = new Map<string, string>();
+    roles.forEach((r) => roleNameMap.set(r.id, r.name));
+
+    const items = docs.map((d) => {
+      const u = toSafeUser(d);
+      u.roleName = roleNameMap.get(d.role) || d.role;
+      return u;
+    });
+
     return {
-      items: docs.map(toSafeUser),
+      items,
       total,
       page,
       limit,
@@ -173,7 +184,20 @@ export const UserModel = {
   async findById(id: string): Promise<User | null> {
     await ensureUsersSeeded();
     const doc = await MongoUserModel.findOne({ id }).lean();
-    return doc ? toSafeUser(doc) : null;
+    if (!doc) return null;
+
+    const safeUser = toSafeUser(doc);
+    const { RoleModel } = await import("@/server/models/role.model");
+    const role = await RoleModel.getRoleById(doc.role);
+    if (role) {
+      safeUser.roleName = role.name;
+      safeUser.allowedPages = role.allowedPages;
+      safeUser.defaultPage = role.defaultPage;
+    } else {
+      safeUser.allowedPages = await RoleModel.getAllowedPagesForRole(doc.role);
+    }
+
+    return safeUser;
   },
 
   /**

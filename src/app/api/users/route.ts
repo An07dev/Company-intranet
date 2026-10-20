@@ -1,10 +1,10 @@
 import { NextRequest } from "next/server";
 import { userService } from "@/server/services/user.service";
+import { RoleModel } from "@/server/models/role.model";
 import { apiError, apiSuccess } from "@/server/utils/response";
 import { getAuthUserFromCookies } from "@/server/utils/auth";
-import { UserRole, UserStatus, ContractType } from "@/types";
+import { UserStatus, ContractType } from "@/types";
 
-const VALID_ROLES: UserRole[] = ["admin", "director", "manager", "employee"];
 const VALID_STATUSES: UserStatus[] = ["active", "inactive", "suspended"];
 const VALID_CONTRACT_TYPES: ContractType[] = ["probation", "official"];
 
@@ -19,14 +19,14 @@ export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
 
-    const roleParam = searchParams.get("role") as UserRole | null;
+    const roleParam = searchParams.get("role");
     const statusParam = searchParams.get("status") as UserStatus | null;
     const contractTypeParam = searchParams.get("contractType") as ContractType | null;
     const search = searchParams.get("search") || undefined;
     const page = parseInt(searchParams.get("page") || "1", 10);
     const limit = parseInt(searchParams.get("limit") || "20", 10);
 
-    const role = roleParam && VALID_ROLES.includes(roleParam) ? roleParam : undefined;
+    const role = roleParam && roleParam !== "all" ? roleParam : undefined;
     const status = statusParam && VALID_STATUSES.includes(statusParam) ? statusParam : undefined;
     const contractType = contractTypeParam && VALID_CONTRACT_TYPES.includes(contractTypeParam) ? contractTypeParam : undefined;
 
@@ -87,9 +87,14 @@ export async function POST(request: NextRequest) {
       return apiError("Email không hợp lệ", 400);
     }
 
-    if (!role || !VALID_ROLES.includes(role)) {
+    if (!role || typeof role !== "string" || !role.trim()) {
+      return apiError("Vai trò (role) là bắt buộc", 400);
+    }
+
+    const validRole = await RoleModel.getRoleById(role.trim());
+    if (!validRole) {
       return apiError(
-        `Role không hợp lệ. Chỉ chấp nhận một trong các role: ${VALID_ROLES.join(", ")} (admin, director, manager, employee)`,
+        `Vai trò '${role}' không tồn tại trong hệ thống. Vui lòng chọn một vai trò hợp lệ.`,
         400
       );
     }

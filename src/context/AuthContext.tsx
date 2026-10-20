@@ -10,6 +10,7 @@ interface AuthContextType {
   logout: () => Promise<void>;
   refreshSession: () => Promise<void>;
   updateUser: (updatedUser: User) => void;
+  canAccessPage: (pagePath: string) => boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -17,6 +18,58 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+
+  const canAccessPage = useCallback(
+    (pagePath: string): boolean => {
+      if (!user) return false;
+      // Admin và Giám đốc có quyền truy cập toàn bộ hệ thống
+      if (user.role === "admin" || user.role === "director") return true;
+
+      const cleanPath = pagePath.replace(/\/+$/, "") || "/dashboard";
+
+      // Các trang cá nhân và văn bản nội bộ luôn được mở
+      if (
+        cleanPath === "/dashboard/profile" ||
+        cleanPath === "/dashboard/regulations" ||
+        cleanPath === "/dashboard/guide"
+      ) {
+        return true;
+      }
+
+      // Kiểm tra danh sách allowedPages của user
+      if (Array.isArray(user.allowedPages) && user.allowedPages.length > 0) {
+        return user.allowedPages.some((p) => {
+          if (p === cleanPath) return true;
+          // QUAN TRỌNG: Chỉ so khớp subpath khi p KHÔNG PHẢI là "/dashboard"
+          // Nếu p là "/dashboard", chỉ cho phép chính xác trang "/dashboard",
+          // TUYỆT ĐỐI KHÔNG dùng startsWith("/dashboard/") vì sẽ làm lộ toàn bộ các trang khác!
+          if (p !== "/dashboard" && cleanPath.startsWith(p + "/")) {
+            return true;
+          }
+          return false;
+        });
+      }
+
+      // Fallback an toàn cho nhân viên cơ bản
+      const defaultEmployeePages = [
+        "/dashboard/chat",
+        "/dashboard/tasks",
+        "/dashboard/attendance",
+        "/dashboard/requests",
+        "/dashboard/regulations",
+        "/dashboard/guide",
+        "/dashboard/profile",
+      ];
+      return defaultEmployeePages.some((p) => {
+        if (p === cleanPath) return true;
+        if (p !== "/dashboard" && cleanPath.startsWith(p + "/")) {
+          return true;
+        }
+        return false;
+      });
+    },
+    [user]
+  );
 
   const refreshSession = useCallback(async () => {
     try {
@@ -94,7 +147,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   return (
-    <AuthContext.Provider value={{ user, isLoading, login, logout, refreshSession, updateUser }}>
+    <AuthContext.Provider
+      value={{ user, isLoading, login, logout, refreshSession, updateUser, canAccessPage }}
+    >
       {children}
     </AuthContext.Provider>
   );

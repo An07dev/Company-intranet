@@ -1,10 +1,10 @@
 import { NextRequest } from "next/server";
 import { userService } from "@/server/services/user.service";
+import { RoleModel } from "@/server/models/role.model";
 import { apiError, apiSuccess } from "@/server/utils/response";
 import { getAuthUserFromCookies } from "@/server/utils/auth";
-import { UserRole, UserStatus, ContractType } from "@/types";
+import { UserStatus, ContractType } from "@/types";
 
-const VALID_ROLES: UserRole[] = ["admin", "director", "manager", "employee"];
 const VALID_STATUSES: UserStatus[] = ["active", "inactive", "suspended"];
 const VALID_CONTRACT_TYPES: ContractType[] = ["probation", "official"];
 
@@ -50,12 +50,15 @@ export async function PUT(request: NextRequest, { params }: RouteContext) {
       return apiError("Thiếu dữ liệu cập nhật", 400);
     }
 
-    // Kiểm tra role nếu có gửi lên
-    if (body.role && !VALID_ROLES.includes(body.role)) {
-      return apiError(
-        `Role không hợp lệ. Chỉ chấp nhận: ${VALID_ROLES.join(", ")}`,
-        400
-      );
+    // Kiểm tra role nếu có gửi lên: Kiểm tra tồn tại trong DB vai trò
+    if (body.role) {
+      const validRole = await RoleModel.getRoleById(body.role);
+      if (!validRole) {
+        return apiError(
+          `Vai trò '${body.role}' không tồn tại trong hệ thống. Vui lòng chọn một vai trò hợp lệ.`,
+          400
+        );
+      }
     }
 
     // Kiểm tra status nếu có gửi lên

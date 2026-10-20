@@ -7,9 +7,10 @@ export * from "./task";
 export * from "./asset";
 export * from "./shopee";
 export * from "./package";
+export * from "./role";
 
-// 4 Role chính trong hệ thống: Admin, Giám đốc, Quản lý, Nhân viên
-export type UserRole = "admin" | "director" | "manager" | "employee";
+// Vai trò trong hệ thống (Hỗ trợ mở rộng role linh hoạt)
+export type UserRole = "admin" | "director" | "manager" | "employee" | string;
 
 export type UserStatus = "active" | "inactive" | "suspended";
 
@@ -22,6 +23,9 @@ export interface User {
   name: string;
   email: string;
   role: UserRole;
+  roleName?: string;
+  allowedPages?: string[];
+  defaultPage?: string;
   phone?: string;
   department?: string;
   avatarUrl?: string;

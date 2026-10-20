@@ -28,6 +28,7 @@ export function EditUserModal({
   const [departments, setDepartments] = useState<Department[]>([]);
   const [loadingDepts, setLoadingDepts] = useState(false);
   const [role, setRole] = useState<UserRole>("employee");
+  const [systemRoles, setSystemRoles] = useState<{ id: string; name: string }[]>([]);
   const [contractType, setContractType] = useState<ContractType>("official");
   const [officialStartDate, setOfficialStartDate] = useState("");
   const [customLeaveDays, setCustomLeaveDays] = useState<number>(0);
@@ -35,7 +36,7 @@ export function EditUserModal({
   const [submitting, setSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
 
-  // Tải danh sách phòng ban từ API
+  // Tải danh sách phòng ban & vai trò từ API
   useEffect(() => {
     if (isOpen) {
       const fetchDepts = async () => {
@@ -52,7 +53,21 @@ export function EditUserModal({
           setLoadingDepts(false);
         }
       };
+
+      const fetchRoles = async () => {
+        try {
+          const res = await fetch("/api/roles");
+          const json = await res.json();
+          if (res.ok && json.success && json.data?.roles) {
+            setSystemRoles(json.data.roles);
+          }
+        } catch (e) {
+          console.error("Lỗi tải roles:", e);
+        }
+      };
+
       fetchDepts();
+      fetchRoles();
     }
   }, [isOpen]);
 
@@ -130,8 +145,8 @@ export function EditUserModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs animate-in fade-in duration-200">
-      <div className="w-full max-w-lg bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-xs overflow-y-auto animate-in fade-in duration-150">
+      <div className="w-full max-w-lg bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl shadow-2xl overflow-hidden flex flex-col my-auto max-h-[90vh]">
         {/* Header Modal */}
         <div className="p-4 sm:p-5 border-b border-zinc-200 dark:border-zinc-800 flex items-center justify-between bg-zinc-50/50 dark:bg-zinc-950/40">
           <div className="flex items-center gap-2.5">
@@ -271,10 +286,20 @@ export function EditUserModal({
                 onChange={(e) => setRole(e.target.value as UserRole)}
                 className="w-full px-3 py-2 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-950 text-xs text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-1 focus:ring-zinc-900 dark:focus:ring-zinc-100 cursor-pointer"
               >
-                <option value="employee">👤 Nhân viên</option>
-                <option value="manager">👔 Quản lý / Trưởng phòng</option>
-                <option value="director">👑 Giám đốc điều hành</option>
-                <option value="admin">🛡️ Quản trị viên (Admin)</option>
+                {systemRoles.length > 0 ? (
+                  systemRoles.map((r) => (
+                    <option key={r.id} value={r.id}>
+                      {r.name} ({r.id})
+                    </option>
+                  ))
+                ) : (
+                  <>
+                    <option value="employee">👤 Nhân viên</option>
+                    <option value="manager">👔 Quản lý / Trưởng phòng</option>
+                    <option value="director">👑 Giám đốc điều hành</option>
+                    <option value="admin">🛡️ Quản trị viên (Admin)</option>
+                  </>
+                )}
               </select>
             </div>
           </div>

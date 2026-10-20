@@ -17,6 +17,7 @@ export default function UsersManagementPage() {
 
   const [usersList, setUsersList] = useState<User[]>([]);
   const [departmentsList, setDepartmentsList] = useState<Department[]>([]);
+  const [systemRolesList, setSystemRolesList] = useState<{ id: string; name: string }[]>([]);
   const [loading, setLoading] = useState(true);
   const [enableLeaveFeature, setEnableLeaveFeature] = useState<boolean>(false);
   const [savingLeaveFeature, setSavingLeaveFeature] = useState<boolean>(false);
@@ -93,6 +94,19 @@ export default function UsersManagementPage() {
     }
   }, []);
 
+  // Tải danh sách vai trò từ API
+  const fetchRoles = useCallback(async () => {
+    try {
+      const res = await fetch("/api/roles");
+      const json = await res.json();
+      if (json.success && json.data?.roles) {
+        setSystemRolesList(json.data.roles);
+      }
+    } catch (err) {
+      console.error("Lỗi khi tải danh sách vai trò:", err);
+    }
+  }, []);
+
   // Bật/tắt tính năng nghỉ phép
   const handleToggleLeaveFeature = async (checked: boolean) => {
     try {
@@ -121,15 +135,17 @@ export default function UsersManagementPage() {
     fetchUsers();
     fetchDepartments();
     fetchSettings();
-  }, [fetchUsers, fetchDepartments, fetchSettings]);
+    fetchRoles();
+  }, [fetchUsers, fetchDepartments, fetchSettings, fetchRoles]);
 
   useEffect(() => {
     if (currentUser && (currentUser.role === "admin" || currentUser.role === "director")) {
       fetchUsers();
       fetchDepartments();
       fetchSettings();
+      fetchRoles();
     }
-  }, [currentUser, fetchUsers, fetchDepartments, fetchSettings]);
+  }, [currentUser, fetchUsers, fetchDepartments, fetchSettings, fetchRoles]);
 
   // Tổng hợp danh sách các phòng ban thực tế trong hệ thống
   const availableDepartments = useMemo(() => {
@@ -307,6 +323,9 @@ export default function UsersManagementPage() {
     director: "bg-amber-100 text-amber-800 dark:bg-amber-950/80 dark:text-amber-300 border border-amber-200 dark:border-amber-800",
     manager: "bg-blue-100 text-blue-700 dark:bg-blue-950/80 dark:text-blue-300 border border-blue-200 dark:border-blue-800",
     employee: "bg-zinc-100 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-700",
+    sales: "bg-emerald-100 text-emerald-700 dark:bg-emerald-950/80 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800",
+    warehouse: "bg-orange-100 text-orange-700 dark:bg-orange-950/80 dark:text-orange-300 border border-orange-200 dark:border-orange-800",
+    accountant: "bg-cyan-100 text-cyan-700 dark:bg-cyan-950/80 dark:text-cyan-300 border border-cyan-200 dark:border-cyan-800",
   };
 
   if (isLoading || !currentUser) {
@@ -611,10 +630,20 @@ export default function UsersManagementPage() {
             className="w-auto shrink-0 px-2.5 py-1.5 rounded-lg border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-950 text-xs text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-1 focus:ring-zinc-900 dark:focus:ring-zinc-100 cursor-pointer"
           >
             <option value="all">Tất cả chức vụ</option>
-            <option value="director">👑 Giám đốc</option>
-            <option value="admin">🛡️ Quản trị viên (Admin)</option>
-            <option value="manager">👔 Quản lý</option>
-            <option value="employee">👤 Nhân viên</option>
+            {systemRolesList.length > 0 ? (
+              systemRolesList.map((r) => (
+                <option key={r.id} value={r.id}>
+                  {r.name}
+                </option>
+              ))
+            ) : (
+              <>
+                <option value="director">👑 Giám đốc</option>
+                <option value="admin">🛡️ Quản trị viên (Admin)</option>
+                <option value="manager">👔 Quản lý</option>
+                <option value="employee">👤 Nhân viên</option>
+              </>
+            )}
           </select>
 
           {/* 2. Lọc theo hình thức nhân sự (Chính thức / Thử việc) */}
@@ -893,10 +922,20 @@ export default function UsersManagementPage() {
                     className="w-full px-2 py-1.5 rounded-lg border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-950 text-zinc-800 dark:text-zinc-200 text-xs"
                   >
                     <option value="all">Tất cả chức vụ</option>
-                    <option value="director">👑 Giám đốc</option>
-                    <option value="admin">🛡️ Quản trị viên</option>
-                    <option value="manager">👔 Quản lý</option>
-                    <option value="employee">👤 Nhân viên</option>
+                    {systemRolesList.length > 0 ? (
+                      systemRolesList.map((r) => (
+                        <option key={r.id} value={r.id}>
+                          {r.name}
+                        </option>
+                      ))
+                    ) : (
+                      <>
+                        <option value="director">👑 Giám đốc</option>
+                        <option value="admin">🛡️ Quản trị viên</option>
+                        <option value="manager">👔 Quản lý</option>
+                        <option value="employee">👤 Nhân viên</option>
+                      </>
+                    )}
                   </select>
                 </div>
 
@@ -994,7 +1033,7 @@ export default function UsersManagementPage() {
               </thead>
               <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800">
                 {paginatedUsers.map((u) => {
-                  const roleLabel = USER_ROLE_LABELS[u.role] || u.role;
+                  const roleLabel = u.roleName || USER_ROLE_LABELS[u.role] || u.role;
                   const isActive = u.status === "active";
                   const isCurrent = u.id === currentUser?.id;
                   const isProbation = u.contractType === "probation";
@@ -1053,7 +1092,7 @@ export default function UsersManagementPage() {
 
                       {/* Vai trò */}
                       <td className="px-4 py-3 whitespace-nowrap">
-                        <span className={`inline-block px-2.5 py-0.5 rounded-full text-[11px] font-semibold ${roleBadges[u.role] || ""}`}>
+                        <span className={`inline-block px-2.5 py-0.5 rounded-full text-[11px] font-semibold ${roleBadges[u.role] || "bg-indigo-100 text-indigo-700 dark:bg-indigo-950/80 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800"}`}>
                           {roleLabel}
                         </span>
                       </td>
@@ -1214,7 +1253,7 @@ export default function UsersManagementPage() {
             </div>
           ) : (
             paginatedUsers.map((u) => {
-              const roleLabel = USER_ROLE_LABELS[u.role] || u.role;
+              const roleLabel = u.roleName || USER_ROLE_LABELS[u.role] || u.role;
               const isActive = u.status === "active";
               const isCurrent = u.id === currentUser?.id;
               const isProbation = u.contractType === "probation";
@@ -1267,7 +1306,7 @@ export default function UsersManagementPage() {
                     <span className="px-2 py-0.5 rounded-md bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 font-medium">
                       🏢 {u.department || "Chung"}
                     </span>
-                    <span className={`px-2 py-0.5 rounded-md font-semibold ${roleBadges[u.role] || ""}`}>
+                    <span className={`px-2 py-0.5 rounded-md font-semibold ${roleBadges[u.role] || "bg-indigo-100 text-indigo-700 dark:bg-indigo-950/80 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800"}`}>
                       {roleLabel}
                     </span>
                     {isProbation ? (

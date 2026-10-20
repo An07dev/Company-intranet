@@ -1156,3 +1156,38 @@ export const MongoPackageModel: Model<IPackageDocument> =
   mongoose.models.Package ||
   mongoose.model<IPackageDocument>("Package", PackageSchema, "packages");
 
+// ======================= ROLE SCHEMAS (RBAC) =======================
+
+export interface IRoleDocument {
+  id: string;
+  name: string;
+  description?: string;
+  isSystem: boolean;
+  allowedPages: string[];
+  defaultPage: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+const RoleSchema = new Schema<IRoleDocument>(
+  {
+    id: { type: String, required: true, unique: true, index: true },
+    name: { type: String, required: true },
+    description: { type: String, default: "" },
+    isSystem: { type: Boolean, default: false },
+    allowedPages: { type: [String], default: [] },
+    defaultPage: { type: String, default: "/dashboard/attendance" },
+    createdAt: { type: String, required: true },
+    updatedAt: { type: String, required: true },
+  },
+  {
+    timestamps: false,
+    versionKey: false,
+    collection: "roles",
+  }
+);
+
+export const MongoRoleModel: Model<IRoleDocument> =
+  mongoose.models.Role || mongoose.model<IRoleDocument>("Role", RoleSchema, "roles");
+
+

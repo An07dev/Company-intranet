@@ -41,8 +41,23 @@ export const authService = {
 
     const expiresAt = new Date(Date.now() + durationSeconds * 1000).toISOString();
 
+    const safeUser = toSafeUser(userDoc);
+    try {
+      const { RoleModel } = await import("@/server/models/role.model");
+      const role = await RoleModel.getRoleById(userDoc.role);
+      if (role) {
+        safeUser.roleName = role.name;
+        safeUser.allowedPages = role.allowedPages;
+        safeUser.defaultPage = role.defaultPage;
+      } else {
+        safeUser.allowedPages = await RoleModel.getAllowedPagesForRole(userDoc.role);
+      }
+    } catch {
+      // fallback
+    }
+
     return {
-      user: toSafeUser(userDoc),
+      user: safeUser,
       token,
       expiresAt,
     };

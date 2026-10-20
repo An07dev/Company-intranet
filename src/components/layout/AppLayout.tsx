@@ -4,6 +4,7 @@ import React, { ReactNode } from "react";
 import { SidebarProvider } from "@/context/SidebarContext";
 import { Header } from "@/components/common/Header";
 import { Sidebar } from "@/components/common/Sidebar";
+import { RouteGuard } from "@/components/common/RouteGuard";
 
 export function AppLayout({ children }: { children: ReactNode }) {
   return (
@@ -13,7 +14,7 @@ export function AppLayout({ children }: { children: ReactNode }) {
         <div className="flex flex-1 w-full relative">
           <Sidebar />
           <div className="flex-1 w-full min-w-0">
-            {children}
+            <RouteGuard>{children}</RouteGuard>
           </div>
         </div>
       </div>
