@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import { Task, User, TaskStatus, TaskPriority } from "@/types";
 import { Spinner } from "@/components/ui/Loading";
+import { EditTaskModal } from "./EditTaskModal";
 
 interface TaskDetailModalProps {
   isOpen: boolean;
@@ -39,6 +40,7 @@ export function TaskDetailModal({
   const [submitting, setSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 
   if (!isOpen || !task || !currentUser) return null;
 
@@ -173,13 +175,28 @@ export function TaskDetailModal({
             </span>
           </div>
 
-          <button
-            type="button"
-            onClick={onClose}
-            className="p-1.5 rounded-lg text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition cursor-pointer shrink-0"
-          >
-            ✕
-          </button>
+          <div className="flex items-center gap-2">
+            {canEdit && (
+              <button
+                type="button"
+                onClick={() => setIsEditModalOpen(true)}
+                className="px-3 py-1 sm:py-1.5 rounded-xl bg-blue-50 dark:bg-blue-950/60 border border-blue-200 dark:border-blue-800 text-blue-700 dark:text-blue-300 font-semibold text-xs hover:bg-blue-100 dark:hover:bg-blue-900 transition flex items-center gap-1.5 active:scale-95 cursor-pointer shadow-2xs"
+                title="Chỉnh sửa toàn bộ thông tin công việc"
+              >
+                <span>✏️</span>
+                <span className="hidden sm:inline">Sửa công việc</span>
+                <span className="sm:hidden">Sửa</span>
+              </button>
+            )}
+
+            <button
+              type="button"
+              onClick={onClose}
+              className="p-1.5 rounded-lg text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition cursor-pointer shrink-0"
+            >
+              ✕
+            </button>
+          </div>
         </div>
 
         {/* Content Body */}
@@ -427,7 +444,19 @@ export function TaskDetailModal({
         </div>
 
         {/* Footer */}
-        <div className="p-3 sm:p-4 border-t border-zinc-200 dark:border-zinc-800 flex items-center justify-end bg-zinc-50/50 dark:bg-zinc-950/40 shrink-0">
+        <div className="p-3 sm:p-4 border-t border-zinc-200 dark:border-zinc-800 flex items-center justify-between bg-zinc-50/50 dark:bg-zinc-950/40 shrink-0">
+          <div>
+            {canEdit && (
+              <button
+                type="button"
+                onClick={() => setIsEditModalOpen(true)}
+                className="px-3.5 py-1.5 sm:py-2 text-xs font-semibold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/50 border border-blue-200 dark:border-blue-800 rounded-xl hover:bg-blue-100 dark:hover:bg-blue-900/50 transition cursor-pointer active:scale-95 flex items-center gap-1.5"
+              >
+                <span>✏️</span>
+                <span>Chỉnh sửa công việc</span>
+              </button>
+            )}
+          </div>
           <button
             type="button"
             onClick={onClose}
@@ -437,6 +466,19 @@ export function TaskDetailModal({
           </button>
         </div>
       </div>
+
+      {isEditModalOpen && (
+        <EditTaskModal
+          isOpen={isEditModalOpen}
+          onClose={() => setIsEditModalOpen(false)}
+          task={task}
+          currentUser={currentUser}
+          onTaskUpdated={(updated) => {
+            onTaskUpdated(updated);
+            setIsEditModalOpen(false);
+          }}
+        />
+      )}
     </div>
   );
 }

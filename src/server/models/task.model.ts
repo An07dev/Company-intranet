@@ -446,11 +446,14 @@ export const TaskModel = {
     if (input.description !== undefined) {
       task.description = input.description.trim();
     }
+    if (input.department !== undefined && input.department.trim()) {
+      task.department = input.department.trim();
+    }
     if (input.priority !== undefined) {
       task.priority = input.priority;
     }
     if (input.dueDate !== undefined) {
-      task.dueDate = input.dueDate;
+      task.dueDate = input.dueDate.trim() ? input.dueDate.trim() : undefined;
     }
 
     // Cập nhật người nhận việc mới nếu có quyền
@@ -511,7 +514,7 @@ export const TaskModel = {
     task.updatedAt = now;
     await task.save();
 
-    return toSafeTask(task.toObject());
+    return toSafeTask(task.toObject(), task.assigneeAvatar, task.creatorAvatar);
   },
 
   /**

@@ -6,6 +6,7 @@ import { Task, TaskPriority, TaskStatus } from "@/types";
 import { LoadingSection } from "@/components/ui/Loading";
 import { CreateTaskModal } from "@/components/tasks/CreateTaskModal";
 import { TaskDetailModal } from "@/components/tasks/TaskDetailModal";
+import { EditTaskModal } from "@/components/tasks/EditTaskModal";
 
 const priorityConfig: Record<TaskPriority, { label: string; class: string }> = {
   urgent: {
@@ -104,6 +105,7 @@ export default function TasksPage() {
   // Modals
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [selectedTaskDetail, setSelectedTaskDetail] = useState<Task | null>(null);
+  const [selectedTaskEdit, setSelectedTaskEdit] = useState<Task | null>(null);
 
   const isDirectorOrAdmin = user?.role === "admin" || user?.role === "director";
   const isManager = user?.role === "manager";
@@ -171,7 +173,12 @@ export default function TasksPage() {
 
   const handleTaskUpdated = (updatedTask: Task) => {
     setTasks((prev) => prev.map((t) => (t.id === updatedTask.id ? updatedTask : t)));
-    setSelectedTaskDetail(updatedTask);
+    if (selectedTaskDetail?.id === updatedTask.id) {
+      setSelectedTaskDetail(updatedTask);
+    }
+    if (selectedTaskEdit?.id === updatedTask.id) {
+      setSelectedTaskEdit(null);
+    }
     fetchTasks();
   };
 
@@ -777,7 +784,7 @@ export default function TasksPage() {
                               onClick={() => setSelectedTaskDetail(t)}
                               className="p-3.5 rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200/80 dark:border-zinc-800 hover:border-zinc-300 dark:hover:border-zinc-700 shadow-2xs active:scale-[0.99] transition cursor-pointer space-y-2.5"
                             >
-                              {/* Hàng 1: Priority + Phòng ban + Quá hạn */}
+                              {/* Hàng 1: Priority + Phòng ban + Quá hạn + Nút Sửa */}
                               <div className="flex items-center justify-between gap-1.5 flex-wrap">
                                 <div className="flex items-center gap-1.5 flex-wrap min-w-0">
                                   <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${pBadge.class}`}>
@@ -787,11 +794,24 @@ export default function TasksPage() {
                                     🏢 {t.department}
                                   </span>
                                 </div>
-                                {isOverdue && (
-                                  <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-rose-50 text-rose-600 dark:bg-rose-950/60 dark:text-rose-400 border border-rose-200 dark:border-rose-900 animate-pulse">
-                                    ⚠️ Quá hạn
-                                  </span>
-                                )}
+                                <div className="flex items-center gap-1.5 shrink-0">
+                                  {isOverdue && (
+                                    <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-rose-50 text-rose-600 dark:bg-rose-950/60 dark:text-rose-400 border border-rose-200 dark:border-rose-900 animate-pulse">
+                                      ⚠️ Quá hạn
+                                    </span>
+                                  )}
+                                  <button
+                                    type="button"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setSelectedTaskEdit(t);
+                                    }}
+                                    className="p-1 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-400 hover:text-blue-600 dark:hover:text-blue-400 transition cursor-pointer"
+                                    title="Sửa công việc"
+                                  >
+                                    <span className="text-xs">✏️</span>
+                                  </button>
+                                </div>
                               </div>
 
                               {/* Hàng 2: Tiêu đề */}
@@ -947,7 +967,7 @@ export default function TasksPage() {
                                   onClick={() => setSelectedTaskDetail(t)}
                                   className="p-3.5 rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200/80 dark:border-zinc-800 hover:border-zinc-300 dark:hover:border-zinc-700 shadow-2xs active:scale-[0.99] transition cursor-pointer space-y-2.5"
                                 >
-                                  {/* Hàng 1 */}
+                                  {/* Hàng 1: Priority + Phòng ban + Quá hạn + Nút Sửa */}
                                   <div className="flex items-center justify-between gap-1.5 flex-wrap">
                                     <div className="flex items-center gap-1.5 flex-wrap min-w-0">
                                       <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${pBadge.class}`}>
@@ -957,11 +977,24 @@ export default function TasksPage() {
                                         🏢 {t.department}
                                       </span>
                                     </div>
-                                    {isOverdue && (
-                                      <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-rose-50 text-rose-600 dark:bg-rose-950/60 dark:text-rose-400 border border-rose-200 dark:border-rose-900 animate-pulse">
-                                        ⚠️ Quá hạn
-                                      </span>
-                                    )}
+                                    <div className="flex items-center gap-1.5 shrink-0">
+                                      {isOverdue && (
+                                        <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-rose-50 text-rose-600 dark:bg-rose-950/60 dark:text-rose-400 border border-rose-200 dark:border-rose-900 animate-pulse">
+                                          ⚠️ Quá hạn
+                                        </span>
+                                      )}
+                                      <button
+                                        type="button"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          setSelectedTaskEdit(t);
+                                        }}
+                                        className="p-1 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-400 hover:text-blue-600 dark:hover:text-blue-400 transition cursor-pointer"
+                                        title="Sửa công việc"
+                                      >
+                                        <span className="text-xs">✏️</span>
+                                      </button>
+                                    </div>
                                   </div>
 
                                   {/* Hàng 2: Tiêu đề */}
@@ -1082,14 +1115,27 @@ export default function TasksPage() {
                             onClick={() => setSelectedTaskDetail(t)}
                             className="p-3.5 rounded-xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 hover:border-zinc-400 dark:hover:border-zinc-600 transition shadow-2xs cursor-pointer space-y-2.5 group"
                           >
-                            {/* Badges */}
+                            {/* Badges & Nút Sửa */}
                             <div className="flex items-center justify-between gap-1.5 flex-wrap">
                               <span className={`px-2 py-0.5 rounded text-[10px] font-semibold ${pBadge.class}`}>
                                 {pBadge.label}
                               </span>
-                              <span className="text-[10px] font-medium text-zinc-400 truncate max-w-[120px]">
-                                {t.department}
-                              </span>
+                              <div className="flex items-center gap-1 min-w-0">
+                                <span className="text-[10px] font-medium text-zinc-400 truncate max-w-[100px]">
+                                  {t.department}
+                                </span>
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setSelectedTaskEdit(t);
+                                  }}
+                                  className="opacity-70 group-hover:opacity-100 p-1 rounded-md hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-400 hover:text-blue-600 dark:hover:text-blue-400 transition cursor-pointer"
+                                  title="Sửa công việc"
+                                >
+                                  <span className="text-xs">✏️</span>
+                                </button>
+                              </div>
                             </div>
 
                             {/* Tiêu đề */}
@@ -1261,13 +1307,24 @@ export default function TasksPage() {
                       )}
                     </div>
 
-                    <button
-                      type="button"
-                      onClick={() => setSelectedTaskDetail(task)}
-                      className="px-2.5 py-1 text-xs font-semibold rounded-lg bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-800 dark:text-zinc-200 transition active:scale-95 cursor-pointer shrink-0"
-                    >
-                      Chi tiết
-                    </button>
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      <button
+                        type="button"
+                        onClick={() => setSelectedTaskDetail(task)}
+                        className="px-2.5 py-1 text-xs font-semibold rounded-lg bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-800 dark:text-zinc-200 transition active:scale-95 cursor-pointer shrink-0"
+                      >
+                        Chi tiết
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setSelectedTaskEdit(task)}
+                        className="px-2.5 py-1 text-xs font-semibold rounded-lg bg-blue-50 dark:bg-blue-950/60 border border-blue-200 dark:border-blue-800 text-blue-700 dark:text-blue-300 hover:bg-blue-100 transition active:scale-95 cursor-pointer shrink-0 flex items-center gap-1"
+                        title="Sửa công việc"
+                      >
+                        <span>✏️</span>
+                        <span>Sửa</span>
+                      </button>
+                    </div>
                   </div>
                 </div>
               );
@@ -1286,7 +1343,7 @@ export default function TasksPage() {
                   <th className="px-4 py-3.5">Hạn chót</th>
                   <th className="px-4 py-3.5">Tiến độ</th>
                   <th className="px-4 py-3.5 text-center">Trạng thái</th>
-                  <th className="px-4 py-3.5 text-right">Chi tiết</th>
+                  <th className="px-4 py-3.5 text-right">Thao tác</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800/80">
@@ -1428,13 +1485,24 @@ export default function TasksPage() {
 
                       {/* Thao tác */}
                       <td className="px-4 py-3.5 whitespace-nowrap text-right">
-                        <button
-                          type="button"
-                          onClick={() => setSelectedTaskDetail(task)}
-                          className="px-2.5 py-1 text-xs font-semibold rounded-lg bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-800 dark:text-zinc-200 transition cursor-pointer"
-                        >
-                          Chi tiết
-                        </button>
+                        <div className="flex items-center justify-end gap-1.5">
+                          <button
+                            type="button"
+                            onClick={() => setSelectedTaskDetail(task)}
+                            className="px-2.5 py-1 text-xs font-semibold rounded-lg bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-800 dark:text-zinc-200 transition cursor-pointer"
+                          >
+                            Chi tiết
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setSelectedTaskEdit(task)}
+                            className="px-2.5 py-1 text-xs font-semibold rounded-lg bg-blue-50 dark:bg-blue-950/60 border border-blue-200 dark:border-blue-800/80 text-blue-700 dark:text-blue-300 hover:bg-blue-100 dark:hover:bg-blue-900/60 transition cursor-pointer flex items-center gap-1 active:scale-95 shadow-2xs"
+                            title="Chỉnh sửa công việc"
+                          >
+                            <span>✏️</span>
+                            <span>Sửa</span>
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   );
@@ -1582,6 +1650,16 @@ export default function TasksPage() {
           currentUser={user}
           onTaskUpdated={handleTaskUpdated}
           onTaskDeleted={handleTaskDeleted}
+        />
+      )}
+
+      {selectedTaskEdit && (
+        <EditTaskModal
+          isOpen={Boolean(selectedTaskEdit)}
+          onClose={() => setSelectedTaskEdit(null)}
+          task={selectedTaskEdit}
+          currentUser={user}
+          onTaskUpdated={handleTaskUpdated}
         />
       )}
     </div>
