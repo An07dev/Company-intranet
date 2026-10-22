@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { connectToDatabase } from "@/server/db";
-import { MongoPurchaseOrderModel } from "@/server/db/schema";
+import { MongoPurchaseOrderModel, MongoShopeeProductModel } from "@/server/db/schema";
+import { SapoService } from "@/server/services/sapo.service";
+import { LogModel } from "@/server/models/log.model";
 
 export const dynamic = "force-dynamic";
 
@@ -42,7 +44,7 @@ export async function GET(
 
 /**
  * PUT /api/expenses/purchase-orders/[id]
- * Cập nhật đơn nhập hàng
+ * Cập nhật đơn nhập hàng & tự động đồng bộ tồn kho Sapo theo chênh lệch (Delta)
  */
 export async function PUT(
   request: NextRequest,
@@ -73,30 +75,207 @@ export async function PUT(
       );
     }
 
-    // Tính toán lại tổng tiền từ danh sách mặt hàng nếu có truyền
-    let totalPrice = existingOrder.total_price || 0;
-    let formattedLineItems = existingOrder.line_items || [];
+    // 1. Phân tích chênh lệch số lượng mặt hàng kho giữa đơn cũ và đơn mới
+    const oldItems = existingOrder.line_items || [];
+    const oldWarehouseQtyMap = new Map<string, { qty: number; name: string; sku: string; productId: string; variantId: string }>();
+
+    for (const oi of oldItems) {
+      const pId = oi.product_id ? String(oi.product_id) : "";
+      const vId = oi.variant_id ? String(oi.variant_id) : "";
+      const isWh = Boolean((pId && pId !== "0") || (vId && vId !== "0"));
+      if (isWh) {
+        const key = vId && vId !== "0" ? `v_${vId}` : `p_${pId}`;
+        oldWarehouseQtyMap.set(key, {
+          qty: Number(oi.quantity || 0),
+          name: oi.name || "",
+          sku: oi.sku || "",
+          productId: pId,
+          variantId: vId,
+        });
+      }
+    }
+
+    const newWarehouseQtyMap = new Map<string, { qty: number; name: string; sku: string; productId: string; variantId: string }>();
+    let totalPrice = 0;
+    let formattedLineItems: any[] = [];
 
     if (Array.isArray(line_items) && line_items.length > 0) {
-      totalPrice = 0;
-      formattedLineItems = line_items.map((li: any) => {
-        const qty = Math.max(1, Number(li.quantity || 1));
-        const price = Math.max(0, Number(li.price || 0));
+      for (const ni of line_items) {
+        const qty = Math.max(1, Number(ni.quantity || 1));
+        const price = Math.max(0, Number(ni.price || 0));
         const lineAmount = qty * price;
         totalPrice += lineAmount;
 
-        return {
-          product_id: li.product_id || 0,
-          variant_id: li.variant_id || 0,
-          name: (li.name || "Sản phẩm").trim(),
-          sku: (li.sku || "").trim(),
+        const pId = ni.product_id ? String(ni.product_id) : "";
+        const vId = ni.variant_id ? String(ni.variant_id) : "";
+        const isWh = Boolean((pId && pId !== "0") || (vId && vId !== "0"));
+
+        if (isWh) {
+          const key = vId && vId !== "0" ? `v_${vId}` : `p_${pId}`;
+          const existingNew = newWarehouseQtyMap.get(key) || { qty: 0, name: ni.name || "", sku: ni.sku || "", productId: pId, variantId: vId };
+          existingNew.qty += qty;
+          newWarehouseQtyMap.set(key, existingNew);
+        }
+
+        formattedLineItems.push({
+          product_id: isWh ? (ni.product_id || 0) : 0,
+          variant_id: isWh ? (ni.variant_id || 0) : 0,
+          name: (ni.name || "Sản phẩm").trim(),
+          sku: (ni.sku || "").trim(),
           quantity: qty,
           price: price,
           line_amount: lineAmount,
-          current_stock: li.current_stock,
-          sapo_synced: li.sapo_synced,
-        };
-      });
+          current_stock: ni.current_stock,
+          sapo_synced: isWh,
+        });
+      }
+    } else {
+      totalPrice = existingOrder.total_price || 0;
+      formattedLineItems = existingOrder.line_items || [];
+    }
+
+    // 2. Tính toán delta và đồng bộ tồn kho Sapo + MongoDB
+    const allWarehouseKeys = new Set([...oldWarehouseQtyMap.keys(), ...newWarehouseQtyMap.keys()]);
+    const syncResults: any[] = [];
+
+    for (const key of allWarehouseKeys) {
+      const oldInfo = oldWarehouseQtyMap.get(key);
+      const newInfo = newWarehouseQtyMap.get(key);
+      const oldQty = oldInfo?.qty || 0;
+      const newQty = newInfo?.qty || 0;
+      const delta = newQty - oldQty;
+
+      if (delta !== 0) {
+        const targetInfo = newInfo || oldInfo!;
+        const targetVId = targetInfo.variantId;
+        const targetPId = targetInfo.productId;
+        const targetName = targetInfo.name;
+        const targetSku = targetInfo.sku;
+
+        try {
+          let productDoc: any = null;
+          if (targetPId && targetPId !== "0") {
+            productDoc = await MongoShopeeProductModel.findOne({ item_id: targetPId });
+          }
+          if (!productDoc && targetVId && targetVId !== "0") {
+            productDoc = await MongoShopeeProductModel.findOne({ "variations.model_id": targetVId });
+          }
+
+          if (productDoc) {
+            let targetVariation: any = null;
+            if (Array.isArray(productDoc.variations) && productDoc.variations.length > 0) {
+              if (targetVId && targetVId !== "0") {
+                targetVariation = productDoc.variations.find((v: any) => String(v.model_id) === String(targetVId));
+              }
+              if (!targetVariation && targetSku) {
+                targetVariation = productDoc.variations.find((v: any) => String(v.sku).toLowerCase() === targetSku.toLowerCase());
+              }
+              if (!targetVariation) {
+                targetVariation = productDoc.variations[0];
+              }
+            }
+
+            if (targetVariation) {
+              const prevVarStock = Number(targetVariation.stock || 0);
+              const newVarStock = Math.max(0, prevVarStock + delta);
+              targetVariation.stock = newVarStock;
+
+              const newTotalStock = productDoc.variations.reduce((sum: number, v: any) => sum + (Number(v.stock) || 0), 0);
+              const newStatus = newTotalStock > 0 ? "Đang hoạt động" : "Hết hàng";
+
+              await MongoShopeeProductModel.updateOne(
+                { _id: productDoc._id },
+                {
+                  $set: {
+                    stock: newTotalStock,
+                    status: newStatus,
+                    variations: productDoc.variations,
+                    updatedAt: new Date().toISOString(),
+                  },
+                }
+              );
+
+              // Cập nhật Sapo API
+              let sapoSynced = false;
+              let syncNote = "";
+              const sapoVarId = String(targetVariation.model_id);
+
+              try {
+                await SapoService.updateVariantInventory(sapoVarId, newVarStock);
+                sapoSynced = true;
+                syncNote = `Đã đồng bộ Sapo (Variant: ${sapoVarId}, tồn: ${newVarStock})`;
+              } catch (sapoErr: any) {
+                console.error(`[Sapo Sync Error on Edit Variant ${sapoVarId}]:`, sapoErr);
+                syncNote = `Lỗi Sapo: ${sapoErr?.message || "Không thể gọi API Sapo"}`;
+              }
+
+              // Ghi log kiểm kê
+              await LogModel.createLog({
+                level: sapoSynced ? "success" : "warn",
+                type: "inventory_adjustment",
+                source: "purchase_order_edit",
+                shop_username: productDoc.shop_username || "sapo_omnichannel",
+                message: `Chỉnh sửa đơn nhập ${existingOrder.code}: ${delta > 0 ? "Tăng" : "Giảm"} tồn "${targetName}" (${targetSku}) ${delta > 0 ? "+" : ""}${delta} cái (Tồn: ${prevVarStock} → ${newVarStock})`,
+                details: {
+                  purchase_order_code: existingOrder.code,
+                  item_id: productDoc.item_id,
+                  model_id: sapoVarId,
+                  prev_stock: prevVarStock,
+                  delta_qty: delta,
+                  new_stock: newVarStock,
+                  sapo_synced: sapoSynced,
+                  sync_note: syncNote,
+                },
+              });
+
+              syncResults.push({
+                name: targetName,
+                sku: targetSku,
+                delta,
+                new_stock: newVarStock,
+                sapo_synced: sapoSynced,
+              });
+            } else {
+              // Sản phẩm đơn không có variations
+              const prevStock = Number(productDoc.stock || 0);
+              const newStock = Math.max(0, prevStock + delta);
+              const newStatus = newStock > 0 ? "Đang hoạt động" : "Hết hàng";
+
+              await MongoShopeeProductModel.updateOne(
+                { _id: productDoc._id },
+                {
+                  $set: {
+                    stock: newStock,
+                    status: newStatus,
+                    updatedAt: new Date().toISOString(),
+                  },
+                }
+              );
+
+              let sapoSynced = false;
+              const sapoId = (targetVId && targetVId !== "0") ? targetVId : targetPId;
+              if (sapoId) {
+                try {
+                  await SapoService.updateVariantInventory(sapoId, newStock);
+                  sapoSynced = true;
+                } catch (sapoErr) {
+                  console.error(`[Sapo Sync Error on Edit Product ${sapoId}]:`, sapoErr);
+                }
+              }
+
+              syncResults.push({
+                name: targetName,
+                sku: targetSku,
+                delta,
+                new_stock: newStock,
+                sapo_synced: sapoSynced,
+              });
+            }
+          }
+        } catch (itemErr) {
+          console.error(`[Inventory sync error on edit item ${targetName}]:`, itemErr);
+        }
+      }
     }
 
     // Chuẩn hóa giao dịch thanh toán và số tiền đã trả
@@ -146,15 +325,21 @@ export async function PUT(
     existingOrder.unpaid_amount = unpaidAmount;
     existingOrder.line_items = formattedLineItems;
     existingOrder.transactions = transactions;
+    existingOrder.inventory_synced = existingOrder.inventory_synced || syncResults.length > 0;
     if (note !== undefined) existingOrder.note = note;
     existingOrder.updated_on = new Date().toISOString();
 
     await existingOrder.save();
 
+    let msg = `Đã cập nhật đơn nhập hàng ${existingOrder.code} thành công!`;
+    if (syncResults.length > 0) {
+      msg += ` Đã đồng bộ chênh lệch tồn kho ${syncResults.length} sản phẩm lên Sapo.`;
+    }
+
     return NextResponse.json({
       success: true,
-      message: `Đã cập nhật đơn nhập hàng ${existingOrder.code} thành công!`,
-      data: { order: existingOrder },
+      message: msg,
+      data: { order: existingOrder, sync_results: syncResults },
     });
   } catch (error: any) {
     console.error("[Update Purchase Order API Error]:", error);
@@ -167,7 +352,7 @@ export async function PUT(
 
 /**
  * DELETE /api/expenses/purchase-orders/[id]
- * Xóa đơn nhập hàng khỏi collection purchase_orders
+ * Xóa đơn nhập hàng & tự động hoàn trừ tồn kho Sapo đối với các mặt hàng đã nhập
  */
 export async function DELETE(
   request: NextRequest,
@@ -188,11 +373,146 @@ export async function DELETE(
     }
 
     const orderCode = existing.code;
+
+    // Hoàn tồn kho và đồng bộ Sapo trước khi xóa đơn nhập hàng
+    const itemsToRollback = existing.line_items || [];
+    const rollbackResults: any[] = [];
+
+    for (const item of itemsToRollback) {
+      const pId = item.product_id ? String(item.product_id) : "";
+      const vId = item.variant_id ? String(item.variant_id) : "";
+      const isWh = Boolean((pId && pId !== "0") || (vId && vId !== "0"));
+      const qtyToRollback = Math.max(0, Number(item.quantity || 0));
+
+      // Chỉ hoàn tồn kho với các mặt hàng đã đồng bộ từ kho Sapo
+      if (isWh && qtyToRollback > 0 && (item.sapo_synced || existing.inventory_synced)) {
+        try {
+          let productDoc: any = null;
+          if (pId && pId !== "0") {
+            productDoc = await MongoShopeeProductModel.findOne({ item_id: pId });
+          }
+          if (!productDoc && vId && vId !== "0") {
+            productDoc = await MongoShopeeProductModel.findOne({ "variations.model_id": vId });
+          }
+
+          if (productDoc) {
+            let targetVariation: any = null;
+            if (Array.isArray(productDoc.variations) && productDoc.variations.length > 0) {
+              if (vId && vId !== "0") {
+                targetVariation = productDoc.variations.find((v: any) => String(v.model_id) === String(vId));
+              }
+              if (!targetVariation && item.sku) {
+                targetVariation = productDoc.variations.find((v: any) => String(v.sku).toLowerCase() === item.sku!.toLowerCase());
+              }
+              if (!targetVariation) {
+                targetVariation = productDoc.variations[0];
+              }
+            }
+
+            if (targetVariation) {
+              const prevVarStock = Number(targetVariation.stock || 0);
+              const newVarStock = Math.max(0, prevVarStock - qtyToRollback);
+              targetVariation.stock = newVarStock;
+
+              const newTotalStock = productDoc.variations.reduce((sum: number, v: any) => sum + (Number(v.stock) || 0), 0);
+              const newStatus = newTotalStock > 0 ? "Đang hoạt động" : "Hết hàng";
+
+              await MongoShopeeProductModel.updateOne(
+                { _id: productDoc._id },
+                {
+                  $set: {
+                    stock: newTotalStock,
+                    status: newStatus,
+                    variations: productDoc.variations,
+                    updatedAt: new Date().toISOString(),
+                  },
+                }
+              );
+
+              // Hoàn tồn trên Sapo API
+              let sapoSynced = false;
+              const sapoVarId = String(targetVariation.model_id);
+              try {
+                await SapoService.updateVariantInventory(sapoVarId, newVarStock);
+                sapoSynced = true;
+              } catch (sapoErr) {
+                console.error(`[Sapo Sync Error on Delete Variant ${sapoVarId}]:`, sapoErr);
+              }
+
+              await LogModel.createLog({
+                level: sapoSynced ? "success" : "warn",
+                type: "inventory_adjustment",
+                source: "purchase_order_delete",
+                shop_username: productDoc.shop_username || "sapo_omnichannel",
+                message: `Xóa đơn nhập ${orderCode}: Hoàn trừ tồn kho "${item.name}" (${item.sku}) -${qtyToRollback} cái (Tồn: ${prevVarStock} → ${newVarStock})`,
+                details: {
+                  purchase_order_code: orderCode,
+                  item_id: productDoc.item_id,
+                  model_id: sapoVarId,
+                  prev_stock: prevVarStock,
+                  rollback_qty: qtyToRollback,
+                  new_stock: newVarStock,
+                  sapo_synced: sapoSynced,
+                },
+              });
+
+              rollbackResults.push({
+                name: item.name,
+                sku: item.sku,
+                rollback_qty: qtyToRollback,
+                new_stock: newVarStock,
+                sapo_synced: sapoSynced,
+              });
+            } else {
+              // Sản phẩm không có biến thể riêng
+              const prevStock = Number(productDoc.stock || 0);
+              const newStock = Math.max(0, prevStock - qtyToRollback);
+              const newStatus = newStock > 0 ? "Đang hoạt động" : "Hết hàng";
+
+              await MongoShopeeProductModel.updateOne(
+                { _id: productDoc._id },
+                {
+                  $set: {
+                    stock: newStock,
+                    status: newStatus,
+                    updatedAt: new Date().toISOString(),
+                  },
+                }
+              );
+
+              const sapoId = (vId && vId !== "0") ? vId : pId;
+              if (sapoId) {
+                try {
+                  await SapoService.updateVariantInventory(sapoId, newStock);
+                } catch (sapoErr) {
+                  console.error(`[Sapo Sync Error on Delete Product ${sapoId}]:`, sapoErr);
+                }
+              }
+
+              rollbackResults.push({
+                name: item.name,
+                rollback_qty: qtyToRollback,
+                new_stock: newStock,
+              });
+            }
+          }
+        } catch (itemErr) {
+          console.error(`[Rollback error for item ${item.name}]:`, itemErr);
+        }
+      }
+    }
+
     await MongoPurchaseOrderModel.deleteOne(filter);
+
+    let msg = `Đã xóa đơn nhập hàng ${orderCode} thành công!`;
+    if (rollbackResults.length > 0) {
+      msg += ` Đã tự động hoàn trừ tồn kho và đồng bộ lại ${rollbackResults.length} sản phẩm lên Sapo.`;
+    }
 
     return NextResponse.json({
       success: true,
-      message: `Đã xóa đơn nhập hàng ${orderCode} thành công!`,
+      message: msg,
+      data: { rollback_results: rollbackResults },
     });
   } catch (error: any) {
     console.error("[Delete Purchase Order API Error]:", error);
