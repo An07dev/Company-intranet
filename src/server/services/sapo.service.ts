@@ -442,11 +442,12 @@ export const SapoService = {
    * Cập nhật số lượng tồn kho của một biến thể trên Sapo (Kiểm kho / Điều chỉnh tồn)
    */
   async updateVariantInventory(variantId: number | string, quantity: number): Promise<any> {
+    const numId = !isNaN(Number(variantId)) ? Number(variantId) : variantId;
     return sapoFetch(`/admin/variants/${variantId}.json`, {
       method: "PUT",
       body: JSON.stringify({
         variant: {
-          id: variantId,
+          id: numId,
           inventory_management: "bizweb",
           inventory_quantity: Number(quantity),
         },

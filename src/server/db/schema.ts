@@ -1212,4 +1212,77 @@ const RoleSchema = new Schema<IRoleDocument>(
 export const MongoRoleModel: Model<IRoleDocument> =
   mongoose.models.Role || mongoose.model<IRoleDocument>("Role", RoleSchema, "roles");
 
+export interface IPurchaseOrderDocument {
+  id: string;
+  code: string;
+  supplier_id?: number;
+  supplier_name: string;
+  supplier_code?: string;
+  total_price: number;
+  subtotal_price: number;
+  paid_amount: number;
+  unpaid_amount: number;
+  transaction_status: string;
+  receipt_status: string;
+  status: string;
+  received_on: string;
+  created_on: string;
+  updated_on?: string;
+  line_items?: Array<{
+    product_id?: number | string;
+    variant_id?: number | string;
+    name: string;
+    sku?: string;
+    quantity: number;
+    price: number;
+    line_amount: number;
+    current_stock?: number;
+    sapo_synced?: boolean;
+  }>;
+  transactions?: Array<{
+    id: number | string;
+    amount: number;
+    payment_method_name?: string;
+    status: string;
+    processed_on?: string;
+    created_on?: string;
+  }>;
+  note?: string;
+  inventory_synced?: boolean;
+}
+
+const PurchaseOrderSchema = new Schema<IPurchaseOrderDocument>(
+  {
+    id: { type: String, required: true, unique: true, index: true },
+    code: { type: String, required: true, unique: true, index: true },
+    supplier_id: { type: Number },
+    supplier_name: { type: String, required: true, index: true },
+    supplier_code: { type: String },
+    total_price: { type: Number, default: 0 },
+    subtotal_price: { type: Number, default: 0 },
+    paid_amount: { type: Number, default: 0 },
+    unpaid_amount: { type: Number, default: 0 },
+    transaction_status: { type: String, default: "pending", index: true },
+    receipt_status: { type: String, default: "received" },
+    status: { type: String, default: "active", index: true },
+    received_on: { type: String, required: true, index: true },
+    created_on: { type: String, required: true, index: true },
+    updated_on: { type: String },
+    line_items: { type: [Schema.Types.Mixed], default: [] },
+    transactions: { type: [Schema.Types.Mixed], default: [] },
+    note: { type: String, default: "" },
+  },
+  {
+    timestamps: false,
+    versionKey: false,
+    collection: "purchase_orders",
+  }
+);
+
+PurchaseOrderSchema.index({ received_on: -1, created_on: -1 });
+
+export const MongoPurchaseOrderModel: Model<IPurchaseOrderDocument> =
+  mongoose.models.PurchaseOrder ||
+  mongoose.model<IPurchaseOrderDocument>("PurchaseOrder", PurchaseOrderSchema, "purchase_orders");
+
 

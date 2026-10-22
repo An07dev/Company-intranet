@@ -80,6 +80,14 @@ export const SYSTEM_PAGES: SystemPageItem[] = [
     description: "Công nợ khách hàng, nhà cung cấp, thu nợ Sapo",
     icon: "💰",
   },
+  {
+    path: "/dashboard/expenses",
+    label: "Chi tiêu nhập hàng & Đề xuất",
+    category: "finance",
+    categoryLabel: "Tài chính & Công nợ",
+    description: "Quản lý chi phí đơn nhập kho NCC, biểu đồ dòng tiền và đề xuất nhập hàng",
+    icon: "💸",
+  },
 
   // 4. Kho vận & Kiện hàng
   {
@@ -245,6 +253,7 @@ export async function ensureRolesSeeded() {
           "/dashboard/orders",
           "/dashboard/customers",
           "/dashboard/debts",
+          "/dashboard/expenses",
           "/dashboard/suppliers",
           "/dashboard/inventory",
           "/dashboard/packages",
@@ -270,6 +279,7 @@ export async function ensureRolesSeeded() {
         allowedPages: [
           "/dashboard/chat",
           "/dashboard/debts",
+          "/dashboard/expenses",
           "/dashboard/orders",
           "/dashboard/customers",
           "/dashboard/suppliers",
@@ -293,6 +303,7 @@ export async function ensureRolesSeeded() {
           "/dashboard/chat",
           "/dashboard/inventory",
           "/dashboard/packages",
+          "/dashboard/expenses",
           "/dashboard/orders",
           "/dashboard/shopee-products",
           "/dashboard/tasks",

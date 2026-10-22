@@ -8,6 +8,7 @@ export * from "./asset";
 export * from "./shopee";
 export * from "./package";
 export * from "./role";
+export * from "./expense";
 
 // Vai trò trong hệ thống (Hỗ trợ mở rộng role linh hoạt)
 export type UserRole = "admin" | "director" | "manager" | "employee" | string;
