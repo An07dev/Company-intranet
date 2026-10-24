@@ -15,6 +15,8 @@ export interface CleanCustomer {
   last_order_name: string | null;
   tags: string;
   note: string | null;
+  custom_id?: string | null;
+  customer_group?: string | null;
   created_on: string;
   modified_on: string;
   default_address?: any;
@@ -35,7 +37,7 @@ export function normalizeCustomer(c: any, now = new Date().toISOString()): Clean
     c.shipping_address?.phone ||
     "";
 
-  return {
+  const res: CleanCustomer = {
     id: Number(c.id),
     first_name: c.first_name || "",
     last_name: c.last_name || "",
@@ -54,11 +56,17 @@ export function normalizeCustomer(c: any, now = new Date().toISOString()): Clean
     addresses: c.addresses || (c.shipping_address ? [c.shipping_address] : []),
     synced_at: now,
   };
+
+  if (c.custom_id !== undefined) res.custom_id = c.custom_id;
+  if (c.customer_group !== undefined) res.customer_group = c.customer_group;
+
+  return res;
 }
 
 export class CustomerModel {
   /**
    * Lưu hoặc cập nhật hàng loạt khách hàng vào MongoDB (Atomic bulkWrite)
+   * Tuyệt đối bảo toàn custom_id và customer_group không bị ghi đè bởi Sapo
    */
   static async upsertCustomers(customers: any[]) {
     await connectToDatabase();
@@ -75,13 +83,25 @@ export class CustomerModel {
       }
     }
 
-    const bulkOps = Array.from(map.values()).map((c) => ({
-      updateOne: {
-        filter: { id: c.id },
-        update: { $set: c },
-        upsert: true,
-      },
-    }));
+    const bulkOps = Array.from(map.values()).map((c) => {
+      const updateFields: any = { ...c };
+      delete updateFields.custom_id;
+      delete updateFields.customer_group;
+
+      return {
+        updateOne: {
+          filter: { id: c.id },
+          update: {
+            $set: updateFields,
+            $setOnInsert: {
+              custom_id: null,
+              customer_group: null,
+            },
+          },
+          upsert: true,
+        },
+      };
+    });
 
     if (bulkOps.length === 0) return { total: 0, inserted: 0, updated: 0 };
 
@@ -94,7 +114,7 @@ export class CustomerModel {
   }
 
   /**
-   * Lưu hoặc cập nhật một khách hàng đơn lẻ
+   * Lưu hoặc cập nhật một khách hàng đơn lẻ (Bảo toàn custom_id và customer_group)
    */
   static async upsertSingleCustomer(customer: any) {
     await connectToDatabase();
@@ -102,10 +122,39 @@ export class CustomerModel {
     const now = new Date().toISOString();
     const clean = normalizeCustomer(customer, now);
 
+    const updateFields: any = { ...clean };
+    delete updateFields.custom_id;
+    delete updateFields.customer_group;
+
     return MongoSapoCustomerModel.findOneAndUpdate(
       { id: clean.id },
-      { $set: clean },
+      {
+        $set: updateFields,
+        $setOnInsert: { custom_id: null, customer_group: null },
+      },
       { upsert: true, new: true }
+    );
+  }
+
+  /**
+   * Cập nhật mã khách hàng riêng (custom_id) và nhóm phân loại (customer_group)
+   */
+  static async updateCustomCode(
+    id: number,
+    data: { custom_id?: string | null; customer_group?: string | null }
+  ) {
+    await connectToDatabase();
+    const updateDoc: Record<string, any> = {};
+    if (data.custom_id !== undefined) {
+      updateDoc.custom_id = data.custom_id ? data.custom_id.trim().toUpperCase() : null;
+    }
+    if (data.customer_group !== undefined) {
+      updateDoc.customer_group = data.customer_group ? data.customer_group.trim() : null;
+    }
+    return MongoSapoCustomerModel.findOneAndUpdate(
+      { id },
+      { $set: updateDoc },
+      { new: true }
     );
   }
 

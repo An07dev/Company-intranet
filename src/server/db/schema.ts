@@ -1018,6 +1018,8 @@ export interface ISapoCustomerDocument {
   last_order_name: string | null;
   tags: string;
   note: string | null;
+  custom_id?: string | null;
+  customer_group?: string | null;
   created_on: string;
   modified_on: string;
   default_address?: any;
@@ -1039,6 +1041,8 @@ const SapoCustomerSchema = new Schema<ISapoCustomerDocument>(
     last_order_name: { type: String, default: null },
     tags: { type: String, default: "" },
     note: { type: String, default: null },
+    custom_id: { type: String, default: null, index: true },
+    customer_group: { type: String, default: null, index: true },
     created_on: { type: String, required: true, index: true },
     modified_on: { type: String, required: true, index: true },
     default_address: { type: Schema.Types.Mixed, default: null },
@@ -1055,6 +1059,12 @@ const SapoCustomerSchema = new Schema<ISapoCustomerDocument>(
 SapoCustomerSchema.index({ created_on: -1 });
 SapoCustomerSchema.index({ modified_on: -1 });
 SapoCustomerSchema.index({ id: -1 });
+SapoCustomerSchema.index({ custom_id: 1 });
+SapoCustomerSchema.index({ customer_group: 1 });
+
+if (mongoose.models.SapoCustomer && !mongoose.models.SapoCustomer.schema.paths.custom_id) {
+  delete (mongoose.models as any).SapoCustomer;
+}
 
 export const MongoSapoCustomerModel: Model<ISapoCustomerDocument> =
   mongoose.models.SapoCustomer ||

@@ -89,26 +89,45 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    // Xây dựng bộ lọc tìm kiếm
-    const filter: Record<string, any> = {};
+    // Xây dựng bộ lọc tìm kiếm & phân nhóm
+    const group = (searchParams.get("group") || "").trim();
+    const andConditions: any[] = [];
+
+    if (group && group !== "all") {
+      if (group === "unassigned") {
+        andConditions.push({
+          $or: [
+            { customer_group: null },
+            { customer_group: "" },
+            { customer_group: { $exists: false } },
+          ],
+        });
+      } else {
+        andConditions.push({ customer_group: group });
+      }
+    }
+
     if (query) {
       const orConditions: any[] = [
         { name: { $regex: query, $options: "i" } },
         { phone: { $regex: query, $options: "i" } },
         { email: { $regex: query, $options: "i" } },
+        { custom_id: { $regex: query, $options: "i" } },
+        { customer_group: { $regex: query, $options: "i" } },
         { "default_address.address1": { $regex: query, $options: "i" } },
         { "default_address.city": { $regex: query, $options: "i" } },
       ];
       if (/^\d+$/.test(query)) {
         orConditions.push({ id: Number(query) });
       }
-      filter.$or = orConditions;
+      andConditions.push({ $or: orConditions });
     }
 
+    const filter: Record<string, any> = andConditions.length > 0 ? { $and: andConditions } : {};
     const skip = (page - 1) * limit;
 
     // Sắp xếp: Khách hàng mới nhất lên đầu ({ created_on: -1, id: -1 })
-    const [customers, totalFiltered, totalAll, statsAgg] = await Promise.all([
+    const [customers, totalFiltered, totalAll, statsAgg, groupAgg] = await Promise.all([
       MongoSapoCustomerModel.find(filter)
         .sort({ created_on: -1, id: -1 })
         .skip(skip)
@@ -130,11 +149,30 @@ export async function GET(request: NextRequest) {
           },
         },
       ]),
+      MongoSapoCustomerModel.aggregate([
+        {
+          $group: {
+            _id: "$customer_group",
+            count: { $sum: 1 },
+          },
+        },
+      ]),
     ]);
 
     const pageTotalSpent = customers.reduce((sum, c) => sum + (c.total_spent || 0), 0);
     const pageTotalOrders = customers.reduce((sum, c) => sum + (c.orders_count || 0), 0);
     const globalStats = statsAgg[0] || { totalSpent: 0, totalOrders: 0, vipCount: 0 };
+
+    const groupCounts: Record<string, number> = {};
+    let unassignedGroupCount = 0;
+    groupAgg.forEach((g) => {
+      if (!g._id) {
+        unassignedGroupCount += g.count;
+      } else {
+        groupCounts[g._id] = g.count;
+      }
+    });
+    groupCounts["unassigned"] = unassignedGroupCount;
 
     return NextResponse.json({
       success: true,
@@ -151,6 +189,7 @@ export async function GET(request: NextRequest) {
           pageTotalOrders,
           vipCount: globalStats.vipCount,
           totalCustomers: totalAll,
+          groupCounts,
         },
       },
     });
@@ -160,6 +199,78 @@ export async function GET(request: NextRequest) {
       {
         success: false,
         message: "Không thể lấy danh sách khách hàng",
+        error: error.message || String(error),
+      },
+      { status: 500 }
+    );
+  }
+}
+
+/**
+ * PATCH /api/sapo/customers
+ * Cập nhật mã định danh riêng (custom_id) và nhóm khách hàng (customer_group)
+ */
+export async function PATCH(request: NextRequest) {
+  try {
+    await connectToDatabase();
+    const body = await request.json();
+    const { id, custom_id, customer_group } = body;
+
+    if (!id) {
+      return NextResponse.json(
+        { success: false, message: "Thiếu ID khách hàng" },
+        { status: 400 }
+      );
+    }
+
+    const cleanCustomId =
+      custom_id && typeof custom_id === "string" ? custom_id.trim().toUpperCase() : null;
+    const cleanCustomerGroup =
+      customer_group && typeof customer_group === "string" ? customer_group.trim() : null;
+
+    // Kiểm tra trùng custom_id nếu có nhập mã
+    if (cleanCustomId) {
+      const existing = await MongoSapoCustomerModel.findOne({
+        id: { $ne: Number(id) },
+        custom_id: cleanCustomId,
+      });
+
+      if (existing) {
+        return NextResponse.json(
+          {
+            success: false,
+            message: `Mã khách hàng "${cleanCustomId}" đã được dùng cho "${existing.name}" (ID #${existing.id}). Vui lòng chọn mã khác.`,
+          },
+          { status: 400 }
+        );
+      }
+    }
+
+    const updated = await CustomerModel.updateCustomCode(Number(id), {
+      custom_id: cleanCustomId,
+      customer_group: cleanCustomerGroup,
+    });
+
+    if (!updated) {
+      return NextResponse.json(
+        { success: false, message: "Không tìm thấy khách hàng này trong hệ thống" },
+        { status: 404 }
+      );
+    }
+
+    invalidateCRMStatsCache();
+
+    return NextResponse.json({
+      success: true,
+      message: `Đã cập nhật mã nội bộ [${cleanCustomId || "Chưa có"}] & nhóm cho ${updated.name}`,
+      data: updated,
+    });
+  } catch (error: any) {
+    console.error("[Sapo Customers PATCH Error]:", error);
+    return NextResponse.json(
+      {
+        success: false,
+        message: "Lỗi cập nhật mã khách hàng nội bộ",
         error: error.message || String(error),
       },
       { status: 500 }

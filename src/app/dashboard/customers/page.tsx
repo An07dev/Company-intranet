@@ -5,6 +5,8 @@ import Link from "next/link";
 import { useToast } from "@/context/ToastContext";
 import { LoyalCustomersTab } from "@/components/customers/LoyalCustomersTab";
 import { AddLoyalCustomerModal } from "@/components/customers/AddLoyalCustomerModal";
+import { CustomerCustomCodeInline } from "@/components/customers/CustomerCustomCodeInline";
+import { CUSTOMER_GROUPS, CUSTOMER_GROUP_CATEGORIES, getCustomerGroupConfig } from "@/types/customer-group";
 
 interface Address {
   id: number;
@@ -29,6 +31,8 @@ interface Customer {
   last_order_name: string | null;
   tags: string;
   note: string | null;
+  custom_id?: string | null;
+  customer_group?: string | null;
   created_on: string;
   modified_on: string;
   default_address?: Address | null;
@@ -52,12 +56,14 @@ export default function CustomersPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Pagination & Search
+  // Pagination, Search & Group Filter
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
   const [searchQuery, setSearchQuery] = useState("");
   const [activeQuery, setActiveQuery] = useState("");
+  const [selectedGroup, setSelectedGroup] = useState<string>("all");
+  const [groupCounts, setGroupCounts] = useState<Record<string, number>>({});
   const [copiedPhone, setCopiedPhone] = useState<string | null>(null);
   const [stats, setStats] = useState({
     pageTotalSpent: 0,
@@ -68,10 +74,74 @@ export default function CustomersPage() {
 
   // Modal Chi tiết khách hàng
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
+  const [modalCustomId, setModalCustomId] = useState("");
+  const [modalCustomerGroup, setModalCustomerGroup] = useState("");
+  const [savingModalCustomCode, setSavingModalCustomCode] = useState(false);
+
+  useEffect(() => {
+    if (selectedCustomer) {
+      setModalCustomId(selectedCustomer.custom_id || "");
+      setModalCustomerGroup(selectedCustomer.customer_group || "");
+    }
+  }, [selectedCustomer]);
 
   // Modal Thêm khách hàng vào nhóm thân thiết
   const [isAddLoyalModalOpen, setIsAddLoyalModalOpen] = useState(false);
   const [customerForAddLoyal, setCustomerForAddLoyal] = useState<any | null>(null);
+
+  // Cập nhật mã nội bộ nhanh chóng trong state
+  const handleCustomerCodeSaved = (
+    customerId: number,
+    newCustomId: string | null,
+    newGroup: string | null
+  ) => {
+    setCustomers((prev) =>
+      prev.map((c) =>
+        c.id === customerId ? { ...c, custom_id: newCustomId, customer_group: newGroup } : c
+      )
+    );
+    if (selectedCustomer && selectedCustomer.id === customerId) {
+      setSelectedCustomer((prev) =>
+        prev ? { ...prev, custom_id: newCustomId, customer_group: newGroup } : null
+      );
+    }
+  };
+
+  const handleSaveModalCustomCode = async (cId: string, cGroup: string) => {
+    if (!selectedCustomer) return;
+    setSavingModalCustomCode(true);
+    try {
+      const cleanCustomId = cId.trim() ? cId.trim().toUpperCase() : null;
+      const cleanGroup = cGroup.trim() ? cGroup.trim() : null;
+
+      const res = await fetch("/api/sapo/customers", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          id: selectedCustomer.id,
+          custom_id: cleanCustomId,
+          customer_group: cleanGroup,
+        }),
+      });
+
+      const json = await res.json();
+      if (!res.ok || !json.success) {
+        throw new Error(json.message || "Không thể lưu mã khách hàng");
+      }
+
+      toast.success(
+        cleanCustomId
+          ? `Đã lưu mã [${cleanCustomId}] cho ${getFullName(selectedCustomer)}`
+          : `Đã xóa mã nội bộ cho ${getFullName(selectedCustomer)}`
+      );
+
+      handleCustomerCodeSaved(selectedCustomer.id, cleanCustomId, cleanGroup);
+    } catch (err: any) {
+      toast.error(err.message || "Lỗi lưu mã khách hàng");
+    } finally {
+      setSavingModalCustomCode(false);
+    }
+  };
 
   // 1. Tải danh sách ID khách hàng thân thiết từ MongoDB
   const fetchLoyalMap = useCallback(async () => {
@@ -92,11 +162,12 @@ export default function CustomersPage() {
   }, [fetchLoyalMap]);
 
   // 2. Tải danh sách khách hàng Sapo Omnichannel
-  const fetchCustomers = async (p = 1, query = "") => {
+  const fetchCustomers = async (p = 1, query = "", group = selectedGroup) => {
     setLoading(true);
     setError(null);
     try {
-      const url = `/api/sapo/customers?page=${p}&limit=20${query ? `&query=${encodeURIComponent(query)}` : ""}`;
+      const groupParam = group && group !== "all" ? `&group=${encodeURIComponent(group)}` : "";
+      const url = `/api/sapo/customers?page=${p}&limit=20${query ? `&query=${encodeURIComponent(query)}` : ""}${groupParam}`;
       const res = await fetch(url);
       const json = await res.json();
       if (!res.ok || !json.success) {
@@ -106,6 +177,9 @@ export default function CustomersPage() {
       setTotalPages(json.data.pagination.totalPages || 1);
       setTotalCount(json.data.pagination.total || 0);
       setStats(json.data.stats || { pageTotalSpent: 0, pageTotalOrders: 0, vipCount: 0, totalCustomers: 0 });
+      if (json.data.stats?.groupCounts) {
+        setGroupCounts(json.data.stats.groupCounts);
+      }
     } catch (err: any) {
       setError(err.message || "Lỗi tải dữ liệu khách hàng");
       toast.error(err.message || "Lỗi tải dữ liệu khách hàng");
@@ -115,8 +189,8 @@ export default function CustomersPage() {
   };
 
   useEffect(() => {
-    fetchCustomers(page, activeQuery);
-  }, [page, activeQuery]);
+    fetchCustomers(page, activeQuery, selectedGroup);
+  }, [page, activeQuery, selectedGroup]);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -397,7 +471,7 @@ export default function CustomersPage() {
           </div>
 
           {/* 3. Search & Filters Bar */}
-          <div className="bg-white dark:bg-zinc-900 p-2 sm:p-3.5 rounded-xl sm:rounded-2xl border border-zinc-200/80 dark:border-zinc-800 shadow-2xs sm:shadow-sm">
+          <div className="bg-white dark:bg-zinc-900 p-2.5 sm:p-3.5 rounded-xl sm:rounded-2xl border border-zinc-200/80 dark:border-zinc-800 shadow-2xs sm:shadow-sm space-y-2.5">
             <form onSubmit={handleSearch} className="flex items-center gap-1.5 sm:gap-2">
               <div className="relative flex-1">
                 <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-zinc-400 text-xs pointer-events-none">🔍</span>
@@ -405,7 +479,7 @@ export default function CustomersPage() {
                   type="text"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Tìm theo tên khách, SĐT, mã ID..."
+                  placeholder="Tìm theo tên khách, SĐT, mã ID Sapo, mã riêng (SI-01, DL-02...)..."
                   className="w-full pl-7 pr-7 py-1.5 sm:py-2 text-xs rounded-xl border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800 text-zinc-900 dark:text-white placeholder-zinc-400 focus:ring-2 focus:ring-blue-500 focus:outline-hidden transition-all"
                 />
                 {searchQuery && (
@@ -427,18 +501,124 @@ export default function CustomersPage() {
                 Tìm kiếm
               </button>
 
-              {activeQuery && (
+              {(activeQuery || selectedGroup !== "all") && (
                 <button
                   type="button"
-                  onClick={handleClearSearch}
+                  onClick={() => {
+                    handleClearSearch();
+                    setSelectedGroup("all");
+                  }}
                   className="py-1.5 sm:py-2 px-2.5 text-xs font-semibold rounded-xl border border-rose-200 dark:border-rose-900/60 bg-rose-50 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400 hover:bg-rose-100 transition shrink-0 cursor-pointer flex items-center gap-1 active:scale-95"
-                  title="Xóa bộ lọc tìm kiếm"
+                  title="Xóa bộ lọc tìm kiếm & nhóm"
                 >
                   <span>✕</span>
                   <span className="hidden sm:inline">Đặt lại</span>
                 </button>
               )}
             </form>
+
+            {/* TAB LỌC THEO NHÓM KHÁCH HÀNG NỘI BỘ (Customer Groups Filter Bar) */}
+            <div className="flex items-center gap-1.5 overflow-x-auto pb-0.5 pt-0.5 no-scrollbar text-xs">
+              <span className="text-[11px] font-semibold text-zinc-400 shrink-0 mr-1 flex items-center gap-1">
+                <span>🏷️</span>
+                <span>Nhóm:</span>
+              </span>
+
+              {/* Dropdown chọn nhanh 20+ nhóm */}
+              <div className="shrink-0 mr-1">
+                <select
+                  value={selectedGroup}
+                  onChange={(e) => {
+                    setSelectedGroup(e.target.value);
+                    setPage(1);
+                  }}
+                  className="h-7 px-2 text-[11px] font-semibold rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-zinc-800 dark:text-zinc-200 focus:ring-2 focus:ring-blue-500 focus:outline-hidden cursor-pointer shadow-2xs"
+                >
+                  <option value="all">🔍 Tất cả nhóm ({totalCount} khách)</option>
+                  <option value="unassigned">⚪ Chưa gán nhóm {groupCounts["unassigned"] ? `(${groupCounts["unassigned"]})` : ""}</option>
+                  {CUSTOMER_GROUP_CATEGORIES.map((cat) => (
+                    <optgroup key={cat} label={`── ${cat} ──`}>
+                      {CUSTOMER_GROUPS.filter((g) => g.category === cat).map((g) => {
+                        const count = groupCounts[g.key] || 0;
+                        return (
+                          <option key={g.key} value={g.key}>
+                            {g.icon} {g.label} ({g.prefix}-) {count > 0 ? `[${count}]` : ""}
+                          </option>
+                        );
+                      })}
+                    </optgroup>
+                  ))}
+                </select>
+              </div>
+
+              {/* Tất cả */}
+              <button
+                type="button"
+                onClick={() => {
+                  setSelectedGroup("all");
+                  setPage(1);
+                }}
+                className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold transition-all shrink-0 cursor-pointer flex items-center gap-1 ${selectedGroup === "all"
+                  ? "bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 shadow-2xs font-bold"
+                  : "bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white"
+                  }`}
+              >
+                <span>Tất cả</span>
+                <span className="text-[10px] opacity-75">({totalCount})</span>
+              </button>
+
+              {/* Từng nhóm khách hàng */}
+              {CUSTOMER_GROUPS.map((g) => {
+                const count = groupCounts[g.key] || 0;
+                const isSelected = selectedGroup === g.key;
+                return (
+                  <button
+                    key={g.key}
+                    type="button"
+                    onClick={() => {
+                      setSelectedGroup(g.key);
+                      setPage(1);
+                    }}
+                    className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold transition-all shrink-0 cursor-pointer flex items-center gap-1 border ${isSelected
+                      ? "bg-blue-600 text-white border-blue-600 shadow-2xs font-bold"
+                      : "bg-white dark:bg-zinc-900 text-zinc-700 dark:text-zinc-300 border-zinc-200 dark:border-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-800/60"
+                      }`}
+                  >
+                    <span>{g.icon}</span>
+                    <span>{g.label}</span>
+                    {count > 0 && (
+                      <span
+                        className={`px-1.5 py-0.1 rounded-full text-[9px] font-mono font-bold ${isSelected
+                          ? "bg-blue-800 text-white"
+                          : "bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400"
+                          }`}
+                      >
+                        {count}
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
+
+              {/* Chưa phân nhóm */}
+              <button
+                type="button"
+                onClick={() => {
+                  setSelectedGroup("unassigned");
+                  setPage(1);
+                }}
+                className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold transition-all shrink-0 cursor-pointer flex items-center gap-1 border ${selectedGroup === "unassigned"
+                  ? "bg-zinc-800 text-white border-zinc-800 dark:bg-zinc-200 dark:text-zinc-900 shadow-2xs font-bold"
+                  : "bg-white dark:bg-zinc-900 text-zinc-500 dark:text-zinc-400 border-dashed border-zinc-300 dark:border-zinc-700 hover:text-zinc-800 dark:hover:text-zinc-200"
+                  }`}
+              >
+                <span>⚪</span>
+                <span>Chưa gán nhóm</span>
+                {groupCounts["unassigned"] !== undefined && (
+                  <span className="text-[10px] opacity-75">({groupCounts["unassigned"]})</span>
+                )}
+              </button>
+            </div>
           </div>
 
           {/* Error state */}
@@ -529,8 +709,20 @@ export default function CustomersPage() {
                                 </span>
                               ) : null}
                             </div>
-                            <div className="text-[10px] text-zinc-400 font-mono">
-                              ID: #{c.id}
+                            <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
+                              <span className="text-[10px] text-zinc-400 font-mono">
+                                ID: #{c.id}
+                              </span>
+                              <CustomerCustomCodeInline
+                                customerId={c.id}
+                                customId={c.custom_id}
+                                customerGroup={c.customer_group}
+                                customerName={fullName}
+                                onSaved={(newId, newGroup) =>
+                                  handleCustomerCodeSaved(c.id, newId, newGroup)
+                                }
+                                size="sm"
+                              />
                             </div>
                           </div>
                         </div>
@@ -686,8 +878,19 @@ export default function CustomersPage() {
                                       </span>
                                     ) : null}
                                   </div>
-                                  <div className="text-[11px] text-zinc-400 font-mono">
-                                    ID: #{c.id}
+                                  <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+                                    <span className="text-[11px] text-zinc-400 font-mono">
+                                      ID: #{c.id}
+                                    </span>
+                                    <CustomerCustomCodeInline
+                                      customerId={c.id}
+                                      customId={c.custom_id}
+                                      customerGroup={c.customer_group}
+                                      customerName={fullName}
+                                      onSaved={(newId, newGroup) =>
+                                        handleCustomerCodeSaved(c.id, newId, newGroup)
+                                      }
+                                    />
                                   </div>
                                 </div>
                               </div>
@@ -876,9 +1079,14 @@ export default function CustomersPage() {
                       </span>
                     ) : null}
                   </div>
-                  <p className="text-[10px] sm:text-[11px] text-zinc-400 font-mono mt-0.5">
-                    Sapo Customer ID: #{selectedCustomer.id}
-                  </p>
+                  <div className="flex items-center gap-2 text-[10px] sm:text-[11px] text-zinc-400 font-mono mt-0.5">
+                    <span>Sapo ID: #{selectedCustomer.id}</span>
+                    {selectedCustomer.custom_id && (
+                      <span className="px-1.5 py-0.2 rounded font-bold font-mono bg-blue-100 dark:bg-blue-950 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800">
+                        🏷️ {selectedCustomer.custom_id}
+                      </span>
+                    )}
+                  </div>
                 </div>
               </div>
               <button
@@ -907,6 +1115,108 @@ export default function CustomersPage() {
                   <div className="text-[10px] sm:text-[11px] text-zinc-400 font-medium">💰 Tổng chi tiêu</div>
                   <div className="text-lg sm:text-xl font-bold font-mono text-emerald-600 dark:text-emerald-400 mt-0.5 truncate whitespace-nowrap">
                     {formatCurrency(selectedCustomer.total_spent)}
+                  </div>
+                </div>
+              </div>
+
+              {/* Quản lý mã định danh nội bộ & Phân nhóm riêng */}
+              <div className="p-3 sm:p-3.5 rounded-xl sm:rounded-2xl bg-gradient-to-r from-blue-50/60 to-indigo-50/50 dark:from-blue-950/25 dark:to-indigo-950/25 border border-blue-200/80 dark:border-blue-900/60 space-y-2.5">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-1.5 text-xs font-bold text-blue-900 dark:text-blue-200">
+                    <span>🏷️</span>
+                    <span>Mã riêng &amp; Nhóm khách hàng nội bộ</span>
+                  </div>
+                  {modalCustomId && (
+                    <span className="px-2 py-0.5 rounded text-[10px] font-bold font-mono bg-blue-600 text-white">
+                      {modalCustomId}
+                    </span>
+                  )}
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                  <div>
+                    <div className="flex items-center justify-between text-[11px] font-semibold text-zinc-700 dark:text-zinc-300 mb-1">
+                      <span>Mã riêng (Custom ID):</span>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const activeGroupKey = modalCustomerGroup || "wholesale";
+                          const cfg = CUSTOMER_GROUPS.find((g) => g.key === activeGroupKey) || CUSTOMER_GROUPS[0];
+                          const suffix = String(selectedCustomer.id).slice(-4).padStart(4, "0");
+                          setModalCustomId(`${cfg.prefix}-${suffix}`);
+                        }}
+                        className="text-blue-600 dark:text-blue-400 hover:underline text-[10px] font-normal cursor-pointer flex items-center gap-0.5"
+                      >
+                        <span>⚡</span>
+                        <span>Sinh mã</span>
+                      </button>
+                    </div>
+                    <input
+                      type="text"
+                      value={modalCustomId}
+                      onChange={(e) => setModalCustomId(e.target.value.toUpperCase())}
+                      placeholder="VD: SI-001, DL-02..."
+                      className="w-full px-2.5 py-1.5 text-xs font-mono font-bold uppercase rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-zinc-900 dark:text-white placeholder-zinc-400 focus:ring-2 focus:ring-blue-500 focus:outline-hidden"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-[11px] font-semibold text-zinc-700 dark:text-zinc-300 mb-1">
+                      Nhóm phân loại:
+                    </label>
+                    <select
+                      value={modalCustomerGroup}
+                      onChange={(e) => {
+                        setModalCustomerGroup(e.target.value);
+                        if (!modalCustomId && e.target.value) {
+                          const cfg = CUSTOMER_GROUPS.find((g) => g.key === e.target.value);
+                          if (cfg) {
+                            const suffix = String(selectedCustomer.id).slice(-4).padStart(4, "0");
+                            setModalCustomId(`${cfg.prefix}-${suffix}`);
+                          }
+                        }
+                      }}
+                      className="w-full px-2.5 py-1.5 text-xs rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-zinc-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:outline-hidden"
+                    >
+                      <option value="">-- Chưa phân nhóm --</option>
+                      {CUSTOMER_GROUP_CATEGORIES.map((cat) => (
+                        <optgroup key={cat} label={`── ${cat} ──`}>
+                          {CUSTOMER_GROUPS.filter((g) => g.category === cat).map((g) => (
+                            <option key={g.key} value={g.key}>
+                              {g.icon} {g.label} ({g.prefix}-)
+                            </option>
+                          ))}
+                        </optgroup>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between pt-1">
+                  <div className="flex items-center gap-1.5">
+                    {selectedCustomer.custom_id && (
+                      <button
+                        type="button"
+                        disabled={savingModalCustomCode}
+                        onClick={async () => {
+                          setModalCustomId("");
+                          setModalCustomerGroup("");
+                          await handleSaveModalCustomCode("", "");
+                        }}
+                        className="px-2 py-1 text-[10px] font-semibold text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded-lg transition cursor-pointer"
+                      >
+                        Xóa mã
+                      </button>
+                    )}
+                    <button
+                      type="button"
+                      disabled={savingModalCustomCode}
+                      onClick={() => handleSaveModalCustomCode(modalCustomId, modalCustomerGroup)}
+                      className="px-3 py-1 text-xs font-bold rounded-lg bg-blue-600 hover:bg-blue-700 text-white transition shadow-2xs flex items-center gap-1 cursor-pointer disabled:opacity-60"
+                    >
+                      {savingModalCustomCode ? <span className="animate-spin text-xs">⏳</span> : <span>💾</span>}
+                      <span>{savingModalCustomCode ? "Đang lưu..." : "Lưu mã nội bộ"}</span>
+                    </button>
                   </div>
                 </div>
               </div>
