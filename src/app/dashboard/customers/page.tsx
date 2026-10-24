@@ -470,17 +470,18 @@ export default function CustomersPage() {
             </div>
           </div>
 
-          {/* 3. Search & Filters Bar */}
-          <div className="bg-white dark:bg-zinc-900 p-2.5 sm:p-3.5 rounded-xl sm:rounded-2xl border border-zinc-200/80 dark:border-zinc-800 shadow-2xs sm:shadow-sm space-y-2.5">
-            <form onSubmit={handleSearch} className="flex items-center gap-1.5 sm:gap-2">
-              <div className="relative flex-1">
+          {/* 3. Search & Filters Bar (1 Hàng trên PC) */}
+          <div className="bg-white dark:bg-zinc-900 p-2 sm:p-3 rounded-xl sm:rounded-2xl border border-zinc-200/80 dark:border-zinc-800 shadow-2xs sm:shadow-sm">
+            <form onSubmit={handleSearch} className="flex flex-col sm:flex-row sm:items-center gap-1.5 sm:gap-2">
+              {/* Ô tìm kiếm */}
+              <div className="relative flex-1 min-w-0">
                 <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-zinc-400 text-xs pointer-events-none">🔍</span>
                 <input
                   type="text"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   placeholder="Tìm theo tên khách, SĐT, mã ID Sapo, mã riêng (SI-01, DL-02...)..."
-                  className="w-full pl-7 pr-7 py-1.5 sm:py-2 text-xs rounded-xl border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800 text-zinc-900 dark:text-white placeholder-zinc-400 focus:ring-2 focus:ring-blue-500 focus:outline-hidden transition-all"
+                  className="w-full pl-7 pr-7 py-1.5 sm:py-2 text-xs rounded-xl border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800 text-zinc-900 dark:text-white placeholder-zinc-400 focus:ring-2 focus:ring-blue-500 focus:outline-hidden transition-all h-8 sm:h-9"
                 />
                 {searchQuery && (
                   <button
@@ -494,131 +495,62 @@ export default function CustomersPage() {
                 )}
               </div>
 
-              <button
-                type="submit"
-                className="py-1.5 sm:py-2 px-3 sm:px-4 text-xs font-semibold rounded-xl bg-blue-600 hover:bg-blue-700 text-white transition shadow-2xs shrink-0 cursor-pointer active:scale-95"
-              >
-                Tìm kiếm
-              </button>
-
-              {(activeQuery || selectedGroup !== "all") && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    handleClearSearch();
-                    setSelectedGroup("all");
-                  }}
-                  className="py-1.5 sm:py-2 px-2.5 text-xs font-semibold rounded-xl border border-rose-200 dark:border-rose-900/60 bg-rose-50 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400 hover:bg-rose-100 transition shrink-0 cursor-pointer flex items-center gap-1 active:scale-95"
-                  title="Xóa bộ lọc tìm kiếm & nhóm"
-                >
-                  <span>✕</span>
-                  <span className="hidden sm:inline">Đặt lại</span>
-                </button>
-              )}
-            </form>
-
-            {/* TAB LỌC THEO NHÓM KHÁCH HÀNG NỘI BỘ (Customer Groups Filter Bar) */}
-            <div className="flex items-center gap-1.5 overflow-x-auto pb-0.5 pt-0.5 no-scrollbar text-xs">
-              <span className="text-[11px] font-semibold text-zinc-400 shrink-0 mr-1 flex items-center gap-1">
-                <span>🏷️</span>
-                <span>Nhóm:</span>
-              </span>
-
-              {/* Dropdown chọn nhanh 20+ nhóm */}
-              <div className="shrink-0 mr-1">
-                <select
-                  value={selectedGroup}
-                  onChange={(e) => {
-                    setSelectedGroup(e.target.value);
-                    setPage(1);
-                  }}
-                  className="h-7 px-2 text-[11px] font-semibold rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-zinc-800 dark:text-zinc-200 focus:ring-2 focus:ring-blue-500 focus:outline-hidden cursor-pointer shadow-2xs"
-                >
-                  <option value="all">🔍 Tất cả nhóm ({totalCount} khách)</option>
-                  <option value="unassigned">⚪ Chưa gán nhóm {groupCounts["unassigned"] ? `(${groupCounts["unassigned"]})` : ""}</option>
-                  {CUSTOMER_GROUP_CATEGORIES.map((cat) => (
-                    <optgroup key={cat} label={`── ${cat} ──`}>
-                      {CUSTOMER_GROUPS.filter((g) => g.category === cat).map((g) => {
-                        const count = groupCounts[g.key] || 0;
-                        return (
-                          <option key={g.key} value={g.key}>
-                            {g.icon} {g.label} ({g.prefix}-) {count > 0 ? `[${count}]` : ""}
-                          </option>
-                        );
-                      })}
-                    </optgroup>
-                  ))}
-                </select>
-              </div>
-
-              {/* Tất cả */}
-              <button
-                type="button"
-                onClick={() => {
-                  setSelectedGroup("all");
-                  setPage(1);
-                }}
-                className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold transition-all shrink-0 cursor-pointer flex items-center gap-1 ${selectedGroup === "all"
-                  ? "bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 shadow-2xs font-bold"
-                  : "bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white"
-                  }`}
-              >
-                <span>Tất cả</span>
-                <span className="text-[10px] opacity-75">({totalCount})</span>
-              </button>
-
-              {/* Từng nhóm khách hàng */}
-              {CUSTOMER_GROUPS.map((g) => {
-                const count = groupCounts[g.key] || 0;
-                const isSelected = selectedGroup === g.key;
-                return (
-                  <button
-                    key={g.key}
-                    type="button"
-                    onClick={() => {
-                      setSelectedGroup(g.key);
+              {/* Nhóm phân loại dropdown (Cùng hàng trên PC) */}
+              <div className="flex items-center gap-1.5 sm:shrink-0">
+                <div className="relative w-full sm:w-auto">
+                  <select
+                    value={selectedGroup}
+                    onChange={(e) => {
+                      setSelectedGroup(e.target.value);
                       setPage(1);
                     }}
-                    className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold transition-all shrink-0 cursor-pointer flex items-center gap-1 border ${isSelected
-                      ? "bg-blue-600 text-white border-blue-600 shadow-2xs font-bold"
-                      : "bg-white dark:bg-zinc-900 text-zinc-700 dark:text-zinc-300 border-zinc-200 dark:border-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-800/60"
-                      }`}
+                    className="w-full sm:w-56 h-8 sm:h-9 px-2.5 text-xs font-medium rounded-xl border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800 text-zinc-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:outline-hidden cursor-pointer transition-all truncate"
+                    title="Lọc theo nhóm phân loại"
                   >
-                    <span>{g.icon}</span>
-                    <span>{g.label}</span>
-                    {count > 0 && (
-                      <span
-                        className={`px-1.5 py-0.1 rounded-full text-[9px] font-mono font-bold ${isSelected
-                          ? "bg-blue-800 text-white"
-                          : "bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400"
-                          }`}
-                      >
-                        {count}
-                      </span>
-                    )}
-                  </button>
-                );
-              })}
+                    <option value="all">🔍 Tất cả nhóm ({totalCount.toLocaleString("vi-VN")})</option>
+                    <option value="unassigned">
+                      ⚪ Chưa gán nhóm {groupCounts["unassigned"] !== undefined ? `(${groupCounts["unassigned"]})` : ""}
+                    </option>
+                    {CUSTOMER_GROUP_CATEGORIES.map((cat) => (
+                      <optgroup key={cat} label={`── ${cat} ──`}>
+                        {CUSTOMER_GROUPS.filter((g) => g.category === cat).map((g) => {
+                          const count = groupCounts[g.key] || 0;
+                          return (
+                            <option key={g.key} value={g.key}>
+                              {g.icon} {g.label} ({g.prefix}-) {count > 0 ? `[${count}]` : ""}
+                            </option>
+                          );
+                        })}
+                      </optgroup>
+                    ))}
+                  </select>
+                </div>
 
-              {/* Chưa phân nhóm */}
-              <button
-                type="button"
-                onClick={() => {
-                  setSelectedGroup("unassigned");
-                  setPage(1);
-                }}
-                className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold transition-all shrink-0 cursor-pointer flex items-center gap-1 border ${selectedGroup === "unassigned"
-                  ? "bg-zinc-800 text-white border-zinc-800 dark:bg-zinc-200 dark:text-zinc-900 shadow-2xs font-bold"
-                  : "bg-white dark:bg-zinc-900 text-zinc-500 dark:text-zinc-400 border-dashed border-zinc-300 dark:border-zinc-700 hover:text-zinc-800 dark:hover:text-zinc-200"
-                  }`}
-              >
-                <span>⚪</span>
-                <span>Chưa gán nhóm</span>
-                {groupCounts["unassigned"] !== undefined && (
-                  <span className="text-[10px] opacity-75">({groupCounts["unassigned"]})</span>
+                {/* Nút Tìm kiếm */}
+                <button
+                  type="submit"
+                  className="h-8 sm:h-9 py-1 sm:py-2 px-3 sm:px-4 text-xs font-semibold rounded-xl bg-blue-600 hover:bg-blue-700 text-white transition shadow-2xs shrink-0 cursor-pointer active:scale-95 flex items-center gap-1"
+                >
+                  <span>Tìm kiếm</span>
+                </button>
+
+                {/* Nút Đặt lại */}
+                {(activeQuery || selectedGroup !== "all") && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      handleClearSearch();
+                      setSelectedGroup("all");
+                    }}
+                    className="h-8 sm:h-9 py-1 sm:py-2 px-2.5 text-xs font-semibold rounded-xl border border-rose-200 dark:border-rose-900/60 bg-rose-50 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400 hover:bg-rose-100 transition shrink-0 cursor-pointer flex items-center gap-1 active:scale-95"
+                    title="Xóa bộ lọc tìm kiếm & nhóm"
+                  >
+                    <span>✕</span>
+                    <span className="hidden sm:inline">Đặt lại</span>
+                  </button>
                 )}
-              </button>
-            </div>
+              </div>
+            </form>
           </div>
 
           {/* Error state */}
